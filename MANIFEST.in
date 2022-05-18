@@ -1,0 +1,2 @@
+include versioneer.py
+include prefect_kubernetes/_version.py
