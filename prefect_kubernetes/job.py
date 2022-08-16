@@ -1,10 +1,15 @@
+import prefect.context
+import time
+
 from typing import Dict, Optional
 
 from concurrent.futures import ThreadPoolExecutor
 from kubernetes import client
-from prefect import task
+from prefect import get_run_logger, task
+from prefect_kubernetes import exceptions as err
 from prefect_kubernetes.credentials import KubernetesApiKey
-from prefect_kubernetes.utilities import get_kubernetes_client, KubernetesClient
+from prefect_kubernetes.pod import read_namespaced_pod_logs
+from prefect_kubernetes.utilities import KubernetesClient
 
 @task
 def create_namespaced_job(
@@ -30,7 +35,9 @@ def create_namespaced_job(
         ValueError: if `body` is `None`
     """
     if not body:
-        raise ValueError("A dictionary representing a V1Job must be provided.")
+        raise err.KubernetesJobDefinitionError(
+            "A dictionary representing a V1Job must be provided."
+        )
 
     api_client = kubernetes_api_key.get_client(resource="job") if not api_client else api_client
     
@@ -128,8 +135,8 @@ def patch_namespaced_job(
         ValueError: if `job_name` is `None`
     """
     if not body:
-        raise ValueError(
-            "A dictionary representing a V1Job patch must be provided."
+        raise err.KubernetesJobDefinitionError(
+            "A dictionary representing a V1Job must be provided."
         )
 
     if not job_name:
@@ -230,7 +237,8 @@ def run_namespaced_job(
             defaults to the `default` namespace.
         kubernetes_api_key (KubernetesApiKey, optional): KubernetesApiKey block 
             holding a Kubernetes API Key. Defaults to None.
-        api_client (KubernetesClient, optional): An initialized Kubernetes API client to use to run a job. Defaults to None.
+        api_client (KubernetesClient, optional): An initialized Kubernetes API client 
+            to use to run a job. Defaults to None.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
         job_status_poll_interval (int, optional): The interval given in seconds
@@ -243,11 +251,15 @@ def run_namespaced_job(
             resources related to a given job will be removed from the Kubernetes cluster
             after completion, defaults to the `True` value
     Raises:
-        ValueError: if `body` is `None`
-        ValueError: if `body["metadata"]["name"] is `None`
+        KubernetesJobDefinitionError: if `body` is `None`
+        KubernetesJobDefinitionError: if `body["metadata"]["name"] is `None`
     """
+    logger = get_run_logger(log_level=log_level)
+    
     if not body:
-        raise ValueError("A dictionary representing a V1Job must be provided.")
+        raise err.KubernetesJobDefinitionError(
+            "A dictionary representing a V1Job must be provided."
+        )
     
     # if log_level is not None and getattr(logger, log_level, None) is None:
     #     raise ValueError("A valid log_level must be provided.")
@@ -256,83 +268,80 @@ def run_namespaced_job(
     kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
 
     job_name = body.get("metadata", {}).get("name")
+    
     if not job_name:
-        raise ValueError(
+        raise err.KubernetesJobDefinitionError(
             "The job name must be defined in the body under the metadata key."
         )
 
     api_client_job = kubernetes_api_key.get_client(resource="job")
-
     api_client_pod = kubernetes_api_key.get_client(resource="pod")
 
     api_client_job.create_namespaced_job(
         namespace=namespace, body=body, **kube_kwargs
     )
-    print(f"Job {job_name} has been created.")
+    logger.info(f"Job {job_name} has been created.")
 
     pod_log_streams = {}
 
-    # Context is thread-local and isn't automatically copied
-    # to the threads spawned by ThreadPoolExecutor.
-    # Add an initializer which updates the thread's Context with
-    # values from the current Context.
-    # context_copy = prefect.context.copy()
+    # Context is thread-local and isn't automatically copied to the threads spawned by ThreadPoolExecutor.
+    # Add an initializer which updates the thread's Context with values from the current Context.
+    context_copy = prefect.context.copy()
 
-    # def initialize_thread(context):
-    #     prefect.context.update(context)
+    def initialize_thread(context):
+        prefect.context.update(context)
 
-    # with ThreadPoolExecutor(
-    #     initializer=initialize_thread, initargs=(context_copy,)
-    # ) as pool:
-    #     completed = False
-    #     while not completed:
-    #         job = api_client_job.read_namespaced_job_status(
-    #             name=job_name, namespace=namespace
-    #         )
+    with ThreadPoolExecutor(
+        initializer=initialize_thread, initargs=(context_copy,)
+    ) as pool:
+        completed = False
+        while not completed:
+            job = api_client_job.read_namespaced_job_status(
+                name=job_name, namespace=namespace
+            )
+            if log_level is not None:
+                func_log = getattr(logger, log_level)
+                    
+                pod_selector = (
+                    f"controller-uid={job.metadata.labels['controller-uid']}"
+                )
+                pods_list = api_client_pod.list_namespaced_pod(
+                    namespace=namespace, label_selector=pod_selector
+                )
 
-    #         if log_level is not None:
-    #             func_log = getattr(self.logger, log_level)
+                for pod in pods_list.items:
+                    pod_name = pod.metadata.name
 
-    #             pod_selector = (
-    #                 f"controller-uid={job.metadata.labels['controller-uid']}"
-    #             )
-    #             pods_list = api_client_pod.list_namespaced_pod(
-    #                 namespace=namespace, label_selector=pod_selector
-    #             )
+                    # Can't start logs when phase is pending
+                    if pod.status.phase == "Pending":
+                        continue
+                    if pod_name in pod_log_streams:
+                        continue
 
-    #             for pod in pods_list.items:
-    #                 pod_name = pod.metadata.name
+                    read_pod_logs = read_namespaced_pod_logs(
+                        pod_name=pod_name,
+                        namespace=namespace,
+                        kubernetes_api_key=kubernetes_api_key,
+                        on_log_entry=lambda log: func_log(f"{pod_name}: {log}"),
+                    )
 
-    #                 # Can't start logs when phase is pending
-    #                 if pod.status.phase == "Pending":
-    #                     continue
-    #                 if pod_name in pod_log_streams:
-    #                     continue
+                    logger.info(f"Started following logs for {pod_name}")
+                    pod_log_streams[pod_name] = pool.submit(read_pod_logs.run)
 
-    #                 read_pod_logs = ReadNamespacedPodLogs(
-    #                     pod_name=pod_name,
-    #                     namespace=namespace,
-    #                     kubernetes_api_key=kubernetes_api_key,
-    #                     on_log_entry=lambda log: func_log(f"{pod_name}: {log}"),
-    #                 )
+            if job.status.active:
+                time.sleep(job_status_poll_interval)
+            elif job.status.failed:
+                raise err.KubernetesJobFailedError(
+                    f"Job {job_name} failed, check Kubernetes pod logs for more information."
+                )
+            elif job.status.succeeded:
+                logger.info(f"Job {job_name} has been completed.")
+                break
 
-    #                 self.logger.info(f"Started following logs for {pod_name}")
-    #                 pod_log_streams[pod_name] = pool.submit(read_pod_logs.run)
-
-    #         if job.status.active:
-    #             time.sleep(job_status_poll_interval)
-    #         elif job.status.failed:
-    #             raise signals.FAIL(
-    #                 f"Job {job_name} failed, check Kubernetes pod logs for more information."
-    #             )
-    #         elif job.status.succeeded:
-    #             self.logger.info(f"Job {job_name} has been completed.")
-    #             break
-
-    #     if delete_job_after_completion:
-    #         api_client_job.delete_namespaced_job(
-    #             name=job_name,
-    #             namespace=namespace,
-    #             body=client.V1DeleteOptions(propagation_policy="Foreground"),
-    #         )
-    #         self.logger.info(f"Job {job_name} has been deleted.")
+            if delete_job_after_completion:
+                api_client_job.delete_namespaced_job(
+                    name=job_name,
+                    namespace=namespace,
+                    body=client.V1DeleteOptions(propagation_policy="Foreground"),
+                )
+                logger.info(f"Job {job_name} has been deleted.")
