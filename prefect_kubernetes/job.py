@@ -12,7 +12,7 @@ from prefect_kubernetes.pod import read_namespaced_pod_logs
 
 
 @task
-def create_namespaced_job(
+async def create_namespaced_job(
     body: Dict,
     kubernetes_api_key: KubernetesApiKey,
     namespace: Optional[str] = "default",
@@ -46,7 +46,7 @@ def create_namespaced_job(
 
 
 @task
-def delete_namespaced_job(
+async def delete_namespaced_job(
     job_name: str,
     kubernetes_api_key: KubernetesApiKey,
     namespace: Optional[str] = "default",
@@ -87,7 +87,7 @@ def delete_namespaced_job(
 
 
 @task
-def list_namespaced_job(
+async def list_namespaced_job(
     kubernetes_api_key: KubernetesApiKey,
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict] = {},
@@ -98,7 +98,7 @@ def list_namespaced_job(
         namespace (str, optional): The Kubernetes namespace to list jobs from,
             defaults to the `default` namespace.
         kubernetes_api_key (KubernetesApiKey, optional): KubernetesApiKey block
-            holding a Kubernetes API Key. Defaults to None.
+            holding a Kubernetes API Key
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
     """
@@ -113,7 +113,7 @@ def list_namespaced_job(
 
 
 @task
-def patch_namespaced_job(
+async def patch_namespaced_job(
     job_name: str,
     body: dict,
     kubernetes_api_key: KubernetesApiKey = None,
@@ -155,7 +155,7 @@ def patch_namespaced_job(
 
 
 @task
-def read_namespaced_job(
+async def read_namespaced_job(
     job_name: str,
     kubernetes_api_key: KubernetesApiKey,
     namespace: Optional[str] = "default",
@@ -188,7 +188,7 @@ def read_namespaced_job(
 
 
 @task
-def replace_namespaced_job(
+async def replace_namespaced_job(
     body: dict,
     job_name: str,
     kubernetes_api_key: KubernetesApiKey,
@@ -231,7 +231,7 @@ def replace_namespaced_job(
 
 
 @task
-def run_namespaced_job(
+async def run_namespaced_job(
     body: str,
     kubernetes_api_key: KubernetesApiKey,
     namespace: Optional[str] = "default",

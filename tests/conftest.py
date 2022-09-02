@@ -53,3 +53,16 @@ def api_core_client(monkeypatch):
     )
 
     return core_client
+
+
+@pytest.fixture
+def api_request_method(monkeypatch):
+    method = MagicMock()
+    method.__self__ = api_core_client
+
+    monkeypatch.setattr(
+        "kubernetes.client.api_client.ApiClient.request",
+        "method",
+        method,
+    )
+    return method
