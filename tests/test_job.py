@@ -1,6 +1,6 @@
 import pytest
+from kubernetes.client.exceptions import ApiValueError
 
-from prefect_kubernetes import exceptions as err
 from prefect_kubernetes.job import (
     create_namespaced_job,
     delete_namespaced_job,
@@ -13,11 +13,11 @@ from prefect_kubernetes.job import (
 
 
 async def test_invalid_body_raises_error(kubernetes_credentials):
-    with pytest.raises(err.KubernetesJobDefinitionError):
+    with pytest.raises(TypeError):
         await create_namespaced_job.fn(
             body=None, kubernetes_credentials=kubernetes_credentials
         )
-    with pytest.raises(err.KubernetesJobDefinitionError):
+    with pytest.raises(ApiValueError):
         await patch_namespaced_job.fn(
             body=None, job_name="", kubernetes_credentials=kubernetes_credentials
         )

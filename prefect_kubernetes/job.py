@@ -52,7 +52,7 @@ async def delete_namespaced_job(
         kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
             holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
-            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
+            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to None.
         - delete_option_kwargs (dict, optional): Optional keyword arguments to pass to
             the V1DeleteOptions object (e.g. {"propagation_policy": "...",
             "grace_period_seconds": "..."}.
@@ -82,7 +82,7 @@ async def list_namespaced_job(
         namespace (str, optional): The Kubernetes namespace to list jobs from,
             defaults to the `default` namespace.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
-            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
+            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to None.
     """
     api_client = kubernetes_credentials.get_batch_client()
 
@@ -100,7 +100,7 @@ async def patch_namespaced_job(
     body: dict,
     kubernetes_credentials: KubernetesCredentials = None,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = {},
+    kube_kwargs: Optional[Dict] = None,
 ):
     """Task for deleting a namespaced Kubernetes job.
 
@@ -113,23 +113,15 @@ async def patch_namespaced_job(
         kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
             holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
-            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
+            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to None.
 
     Raises:
         ValueError: if `job_name` is `None`
     """
-    if not body:
-        raise err.KubernetesJobDefinitionError(
-            "A dictionary representing a V1Job must be provided."
-        )
-
-    if not job_name:
-        raise ValueError("The name of a Kubernetes job must be provided.")
 
     api_client = kubernetes_credentials.get_batch_client()
 
-    body = {**body, **(body or {})}
-    kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
+    kube_kwargs = kube_kwargs or {}
 
     api_client.patch_namespaced_job(
         name=job_name, namespace=namespace, body=body, **kube_kwargs
@@ -141,7 +133,7 @@ async def read_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = {},
+    kube_kwargs: Optional[Dict] = None,
 ):
     """Task for reading a namespaced kubernetes job.
 
@@ -152,7 +144,7 @@ async def read_namespaced_job(
         kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
             holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
-            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
+            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to None.
 
     Raises:
         ValueError: if `job_name` is `None`
@@ -162,7 +154,7 @@ async def read_namespaced_job(
 
     api_client = kubernetes_credentials.get_batch_client()
 
-    kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
+    kube_kwargs = kube_kwargs or {}
 
     return api_client.read_namespaced_job(
         name=job_name, namespace=namespace, **kube_kwargs
@@ -175,7 +167,7 @@ async def replace_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = {},
+    kube_kwargs: Optional[Dict] = None,
 ):
     """Task for replacing a namespaced kubernetes job.
 
@@ -188,24 +180,11 @@ async def replace_namespaced_job(
         kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
             holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
-            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
-
-    Raises:
-        ValueError: if `body` is `None`
-        ValueError: if `job_name` is `None`
+            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to None.
     """
-    if not body:
-        raise err.KubernetesJobDefinitionError(
-            "A dictionary representing a V1Job must be provided."
-        )
-
-    if not job_name:
-        raise ValueError("The name of a Kubernetes job must be provided.")
-
     api_client = kubernetes_credentials.get_batch_client()
 
-    body = {**body, **(body or {})}
-    kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
+    kube_kwargs = kube_kwargs or {}
 
     return api_client.replace_namespaced_job(
         name=job_name, body=body, namespace=namespace, **kube_kwargs
@@ -217,7 +196,7 @@ async def run_namespaced_job(
     body: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = {},
+    kube_kwargs: Optional[Dict] = None,
     job_status_poll_interval: Optional[int] = 5,
     log_level: Optional[str] = None,
     delete_job_after_completion: Optional[bool] = True,
@@ -232,7 +211,7 @@ async def run_namespaced_job(
         kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
             holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
-            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
+            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to None.
         job_status_poll_interval (int, optional): The interval given in seconds
             indicating how often the Kubernetes API will be requested about the status
             of the job being performed, defaults to `5` seconds.
@@ -248,16 +227,10 @@ async def run_namespaced_job(
     """
     logger = get_run_logger().setLevel(level=log_level)
 
-    if not body:
-        raise err.KubernetesJobDefinitionError(
-            "A dictionary representing a V1Job must be provided."
-        )
-
     # if log_level is not None and getattr(logger, log_level, None) is None:
     #     raise ValueError("A valid log_level must be provided.")
 
-    body = {**body, **(body or {})}
-    kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
+    kube_kwargs = kube_kwargs or {}
 
     job_name = body.get("metadata", {}).get("name")
 

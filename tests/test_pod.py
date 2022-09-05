@@ -35,7 +35,7 @@ async def test_connect_get_namespaced_pod_exec_stream_return(kubernetes_credenti
             kubernetes_credentials=kubernetes_credentials,
             _preload_content=False,
         )
-        # test_flow` failing because cannot `return` non-pickleable type `SSLSocket` ?
+        # `test_flow` failing because cannot `return` non-pickleable type `SSLSocket` ?
         assert isinstance(response, WSClient)
         return None
 
