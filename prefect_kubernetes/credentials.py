@@ -22,13 +22,15 @@ K8S_CLIENTS = {
 
 
 class KubernetesCredentials(Block):
-    """Credentials block for API client generation across prefect-kubernetes tasks and flows.
+    """Credentials block for authenticated Kubernetes API client generation.
 
     Args:
-        api_key (SecretStr): API key to authenticate with the Kubernetes API.
+        api_key (SecretStr): API key to authenticate with the Kubernetes API
+        cluster_config (KubernetesClusterConfig, optional): an instance of `KubernetesClusterConfig`
+            holding a JSON kube config for a specific kubernetes context
 
     Examples:
-        Load a stored kubernetes API key:
+        Load stored Kubernetes credentials:
         ```python
         from prefect_kubernetes.credentials import KubernetesCredentials
 
@@ -38,21 +40,20 @@ class KubernetesCredentials(Block):
         Create a kubernetes API client from KubernetesCredentials and inferred cluster configuration:
         ```python
         from prefect_kubernetes import KubernetesCredentials
-        from prefect_kubernetes.utilities import get_kubernetes_client
 
-        kubernetes_credentials = KubernetesCredentials.load("my-k8s-api-key")
+        kubernetes_credentials = KubernetesCredentials.load("my-k8s-credentials")
         kubernetes_api_client = kubernetes_credentials.get_core_client()
         ```
 
         Create a namespaced kubernetes job:
         ```python
-        from prefect_kubernetes import KubernetesApiKey
+        from prefect_kubernetes import KubernetesCredentials
         from prefect_kubernetes.job import create_namespaced_job
 
-        kubernetes_credentials = KubernetesApiKey.load("my-k8s-api-key")
+        kubernetes_credentials = KubernetesCredentials.load("my-k8s-credentials")
 
         create_namespaced_job(
-            namespace="default", body={"Marvin": "42"}, **kube_kwargs
+            body={"Marvin": "42"}, kubernetes_credentials=kubernetes_credentials
         )
         ```
     """
@@ -60,8 +61,8 @@ class KubernetesCredentials(Block):
     _block_type_name = "Kubernetes Credentials"
     _logo_url = "https://kubernetes-security.info/assets/img/logo.png?h=250"  # noqa
 
-    api_key: SecretStr = None
-    cluster_config: KubernetesClusterConfig = None
+    api_key: Optional[SecretStr] = None
+    cluster_config: Optional[KubernetesClusterConfig] = None
 
     def get_core_client(self) -> client.CoreV1Api:
         """Convenience method for retrieving a kubernetes api client for core resources

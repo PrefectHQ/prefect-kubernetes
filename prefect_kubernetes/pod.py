@@ -66,7 +66,7 @@ async def read_namespaced_pod_logs(
 
 @task
 async def connect_get_namespaced_pod_exec(
-    name: str,
+    pod_name: str,
     container: str,
     command: List[str],
     kubernetes_credentials: KubernetesCredentials,
@@ -90,7 +90,7 @@ async def connect_get_namespaced_pod_exec(
     of a @flow-decorated function definition.
 
     Args:
-        name (str): The name of the pod in which the command is to be run
+        pod_name (str): The name of the pod in which the command is to be run
         container (str): The name of a container to use in the pod.
         command (List): The command to run in `pod_name`
         kubernetes_credentials (KubernetesCredentials): A block that stores a Kubernetes credentials,
@@ -129,7 +129,7 @@ async def connect_get_namespaced_pod_exec(
     try:
         api_response = stream(
             api_client.connect_get_namespaced_pod_exec,
-            name=name,
+            name=pod_name,
             namespace=namespace,
             container=container,
             command=command,

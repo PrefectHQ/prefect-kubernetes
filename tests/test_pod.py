@@ -13,7 +13,7 @@ async def test_connect_get_namespaced_pod_exec_str_return(kubernetes_credentials
     @flow
     async def test_flow():
         return await connect_get_namespaced_pod_exec(
-            name="demo-pod",
+            pod_name="demo-pod",
             container="app-container",
             command=["whoami"],
             kubernetes_credentials=kubernetes_credentials,
@@ -29,7 +29,7 @@ async def test_connect_get_namespaced_pod_exec_stream_return(kubernetes_credenti
     @flow
     async def test_flow():
         response = await connect_get_namespaced_pod_exec(
-            name="demo-pod",
+            pod_name="demo-pod",
             container="app-container",
             command=["/bin/bash"],
             kubernetes_credentials=kubernetes_credentials,
@@ -52,7 +52,7 @@ async def test_connect_get_namespaced_pod_exec_multiline_cmd(kubernetes_credenti
     @flow
     async def test_flow():
         return await connect_get_namespaced_pod_exec(
-            name="demo-pod",
+            pod_name="demo-pod",
             container="app-container",
             command=["ls", "/"],
             kubernetes_credentials=kubernetes_credentials,
@@ -67,7 +67,7 @@ async def test_connect_get_namespaced_pod_exec_no_stdout(kubernetes_credentials)
     @flow
     async def test_flow():
         return await connect_get_namespaced_pod_exec(
-            name="demo-pod",
+            pod_name="demo-pod",
             container="app-container",
             command=["whoami"],
             stdout=False,
@@ -83,7 +83,7 @@ async def test_connect_get_namespaced_pod_exec_fake_pod(kubernetes_credentials):
     @flow
     async def test_flow():
         return await connect_get_namespaced_pod_exec(
-            name="non-existent-pod",
+            pod_name="non-existent-pod",
             container="app-container",
             command=["whoami"],
             stdout=False,
