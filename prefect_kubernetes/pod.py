@@ -1,11 +1,16 @@
-from typing import Any, Callable, Dict, List, Optional
+import asyncio
+from typing import Callable, List, Optional, Union
 
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
+from kubernetes.stream.ws_client import WSClient
 from kubernetes.watch import Watch
-from prefect import task
+from prefect import get_run_logger, task
 
 from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.exceptions import KubernetesResourceNotFoundError
+
+KUBERNETES_RESOURCE_NOT_FOUND_STATUS_CODE = 0
 
 
 @task
@@ -67,14 +72,22 @@ async def connect_get_namespaced_pod_exec(
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
     **kwargs,
-) -> str:
-    """Task for running a command in a namespaced pod on Kubernetes.
+) -> Union[str, WSClient]:
+    """Task for running and/or streaming commands in a namespaced pod on Kubernetes.
 
     This task requires `KubernetesCredentials` to generate a`CoreV1Api` Kubernetes
-    client to stream the overridden `api_response` to `connect_get_namespaced_pod_exec`.
+    client to run / stream commands on the specified pod's `container`.
 
-    User-provided `kwargs` will overwrite `default_kwargs` if key values from `default_kwargs`
-    are set in `kwargs`.
+    User-provided `kwargs` will overwrite `default_kwargs` if keys exist in both.
+
+    The `kubernetes.stream.stream` object accepts a `_preload_content` kwarg (defualts to True) which
+    determines this task's return value type.
+
+    If `_preload_content=True`, `api_response` will be the `str` output of `command` on `container`.
+    Otherwise if `_preload_content=False`, `api_response` will be an interactive `WSClient` object.
+
+    Note that since `WSClient` is a non-pickleable object-type, it cannot be used as the `return` value
+    of a @flow-decorated function definition.
 
     Args:
         name (str): The name of the pod in which the command is to be run
@@ -83,16 +96,21 @@ async def connect_get_namespaced_pod_exec(
         kubernetes_credentials (KubernetesCredentials): A block that stores a Kubernetes credentials,
             has methods to generate resource-specific client
         namespace (str, optional): The Kubernetes namespace of the pod.
-                Defaults to `default`
+            Defaults to `default`
         kwargs (Dict, optional): Optional extra keyword arguments to pass to the
-                Kubernetes API method (e.g. `{"stderr": "False", "tty": "True"}`)
+            Kubernetes API method (e.g. `{"stderr": "False", "tty": "True"}`)
 
     Returns:
-        str: The string output of `command` on `container`, will be empty if `stdout=False`
+        Union[str, WSClient]: This task either returns the `str` output of `command`, or if
+            `_preload_content=False`, then an interactive `WSClient` object is returned.
 
     Raises:
-        - TypeError: `command` is not a list
+        - TypeError: `command` is not a list, or `api_response` is of unexpected type
+        - KubernetesResourceNotFoundError: if `api_response` has KUBERNETES_RESOURCE_NOT_FOUND_STATUS_CODE
+        - ApiException: if bad `api_response` status and is not KUBERNETES_RESOURCE_NOT_FOUND_STATUS_CODE
     """
+
+    logger = get_run_logger()
 
     if not isinstance(command, List):
         raise TypeError("The `command` argument must be provided as a list")
@@ -108,13 +126,40 @@ async def connect_get_namespaced_pod_exec(
 
     method_kwargs = {**default_kwargs, **kwargs}
 
-    api_response = stream(
-        api_client.connect_get_namespaced_pod_exec,
-        name=name,
-        namespace=namespace,
-        container=container,
-        command=command,
-        **method_kwargs,
-    )
+    try:
+        api_response = stream(
+            api_client.connect_get_namespaced_pod_exec,
+            name=name,
+            namespace=namespace,
+            container=container,
+            command=command,
+            **method_kwargs,
+        )
 
-    return api_response
+        if isinstance(api_response, str):
+            logger.info(
+                f"Returning `str` output of '{' '.join(command)}' as executed on {container}..."
+            )
+        elif isinstance(api_response, WSClient):
+            logger.info(
+                f"Returning an interactive `kubernetes.stream.ws_client.WSClient` object..."
+            )
+        else:
+            raise TypeError(
+                f"Unexpected API response object-type: {type(api_response)}"
+            )
+
+        return api_response
+
+    except ApiException as err:
+        if err.status == KUBERNETES_RESOURCE_NOT_FOUND_STATUS_CODE:
+            raise KubernetesResourceNotFoundError(
+                status=404,
+                reason=(
+                    f"{err.reason}"
+                    " - Your Kubernetes API client cannot find a resource you specified."
+                ),
+            )
+        else:
+            logger.error(f"{err.reason}")
+            raise
