@@ -136,3 +136,6 @@ dmypy.json
 
 # Jupyter notebook
 *.ipynb
+
+# testing
+testing_stuff.py

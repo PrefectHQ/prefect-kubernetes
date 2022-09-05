@@ -7,16 +7,16 @@ from kubernetes import client
 from prefect import get_run_logger, task
 
 from prefect_kubernetes import exceptions as err
-from prefect_kubernetes.credentials import KubernetesApiKey
+from prefect_kubernetes.credentials import KubernetesCredentials
 from prefect_kubernetes.pod import read_namespaced_pod_logs
 
 
 @task
 async def create_namespaced_job(
     body: Dict,
-    kubernetes_api_key: KubernetesApiKey,
+    kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = {},
+    kube_kwargs: Optional[Dict] = None,
 ):
     """Task for creating a namespaced Kubernetes job.
 
@@ -25,7 +25,7 @@ async def create_namespaced_job(
             specification. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to create this job in,
             defaults to the `default` namespace.
-        kubernetes_api_key (KubernetesApiKey, optional): KubernetesApiKey block holding a Kubernetes API Key. Defaults to None.
+        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block holding a Kubernetes API Key. Defaults to None.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
                 Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to None.
 
@@ -37,7 +37,7 @@ async def create_namespaced_job(
             "A dictionary representing a V1Job must be provided."
         )
 
-    api_client = kubernetes_api_key.get_batch_client()
+    api_client = kubernetes_credentials.get_batch_client()
 
     body = {**body, **(body or {})}
     kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
@@ -48,10 +48,10 @@ async def create_namespaced_job(
 @task
 async def delete_namespaced_job(
     job_name: str,
-    kubernetes_api_key: KubernetesApiKey,
+    kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = {},
-    delete_option_kwargs: Optional[Dict] = {},
+    kube_kwargs: Optional[Dict] = None,
+    delete_option_kwargs: Optional[Dict] = None,
 ):
     """Task for deleting a namespaced Kubernetes job.
 
@@ -59,7 +59,7 @@ async def delete_namespaced_job(
         job_name (str): The name of a job to delete. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to delete this job in,
             defaults to the `default` namespace.
-        kubernetes_api_key (KubernetesApiKey, optional): KubernetesApiKey block
+        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
             holding a Kubernetes API Key. Defaults to None.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
@@ -73,42 +73,43 @@ async def delete_namespaced_job(
     if not job_name:
         raise ValueError("The name of a Kubernetes job must be provided.")
 
-    api_client = kubernetes_api_key.get_batch_client()
+    api_client = kubernetes_credentials.get_batch_client()
 
-    kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
-    delete_option_kwargs = delete_option_kwargs or {}
+    method_kwargs = {}
+
+    if delete_option_kwargs:
+        method_kwargs.update(body=client.V1DeleteOptions(**delete_option_kwargs))
+    if kube_kwargs:
+        method_kwargs.update(**kube_kwargs)
 
     api_client.delete_namespaced_job(
-        name=job_name,
-        namespace=namespace,
-        body=client.V1DeleteOptions(**delete_option_kwargs),
-        **kube_kwargs,
+        name=job_name, namespace=namespace, **method_kwargs
     )
 
 
 @task
 async def list_namespaced_job(
-    kubernetes_api_key: KubernetesApiKey,
+    kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = {},
+    kube_kwargs: Optional[Dict] = None,
 ):
     """Task for listing namespaced Kubernetes jobs.
 
     Args:
         namespace (str, optional): The Kubernetes namespace to list jobs from,
             defaults to the `default` namespace.
-        kubernetes_api_key (KubernetesApiKey, optional): KubernetesApiKey block
+        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
             holding a Kubernetes API Key
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
     """
-    api_client = kubernetes_api_key.get_batch_client()
+    api_client = kubernetes_credentials.get_batch_client()
 
-    kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
+    method_kwargs = kube_kwargs or {}
 
     api_client.list_namespaced_job(
         namespace=namespace,
-        **kube_kwargs,
+        **method_kwargs,
     )
 
 
@@ -116,7 +117,7 @@ async def list_namespaced_job(
 async def patch_namespaced_job(
     job_name: str,
     body: dict,
-    kubernetes_api_key: KubernetesApiKey = None,
+    kubernetes_credentials: KubernetesCredentials = None,
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict] = {},
 ):
@@ -128,7 +129,7 @@ async def patch_namespaced_job(
             specification. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to patch this job in,
             defaults to the `default` namespace.
-        kubernetes_api_key (KubernetesApiKey, optional): KubernetesApiKey block
+        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
             holding a Kubernetes API Key. Defaults to None.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
@@ -144,7 +145,7 @@ async def patch_namespaced_job(
     if not job_name:
         raise ValueError("The name of a Kubernetes job must be provided.")
 
-    api_client = kubernetes_api_key.get_batch_client()
+    api_client = kubernetes_credentials.get_batch_client()
 
     body = {**body, **(body or {})}
     kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
@@ -157,7 +158,7 @@ async def patch_namespaced_job(
 @task
 async def read_namespaced_job(
     job_name: str,
-    kubernetes_api_key: KubernetesApiKey,
+    kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict] = {},
 ):
@@ -167,7 +168,7 @@ async def read_namespaced_job(
         job_name (str): The name of a job to read. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to read this job in,
             defaults to the `default` namespace.
-        kubernetes_api_key (KubernetesApiKey, optional): KubernetesApiKey block
+        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
             holding a Kubernetes API Key. Defaults to None.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
@@ -178,7 +179,7 @@ async def read_namespaced_job(
     if not job_name:
         raise ValueError("The name of a Kubernetes job must be provided.")
 
-    api_client = kubernetes_api_key.get_batch_client()
+    api_client = kubernetes_credentials.get_batch_client()
 
     kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
 
@@ -191,7 +192,7 @@ async def read_namespaced_job(
 async def replace_namespaced_job(
     body: dict,
     job_name: str,
-    kubernetes_api_key: KubernetesApiKey,
+    kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict] = {},
 ):
@@ -203,7 +204,7 @@ async def replace_namespaced_job(
         job_name (str): The name of a job to replace. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to replace this job in,
             defaults to the `default` namespace.
-        kubernetes_api_key (KubernetesApiKey, optional): KubernetesApiKey block
+        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
             holding a Kubernetes API Key. Defaults to None.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
@@ -220,7 +221,7 @@ async def replace_namespaced_job(
     if not job_name:
         raise ValueError("The name of a Kubernetes job must be provided.")
 
-    api_client = kubernetes_api_key.get_batch_client()
+    api_client = kubernetes_credentials.get_batch_client()
 
     body = {**body, **(body or {})}
     kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
@@ -233,7 +234,7 @@ async def replace_namespaced_job(
 @task
 async def run_namespaced_job(
     body: str,
-    kubernetes_api_key: KubernetesApiKey,
+    kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict] = {},
     job_status_poll_interval: Optional[int] = 5,
@@ -247,7 +248,7 @@ async def run_namespaced_job(
             specification. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to run this job in,
             defaults to the `default` namespace.
-        kubernetes_api_key (KubernetesApiKey, optional): KubernetesApiKey block
+        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
             holding a Kubernetes API Key. Defaults to None.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
@@ -284,8 +285,8 @@ async def run_namespaced_job(
             "The job name must be defined in the body under the metadata key."
         )
 
-    api_batch_client = kubernetes_api_key.get_batch_client()
-    api_core_client = kubernetes_api_key.get_core_client()
+    api_batch_client = kubernetes_credentials.get_batch_client()
+    api_core_client = kubernetes_credentials.get_core_client()
 
     api_batch_client.create_namespaced_job(
         namespace=namespace, body=body, **kube_kwargs
@@ -329,7 +330,7 @@ async def run_namespaced_job(
                     read_pod_logs = read_namespaced_pod_logs(
                         pod_name=pod_name,
                         namespace=namespace,
-                        kubernetes_api_key=kubernetes_api_key,
+                        kubernetes_credentials=kubernetes_credentials,
                         on_log_entry=lambda log: func_log(f"{pod_name}: {log}"),
                     )
 

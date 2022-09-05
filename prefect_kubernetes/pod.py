@@ -1,42 +1,35 @@
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 from kubernetes.watch import Watch
 from prefect import task
-from prefect_kubernetes.credentials import KubernetesApiKey
+
+from prefect_kubernetes.credentials import KubernetesCredentials
 
 
 @task
 async def read_namespaced_pod_logs(
-    pod_name: str = None,
+    pod_name: str,
+    kubernetes_credentials: KubernetesCredentials,
     namespace: str = "default",
     on_log_entry: Callable = None,
-    kubernetes_api_key: KubernetesApiKey = None,
     container: str = None,
 ) -> None:
     """
     Task run method.
     Args:
         - pod_name (str, optional): The name of a pod to replace
+        - kubernetes_credentials (KubernetesCredentials): name of the KubernetesCredentials block
         - namespace (str, optional): The Kubernetes namespace to read pod logs in,
             defaults to the `default` namespace
         - on_log_entry (Callable, optional): If provided, will stream the pod logs
             calling the callback for every line (and the task returns `None`). If not
             provided, the current pod logs will be returned immediately from the task.
-        - kubernetes_api_key (KubernetesApiKey, optional): name of the KubernetesApiKey block
-            containing your Kubernetes API Key; value must be a string in BearerToken format
         - container (str, optional): The name of the container to read logs from
-    Raises:
-        - ValueError: if `pod_name` is `None`
     """
-    if not pod_name:
-        raise ValueError("The name of a Kubernetes pod must be provided.")
 
-    if kubernetes_api_key:
-        api_core_client = kubernetes_api_key.get_core_client()
-    else:
-        raise ValueError("A `KubernetesApiKey` block must be provided")
+    api_core_client = kubernetes_credentials.get_core_client()
 
     if on_log_entry is None:
         return api_core_client.read_namespaced_pod_log(
@@ -66,66 +59,62 @@ async def read_namespaced_pod_logs(
                 raise
 
 
-@task(name="Run a command in a namespaced pod on Kubernetes")
+@task
 async def connect_get_namespaced_pod_exec(
-    pod_name: str = None,
-    container_name: str = None,
-    exec_command: List = None,
-    kubernetes_api_key: KubernetesApiKey = None,
-    namespace: str = "default",
-    kube_kwargs: Dict = {},
-) -> Callable:
+    name: str,
+    container: str,
+    command: List[str],
+    kubernetes_credentials: KubernetesCredentials,
+    namespace: Optional[str] = "default",
+    **kwargs,
+) -> str:
     """Task for running a command in a namespaced pod on Kubernetes.
 
-    This task requires a `KubernetesApiKey` to generate a`CoreV1Api` Kubernetes
+    This task requires `KubernetesCredentials` to generate a`CoreV1Api` Kubernetes
     client to stream the overridden `api_response` to `connect_get_namespaced_pod_exec`.
 
+    User-provided `kwargs` will overwrite `default_kwargs` if key values from `default_kwargs`
+    are set in `kwargs`.
+
     Args:
-        pod_name (str): The name of a pod in which the command is to be run
-        container_name (str): The name of a container to use in the pod.
-            Defaults to `None`
-        exec_command (List): The command to run in `pod_name`
-            Defaults to `None`
-        kubernetes_api_key (KubernetesApiKey): A block that stores a Kubernetes api,
-            has methods to generate resource specific client
+        name (str): The name of the pod in which the command is to be run
+        container (str): The name of a container to use in the pod.
+        command (List): The command to run in `pod_name`
+        kubernetes_credentials (KubernetesCredentials): A block that stores a Kubernetes credentials,
+            has methods to generate resource-specific client
         namespace (str, optional): The Kubernetes namespace of the pod.
                 Defaults to `default`
-        kube_kwargs (Dict, optional): Optional extra keyword arguments to pass to the
-                Kubernetes API (e.g. `{"pretty": "...", "exact": "..."}`)
+        kwargs (Dict, optional): Optional extra keyword arguments to pass to the
+                Kubernetes API method (e.g. `{"stderr": "False", "tty": "True"}`)
 
     Returns:
-        Callable: A Kubernetes websocket `stream` according to supplied Kubernetes API method
-            and kwarg overrides
-
+        str: The string output of `command` on `container`, will be empty if `stdout=False`
 
     Raises:
-        - ValueError: if `pod_name` is `None` or `container_name` is `None`
-        - TypeError: `exec_command` is not a list
+        - TypeError: `command` is not a list
     """
-    if not (pod_name and container_name):
-        raise ValueError("The name of a Kubernetes pod and container must be provided.")
 
-    if not isinstance(exec_command, List):
-        raise TypeError("The `exec_command` argument must be provided as a list")
+    if not isinstance(command, List):
+        raise TypeError("The `command` argument must be provided as a list")
 
-    if not kubernetes_api_key:
-        raise ValueError("An existing `KubernetesApiKey` block must be provided.")
+    api_client = kubernetes_credentials.get_core_client()
 
-    api_client = kubernetes_api_key.get_core_client()
-
-    kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
-
-    api_response = stream(
-        api_client.connect_get_namespaced_pod_exec,
-        name=pod_name,
-        namespace=namespace,
-        container=container_name,
-        command=exec_command,
+    default_kwargs = dict(
         stderr=True,
         stdin=True,
         stdout=True,
         tty=False,
-        **kube_kwargs
+    )
+
+    method_kwargs = {**default_kwargs, **kwargs}
+
+    api_response = stream(
+        api_client.connect_get_namespaced_pod_exec,
+        name=name,
+        namespace=namespace,
+        container=container,
+        command=command,
+        **method_kwargs,
     )
 
     return api_response
