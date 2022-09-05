@@ -124,7 +124,7 @@ async def connect_get_namespaced_pod_exec(
         tty=False,
     )
 
-    method_kwargs = {**default_kwargs, **kwargs}
+    api_method_kwargs = {**default_kwargs, **kwargs}
 
     try:
         api_response = stream(
@@ -133,7 +133,7 @@ async def connect_get_namespaced_pod_exec(
             namespace=namespace,
             container=container,
             command=command,
-            **method_kwargs,
+            **api_method_kwargs,
         )
 
         if isinstance(api_response, str):

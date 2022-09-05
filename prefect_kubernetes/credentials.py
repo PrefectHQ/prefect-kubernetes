@@ -1,4 +1,3 @@
-from distutils.command.config import config
 from typing import TYPE_CHECKING, Optional, Union
 
 from kubernetes import client
@@ -26,8 +25,8 @@ class KubernetesCredentials(Block):
 
     Args:
         api_key (SecretStr): API key to authenticate with the Kubernetes API
-        cluster_config (KubernetesClusterConfig, optional): an instance of `KubernetesClusterConfig`
-            holding a JSON kube config for a specific kubernetes context
+        cluster_config (KubernetesClusterConfig, optional): a `KubernetesClusterConfig`
+            block holding a JSON kube config for a specific kubernetes context
 
     Examples:
         Load stored Kubernetes credentials:
@@ -37,7 +36,7 @@ class KubernetesCredentials(Block):
         kubernetes_credentials = KubernetesCredentials.load("my-k8s-credentials")
         ```
 
-        Create a kubernetes API client from KubernetesCredentials and inferred cluster configuration:
+        Create an API client from KubernetesCredentials and inferred cluster configuration:
         ```python
         from prefect_kubernetes import KubernetesCredentials
 
@@ -45,7 +44,7 @@ class KubernetesCredentials(Block):
         kubernetes_api_client = kubernetes_credentials.get_core_client()
         ```
 
-        Create a namespaced kubernetes job:
+        Create a namespaced job:
         ```python
         from prefect_kubernetes import KubernetesCredentials
         from prefect_kubernetes.job import create_namespaced_job
@@ -68,7 +67,8 @@ class KubernetesCredentials(Block):
         """Convenience method for retrieving a kubernetes api client for core resources
 
         Returns:
-            client.CoreV1Api: Kubernetes api client to interact with "pod", "service" and "secret" resources
+            client.CoreV1Api: Kubernetes api client to interact with "pod", "service"
+            and "secret" resources
         """
         return self.get_kubernetes_client(resource="core")
 
@@ -114,16 +114,16 @@ class KubernetesCredentials(Block):
 
         resource_specific_client = K8S_CLIENTS[resource]
 
-        if self.api_key:
+        if self.api_key:  # this case is not yet working as expected
             configuration = client.Configuration()
             configuration.api_key["authorization"] = self.api_key.get_secret_value()
             configuration.api_key_prefix["authorization"] = "Bearer"
-            k8s_client = resource_specific_client(
+            return resource_specific_client(
                 api_client=client.ApiClient(configuration=configuration)
             )
         elif self.cluster_config:
             self.cluster_config.configure_client()
-            k8s_client = resource_specific_client()
+            return resource_specific_client()
         else:
             try:
                 print("Trying to load in-cluster configuration...")
@@ -133,6 +133,4 @@ class KubernetesCredentials(Block):
                 print("Loading out-of-cluster configuration...")
                 kube_config.load_kube_config()
 
-            k8s_client = resource_specific_client()
-
-        return k8s_client
+            return resource_specific_client()

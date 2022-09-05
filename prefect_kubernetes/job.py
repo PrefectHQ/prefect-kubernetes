@@ -22,25 +22,15 @@ async def create_namespaced_job(
 
     Args:
         body (dict): A dictionary representation of a Kubernetes V1Job
-            specification. Defaults to None.
+            specification.
         namespace (str, optional): The Kubernetes namespace to create this job in,
             defaults to the `default` namespace.
-        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block holding a Kubernetes API Key. Defaults to None.
+        kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
+            holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
-                Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to None.
-
-    Raises:
-        ValueError: if `body` is `None`
+            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to None.
     """
-    if not body:
-        raise err.KubernetesJobDefinitionError(
-            "A dictionary representing a V1Job must be provided."
-        )
-
     api_client = kubernetes_credentials.get_batch_client()
-
-    body = {**body, **(body or {})}
-    kube_kwargs = {**kube_kwargs, **(kube_kwargs or {})}
 
     api_client.create_namespaced_job(namespace=namespace, body=body, **kube_kwargs)
 
@@ -59,32 +49,23 @@ async def delete_namespaced_job(
         job_name (str): The name of a job to delete. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to delete this job in,
             defaults to the `default` namespace.
-        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
-            holding a Kubernetes API Key. Defaults to None.
+        kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
+            holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
         - delete_option_kwargs (dict, optional): Optional keyword arguments to pass to
             the V1DeleteOptions object (e.g. {"propagation_policy": "...",
             "grace_period_seconds": "..."}.
-
-    Raises:
-        ValueError: if `job_name` is `None`
     """
-    if not job_name:
-        raise ValueError("The name of a Kubernetes job must be provided.")
 
     api_client = kubernetes_credentials.get_batch_client()
 
-    method_kwargs = {}
+    kwargs = kube_kwargs or {}
 
     if delete_option_kwargs:
-        method_kwargs.update(body=client.V1DeleteOptions(**delete_option_kwargs))
-    if kube_kwargs:
-        method_kwargs.update(**kube_kwargs)
+        kwargs.update(body=client.V1DeleteOptions(**delete_option_kwargs))
 
-    api_client.delete_namespaced_job(
-        name=job_name, namespace=namespace, **method_kwargs
-    )
+    api_client.delete_namespaced_job(name=job_name, namespace=namespace, **kwargs)
 
 
 @task
@@ -96,10 +77,10 @@ async def list_namespaced_job(
     """Task for listing namespaced Kubernetes jobs.
 
     Args:
+        kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
+            holding authentication needed to generate the required API client.
         namespace (str, optional): The Kubernetes namespace to list jobs from,
             defaults to the `default` namespace.
-        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
-            holding a Kubernetes API Key
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
     """
@@ -129,8 +110,8 @@ async def patch_namespaced_job(
             specification. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to patch this job in,
             defaults to the `default` namespace.
-        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
-            holding a Kubernetes API Key. Defaults to None.
+        kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
+            holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
 
@@ -168,8 +149,8 @@ async def read_namespaced_job(
         job_name (str): The name of a job to read. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to read this job in,
             defaults to the `default` namespace.
-        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
-            holding a Kubernetes API Key. Defaults to None.
+        kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
+            holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
 
@@ -204,8 +185,8 @@ async def replace_namespaced_job(
         job_name (str): The name of a job to replace. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to replace this job in,
             defaults to the `default` namespace.
-        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
-            holding a Kubernetes API Key. Defaults to None.
+        kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
+            holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
 
@@ -248,8 +229,8 @@ async def run_namespaced_job(
             specification. Defaults to None.
         namespace (str, optional): The Kubernetes namespace to run this job in,
             defaults to the `default` namespace.
-        kubernetes_credentials (KubernetesCredentials, optional): KubernetesCredentials block
-            holding a Kubernetes API Key. Defaults to None.
+        kubernetes_credentials (KubernetesCredentials): KubernetesCredentials block
+            holding authentication needed to generate the required API client.
         kube_kwargs (dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`). Defaults to {}.
         job_status_poll_interval (int, optional): The interval given in seconds
