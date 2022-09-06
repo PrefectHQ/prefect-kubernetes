@@ -1,4 +1,3 @@
-import asyncio
 from typing import Callable, List, Optional, Union
 
 from kubernetes.client.rest import ApiException
@@ -71,43 +70,49 @@ async def connect_get_namespaced_pod_exec(
     command: List[str],
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
+    interactive: bool = False,
     **kwargs,
 ) -> Union[str, WSClient]:
     """Task for running and/or streaming commands in a namespaced pod on Kubernetes.
 
     This task requires `KubernetesCredentials` to generate a`CoreV1Api` Kubernetes
-    client to run / stream commands on the specified pod's `container`.
+    client to run / stream the user `command` on a specified `container` of `pod_name`.
 
-    User-provided `kwargs` will overwrite `default_kwargs` if keys exist in both.
+    User-provided `kwargs` will overwrite `default_settings` if keys exist in both.
 
     The `kubernetes.stream.stream` object accepts a `_preload_content` kwarg (defualts to True) which
-    determines this task's return value type.
+    determines this task's return value type, configurable as the `interactive` bool parameter.
 
-    If `_preload_content=True`, `api_response` will be the `str` output of `command` on `container`.
-    Otherwise if `_preload_content=False`, `api_response` will be an interactive `WSClient` object.
+    If `interactive` is set to False (as is default), then `_preload_content=True`,
+    and `api_response` will be the str output of `command` on `container`.
 
-    Note that since `WSClient` is a non-pickleable object-type, it cannot be used as the `return` value
-    of a @flow-decorated function definition.
+    Else if `interactive` is set to True, `_preload_content=False`, and
+    `api_response` will be an interactive `WSClient` object.
+
+    Note that since `WSClient` is a un-pickleable object-type, it cannot be used as the `return` value
+    of a `@flow`-decorated function definition.
 
     Args:
         pod_name (str): The name of the pod in which the command is to be run
-        container (str): The name of a container to use in the pod.
+        container (str): The name of a container to use in the pod
         command (List): The command to run in `pod_name`
         kubernetes_credentials (KubernetesCredentials): A block that stores a Kubernetes credentials,
             has methods to generate resource-specific client
-        namespace (str, optional): The Kubernetes namespace of the pod.
+        namespace (str, optional): The Kubernetes namespace of the pod
             Defaults to `default`
+        interactive (bool, optional): If `True` return the interactive Kubernetes websocket
+            client object `WSClient`, else the `str` output of `command`. Defaults to `False`.
         kwargs (Dict, optional): Optional extra keyword arguments to pass to the
             Kubernetes API method (e.g. `{"stderr": "False", "tty": "True"}`)
 
     Returns:
-        Union[str, WSClient]: This task either returns the `str` output of `command`, or if
-            `_preload_content=False`, then an interactive `WSClient` object is returned.
+        Union[str, WSClient]: This task either returns the str output of `command`, or if
+            `_preload_content=False`, then an interactive `WSClient` object is returned
 
     Raises:
         - TypeError: `command` is not a list, or `api_response` is of unexpected type
         - KubernetesResourceNotFoundError: if `api_response` has KUBERNETES_RESOURCE_NOT_FOUND_STATUS_CODE
-        - ApiException: if bad `api_response` status and is not KUBERNETES_RESOURCE_NOT_FOUND_STATUS_CODE
+        - ApiException: if bad `api_response` status but is not a KubernetesResourceNotFoundError
     """
 
     logger = get_run_logger()
@@ -117,14 +122,17 @@ async def connect_get_namespaced_pod_exec(
 
     api_client = kubernetes_credentials.get_core_client()
 
-    default_kwargs = dict(
+    default_settings = dict(
         stderr=True,
         stdin=True,
         stdout=True,
         tty=False,
     )
+    # overwrite `default_settings` with user-defined `kwargs` and add any other `kwargs` provided
+    api_method_kwargs = {**default_settings, **kwargs}
 
-    api_method_kwargs = {**default_kwargs, **kwargs}
+    if interactive:
+        api_method_kwargs["_preload_content"] = False
 
     try:
         api_response = stream(
@@ -146,7 +154,7 @@ async def connect_get_namespaced_pod_exec(
             )
         else:
             raise TypeError(
-                f"Unexpected API response object-type: {type(api_response)}"
+                f"Unexpected API response object `{type(api_response)}`: {api_response!r}"
             )
 
         return api_response
