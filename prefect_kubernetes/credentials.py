@@ -29,8 +29,6 @@ class KubernetesCredentials(Block):
         cluster_config (KubernetesClusterConfig, optional): a `KubernetesClusterConfig`
             block holding a JSON kube config for a specific kubernetes context
 
-        api_key (SecretStr): API key to authenticate with the Kubernetes API
-
 
     Examples:
         Load stored Kubernetes credentials:
@@ -104,11 +102,8 @@ class KubernetesCredentials(Block):
         1. It will first attempt to use `KubernetesCredentials` block's `cluster_config`
         to configure a client using `KubernetesClusterConfig.configure_client` and then
         return the `resource_specific_client`.
-        2. Attempt to use a `KubernetesCredentials` block's `api_key`. If
-        `not self.api_key` then it will attempt the next two connection
-        methods.
-        3. Attempt in-cluster connection (will only work when running within a cluster)
-        4. Attempt out-of-cluster connection using the default kube config path
+        2. Attempt in-cluster connection (will only work when running within a cluster)
+        3. Attempt out-of-cluster connection using the default kube config path
         In some cases connections to the kubernetes server are dropped after being idle
         for some time (e.g. Azure Firewall drops idle connections after 4 minutes) which
         would result in ReadTimeoutErrors.
