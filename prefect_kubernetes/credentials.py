@@ -1,5 +1,4 @@
-"""Module for managing Kubernetes credential configuration.
-"""
+"""Module for managing Kubernetes credential configuration"""
 
 from typing import TYPE_CHECKING, Optional, Union
 
