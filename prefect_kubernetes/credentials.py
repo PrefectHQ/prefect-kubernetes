@@ -1,3 +1,6 @@
+"""Module for managing Kubernetes credential configuration.
+"""
+
 from typing import TYPE_CHECKING, Optional, Union
 
 from kubernetes import client
@@ -5,9 +8,8 @@ from kubernetes import config as kube_config
 from kubernetes.config.config_exception import ConfigException
 from prefect.blocks.core import Block
 
-# if TYPE_CHECKING:
-from prefect.blocks.kubernetes import KubernetesClusterConfig
-from pydantic import SecretStr
+if TYPE_CHECKING:
+    from prefect.blocks.kubernetes import KubernetesClusterConfig
 
 KubernetesClient = Union[
     client.BatchV1Api, client.CoreV1Api, client.AppsV1Api, client.ApiClient
@@ -67,8 +69,6 @@ class KubernetesCredentials(Block):
 
     cluster_config: Optional[KubernetesClusterConfig] = None
 
-    api_key: Optional[SecretStr] = None
-
     def get_core_client(self) -> client.CoreV1Api:
         """Convenience method for retrieving a kubernetes api client for core resources
 
@@ -90,32 +90,36 @@ class KubernetesCredentials(Block):
         """Convenience method for retrieving a kubernetes api client for deployment resources
 
         Returns:
-            client.AppsV1Api: Kubernetes api client to interact with "deployment" resources
+            client.AppsV1Api: Kubernetes client to interact with "deployment" resources
         """
         return self.get_kubernetes_client(resource="deployment")
 
     def get_kubernetes_client(self, resource: str) -> KubernetesClient:
         """
         Utility function for loading kubernetes client object for a given resource.
-        It will attempt to connect to a Kubernetes cluster in three steps with
-        the first successful connection attempt becoming the mode of communication with a
+        It will attempt to connect to a Kubernetes cluster in three steps with the
+        first successful connection attempt becoming the mode of communication with a
         cluster.
-        1. It will first attempt to use a `KubernetesCredentials` block's `cluster_config` to
-        configure a client using `KubernetesClusterConfig.configure_client` and then return the
-        `resource_specific_client`.
+
+        1. It will first attempt to use `KubernetesCredentials` block's `cluster_config`
+        to configure a client using `KubernetesClusterConfig.configure_client` and then
+        return the `resource_specific_client`.
         2. Attempt to use a `KubernetesCredentials` block's `api_key`. If
         `not self.api_key` then it will attempt the next two connection
         methods.
-        3. Attempt in-cluster connection (will only work when running on a Pod in a cluster)
-        4. Attempt out-of-cluster connection using the default location for a kube config file
-        In some cases connections to the kubernetes server are dropped after being idle for some time
-        (e.g. Azure Firewall drops idle connections after 4 minutes) which would result in
-        ReadTimeoutErrors.
-        In order to prevent that a periodic keep-alive message can be sent to the server to keep the
-        connection open.
+        3. Attempt in-cluster connection (will only work when running within a cluster)
+        4. Attempt out-of-cluster connection using the default kube config path
+        In some cases connections to the kubernetes server are dropped after being idle
+        for some time (e.g. Azure Firewall drops idle connections after 4 minutes) which
+        would result in ReadTimeoutErrors.
+
+        In order to prevent that a periodic keep-alive message can be sent to the server
+        to keep the connection open.
+
         Args:
-            - resource (str): the name of the resource to retrieve a client for. Currently
-                you can use one of these values: `job`, `pod`, `service`, `deployment`, `secret`
+            - resource (str): the name of the resource to retrieve a client for.
+                Currently you can use one of these values:
+                `job`, `pod`, `service`, `deployment`, `secret`
 
         Returns:
             - KubernetesClient: an initialized, configured Kubernetes Client
@@ -126,14 +130,6 @@ class KubernetesCredentials(Block):
         if self.cluster_config:
             self.cluster_config.configure_client()
             return resource_specific_client()
-
-        elif self.api_key:
-            configuration = client.Configuration()
-            configuration.api_key["authorization"] = self.api_key.get_secret_value()
-            configuration.api_key_prefix["authorization"] = "Bearer"
-            generic_client = client.ApiClient(configuration=configuration)
-            return resource_specific_client(api_client=generic_client)
-
         else:
             try:
                 print("Trying to load in-cluster configuration...")
