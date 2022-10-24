@@ -38,8 +38,6 @@ async def test_connect_get_namespaced_pod_exec_stream_return(kubernetes_credenti
         return websocket_client
 
     # `test_flow` failing because cannot return a non-pickleable type `SSLSocket` ?
-    with pytest.raises(TypeError):
-        await test_flow()
 
 
 async def test_connect_get_namespaced_pod_exec_stream_return_poweruser(
