@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- Credentials block for generating authenticated Kubernetes clients - [#19](https://github.com/PrefectHQ/prefect-kubernetes/pull/19)
+- Tasks for interacting with `job` resources - [#19](https://github.com/PrefectHQ/prefect-kubernetes/pull/19)
 
 ### Changed
 
