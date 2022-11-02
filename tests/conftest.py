@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 from unittest import mock
 
@@ -7,8 +6,6 @@ import yaml
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 
 from prefect_kubernetes.credentials import KubernetesCredentials
-
-CERT_DUMMY = b"dummy"
 
 BASEDIR = Path("tests")
 GOOD_CONFIG_FILE_PATH = BASEDIR / "kube_config.yaml"
@@ -32,11 +29,9 @@ def successful_job_status():
 def kubernetes_credentials(kube_config_dict):
 
     return KubernetesCredentials(
-        # cluster_config=KubernetesClusterConfig(
-        #     context_name="test",
-        #     config=kube_config_dict
-        # )
-        cluster_config=KubernetesClusterConfig.load("kube-config")
+        cluster_config=KubernetesClusterConfig(
+            context_name="test", config=kube_config_dict
+        )
     )
 
 
@@ -74,27 +69,3 @@ def api_core_client(monkeypatch):
     )
 
     return core_client
-
-
-@pytest.fixture
-def mock_ApiClient(monkeypatch):
-
-    mock_ApiClient = mock.MagicMock()
-    mock_response = mock.MagicMock()
-
-    mock_response.status = mock.PropertyMock(return_value=200)
-
-    mock_response.data = mock.PropertyMock(
-        return_value=json.dumps(
-            {"token_endpoint": "https://example.org/identity/token"}
-        )
-    )
-
-    mock_ApiClient.return_value = mock_response
-
-    monkeypatch.setattr(
-        "kubernetes.config.kube_config.ApiClient.request",
-        mock_ApiClient,
-    )
-
-    return mock_ApiClient
