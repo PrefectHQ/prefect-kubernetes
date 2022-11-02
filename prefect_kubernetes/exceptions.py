@@ -1,13 +1,13 @@
 """Module to define common exceptions within `prefect_kubernetes`."""
 
-from kubernetes.client.exceptions import ApiException
+from kubernetes.client.exceptions import ApiException, OpenApiException
 
 
-class KubernetesJobDefinitionError(Exception):
+class KubernetesJobDefinitionError(OpenApiException):
     """An exception for when a Kubernetes job definition is invalid"""
 
 
-class KubernetesJobFailedError(Exception):
+class KubernetesJobFailedError(OpenApiException):
     """An exception for when a Kubernetes job fails"""
 
 

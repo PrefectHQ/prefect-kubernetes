@@ -97,27 +97,23 @@ class KubernetesCredentials(Block):
         It will attempt to connect to a Kubernetes cluster in three steps with
         the first successful connection attempt becoming the mode of communication with
         a cluster:
+
         1. It will first attempt to use a `KubernetesCredentials` block's
         `cluster_config` to configure a client using
         `KubernetesClusterConfig.configure_client` and then return the
-        `resource_specific_client`.
+        resource specific client.
 
-        2. Attempt in-cluster connection (will only work when running on a pod)
+        2. Attempt in-cluster connection (will only work when running on a pod).
         3. Attempt out-of-cluster connection using the default location for a
-        kube config file. In some cases connections to the kubernetes server
-        are dropped after being idle for some time (e.g. Azure Firewall drops
-        idle connections after 4 minutes) which would result in ReadTimeoutErrors.
-
-        In order to prevent that a periodic keep-alive message can be sent to the
-        server to keep the connection open.
+        kube config file.
 
         Args:
-            - resource: the name of the resource to retrieve a client for.
-                Currently you can use one of these values: `job`, `pod`, `service`,
-                `deployment`, and `secret`.
+            resource: the name of the resource to retrieve a client for.
+                Currently you can use one of these values: `job`, `core`,
+                or `deployment`.
 
         Returns:
-            KubernetesClient: an initialized, configured Kubernetes Client
+            An authenticated and configured Kubernetes Client.
         """
 
         resource_specific_client = K8S_CLIENTS[resource]
@@ -128,11 +124,8 @@ class KubernetesCredentials(Block):
 
         else:
             try:
-                print("Trying to load in-cluster configuration...")
                 kube_config.load_incluster_config()
-            except ConfigException as exc:
-                print("{} | Using out of cluster configuration option.".format(exc))
-                print("Loading out-of-cluster configuration...")
+            except ConfigException:
                 kube_config.load_kube_config()
 
             return resource_specific_client()
