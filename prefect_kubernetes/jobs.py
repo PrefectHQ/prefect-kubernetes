@@ -64,13 +64,13 @@ async def delete_namespaced_job(
 
     api_client = kubernetes_credentials.get_batch_client()
 
-    kwargs = kube_kwargs or {}
+    kube_kwargs = kube_kwargs or {}
 
     if delete_option_kwargs:
-        kwargs.update(body=client.V1DeleteOptions(**delete_option_kwargs))
+        kube_kwargs.update(body=client.V1DeleteOptions(**delete_option_kwargs))
 
     return api_client.delete_namespaced_job(
-        name=job_name, namespace=namespace, **kwargs
+        name=job_name, namespace=namespace, **kube_kwargs
     )
 
 
@@ -94,11 +94,11 @@ async def list_namespaced_job(
     """
     api_client = kubernetes_credentials.get_batch_client()
 
-    method_kwargs = kube_kwargs or {}
+    kube_kwargs = kube_kwargs or {}
 
     return api_client.list_namespaced_job(
         namespace=namespace,
-        **method_kwargs,
+        **kube_kwargs,
     )
 
 
