@@ -145,7 +145,7 @@ async def read_namespaced_job(
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict] = None,
 ) -> V1Job:
-    """Task for reading a namespaced kubernetes job.
+    """Task for reading a namespaced Kubernetes job.
 
     Args:
         job_name: The name of a job to read.
@@ -156,14 +156,11 @@ async def read_namespaced_job(
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
     Raises:
-        ValueError: if `job_name` is `None`
+        ValueError: if `job_name` is `None`.
 
     Returns:
         A Kubernetes `V1Job` object.
     """
-    if not job_name:
-        raise ValueError("The name of a Kubernetes job must be provided.")
-
     api_client = kubernetes_credentials.get_batch_client()
 
     kube_kwargs = kube_kwargs or {}
@@ -181,7 +178,7 @@ async def replace_namespaced_job(
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict] = None,
 ) -> V1Job:
-    """Task for replacing a namespaced kubernetes job.
+    """Task for replacing a namespaced Kubernetes job.
 
     Args:
         body: A dictionary representation of a Kubernetes V1Job

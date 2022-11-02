@@ -47,14 +47,17 @@ class KubernetesCredentials(Block):
 
         Create a namespaced job:
         ```python
+        from prefect import flow
         from prefect_kubernetes import KubernetesCredentials
         from prefect_kubernetes.job import create_namespaced_job
 
         kubernetes_credentials = KubernetesCredentials.load("my-k8s-credentials")
 
-        create_namespaced_job(
-            body={"Marvin": "42"}, kubernetes_credentials=kubernetes_credentials
-        )
+        @flow
+        def kubernetes_orchestrator():
+            create_namespaced_job(
+                body={"Marvin": "42"}, kubernetes_credentials=kubernetes_credentials
+            )
         ```
     """
 
@@ -114,7 +117,7 @@ class KubernetesCredentials(Block):
                 `deployment`, and `secret`.
 
         Returns:
-            - KubernetesClient: an initialized, configured Kubernetes Client
+            KubernetesClient: an initialized, configured Kubernetes Client
         """
 
         resource_specific_client = K8S_CLIENTS[resource]
