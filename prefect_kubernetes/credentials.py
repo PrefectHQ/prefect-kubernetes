@@ -1,11 +1,11 @@
-from typing import TYPE_CHECKING, Optional, Union
+"""Module for defining Kubernetes credential handling and client generation."""
+
+from typing import Optional, Union
 
 from kubernetes import client
 from kubernetes import config as kube_config
 from kubernetes.config.config_exception import ConfigException
 from prefect.blocks.core import Block
-
-# if TYPE_CHECKING:
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from pydantic import SecretStr
 
@@ -90,7 +90,7 @@ class KubernetesCredentials(Block):
         """Convenience method for retrieving a kubernetes api client for deployment resources
 
         Returns:
-            client.AppsV1Api: Kubernetes api client to interact with "deployment" resources
+            client.AppsV1Api: Kubernetes api client to interact with deployments
         """
         return self.get_kubernetes_client(resource="deployment")
 
@@ -98,24 +98,30 @@ class KubernetesCredentials(Block):
         """
         Utility function for loading kubernetes client object for a given resource.
         It will attempt to connect to a Kubernetes cluster in three steps with
-        the first successful connection attempt becoming the mode of communication with a
-        cluster.
-        1. It will first attempt to use a `KubernetesCredentials` block's `cluster_config` to
-        configure a client using `KubernetesClusterConfig.configure_client` and then return the
+        the first successful connection attempt becoming the mode of communication with
+        a cluster:
+        1. It will first attempt to use a `KubernetesCredentials` block's
+        `cluster_config` to configure a client using
+        `KubernetesClusterConfig.configure_client` and then return the
         `resource_specific_client`.
+
         2. Attempt to use a `KubernetesCredentials` block's `api_key`. If
         `not self.api_key` then it will attempt the next two connection
         methods.
-        3. Attempt in-cluster connection (will only work when running on a Pod in a cluster)
-        4. Attempt out-of-cluster connection using the default location for a kube config file
-        In some cases connections to the kubernetes server are dropped after being idle for some time
-        (e.g. Azure Firewall drops idle connections after 4 minutes) which would result in
-        ReadTimeoutErrors.
-        In order to prevent that a periodic keep-alive message can be sent to the server to keep the
-        connection open.
+
+        3. Attempt in-cluster connection (will only work when running on a pod)
+        4. Attempt out-of-cluster connection using the default location for a
+        kube config file. In some cases connections to the kubernetes server
+        are dropped after being idle for some time (e.g. Azure Firewall drops
+        idle connections after 4 minutes) which would result in ReadTimeoutErrors.
+
+        In order to prevent that a periodic keep-alive message can be sent to the
+        server to keep the connection open.
+
         Args:
-            - resource (str): the name of the resource to retrieve a client for. Currently
-                you can use one of these values: `job`, `pod`, `service`, `deployment`, `secret`
+            - resource (str): the name of the resource to retrieve a client for.
+                Currently you can use one of these values: `job`, `pod`, `service`,
+                `deployment`, and `secret`.
 
         Returns:
             - KubernetesClient: an initialized, configured Kubernetes Client

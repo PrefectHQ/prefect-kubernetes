@@ -37,3 +37,4 @@ plugins:
 nav:
     - Home: index.md
     - Credentials: credentials.md
+    - Jobs: jobs.md
