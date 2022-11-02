@@ -7,7 +7,6 @@ from kubernetes import config as kube_config
 from kubernetes.config.config_exception import ConfigException
 from prefect.blocks.core import Block
 from prefect.blocks.kubernetes import KubernetesClusterConfig
-from pydantic import SecretStr
 
 KubernetesClient = Union[
     client.BatchV1Api, client.CoreV1Api, client.AppsV1Api, client.ApiClient
@@ -26,9 +25,6 @@ class KubernetesCredentials(Block):
     Args:
         cluster_config: a `KubernetesClusterConfig` block holding a JSON kube
             config for a specific kubernetes context
-
-        api_key: API key to authenticate with the Kubernetes API
-
 
     Examples:
         Load stored Kubernetes credentials:
@@ -67,8 +63,6 @@ class KubernetesCredentials(Block):
 
     cluster_config: Optional[KubernetesClusterConfig] = None
 
-    api_key: Optional[SecretStr] = None
-
     def get_core_client(self) -> client.CoreV1Api:
         """Convenience method for retrieving a kubernetes api client for core resources
 
@@ -105,12 +99,8 @@ class KubernetesCredentials(Block):
         `KubernetesClusterConfig.configure_client` and then return the
         `resource_specific_client`.
 
-        2. Attempt to use a `KubernetesCredentials` block's `api_key`. If
-        `not self.api_key` then it will attempt the next two connection
-        methods.
-
-        3. Attempt in-cluster connection (will only work when running on a pod)
-        4. Attempt out-of-cluster connection using the default location for a
+        2. Attempt in-cluster connection (will only work when running on a pod)
+        3. Attempt out-of-cluster connection using the default location for a
         kube config file. In some cases connections to the kubernetes server
         are dropped after being idle for some time (e.g. Azure Firewall drops
         idle connections after 4 minutes) which would result in ReadTimeoutErrors.
@@ -132,13 +122,6 @@ class KubernetesCredentials(Block):
         if self.cluster_config:
             self.cluster_config.configure_client()
             return resource_specific_client()
-
-        elif self.api_key:
-            configuration = client.Configuration()
-            configuration.api_key["authorization"] = self.api_key.get_secret_value()
-            configuration.api_key_prefix["authorization"] = "Bearer"
-            generic_client = client.ApiClient(configuration=configuration)
-            return resource_specific_client(api_client=generic_client)
 
         else:
             try:
