@@ -24,10 +24,10 @@ class KubernetesCredentials(Block):
     """Credentials block for generating configured Kubernetes API clients.
 
     Args:
-        cluster_config (KubernetesClusterConfig, optional): a `KubernetesClusterConfig`
-            block holding a JSON kube config for a specific kubernetes context
+        cluster_config: a `KubernetesClusterConfig` block holding a JSON kube
+            config for a specific kubernetes context
 
-        api_key (SecretStr): API key to authenticate with the Kubernetes API
+        api_key: API key to authenticate with the Kubernetes API
 
 
     Examples:
@@ -119,7 +119,7 @@ class KubernetesCredentials(Block):
         server to keep the connection open.
 
         Args:
-            - resource (str): the name of the resource to retrieve a client for.
+            - resource: the name of the resource to retrieve a client for.
                 Currently you can use one of these values: `job`, `pod`, `service`,
                 `deployment`, and `secret`.
 
