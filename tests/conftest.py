@@ -36,7 +36,7 @@ def kubernetes_credentials(kube_config_dict):
 
 
 @pytest.fixture
-def api_app_client(monkeypatch):
+def _mock_api_app_client(monkeypatch):
     app_client = mock.MagicMock()
 
     monkeypatch.setattr(
@@ -48,7 +48,7 @@ def api_app_client(monkeypatch):
 
 
 @pytest.fixture
-def api_batch_client(monkeypatch):
+def _mock_api_batch_client(monkeypatch):
     batch_client = mock.MagicMock()
 
     monkeypatch.setattr(
@@ -60,7 +60,7 @@ def api_batch_client(monkeypatch):
 
 
 @pytest.fixture
-def api_core_client(monkeypatch):
+def _mock_api_core_client(monkeypatch):
     core_client = mock.MagicMock()
 
     monkeypatch.setattr(
