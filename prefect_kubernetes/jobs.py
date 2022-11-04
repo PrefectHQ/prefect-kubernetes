@@ -24,7 +24,7 @@ async def create_namespaced_job(
         namespace: The Kubernetes namespace to create this job in.
         kubernetes_credentials: KubernetesCredentials block
             holding authentication needed to generate the required API client.
-        kube_kwargs: Optional extra keyword arguments to pass to the
+        **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
 
@@ -67,9 +67,9 @@ async def delete_namespaced_job(
         namespace: The Kubernetes namespace to delete this job in.
         kubernetes_credentials: KubernetesCredentials block
             holding authentication needed to generate the required API client.
-        kube_kwargs: Optional extra keyword arguments to pass to the
+        **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
-        delete_option_kwargs: Optional keyword arguments to pass to
+        **delete_option_kwargs: Optional keyword arguments to pass to
             the V1DeleteOptions object (e.g. {"propagation_policy": "...",
             "grace_period_seconds": "..."}.
 
@@ -118,7 +118,7 @@ async def list_namespaced_job(
         kubernetes_credentials: KubernetesCredentials block
             holding authentication needed to generate the required API client.
         namespace: The Kubernetes namespace to list jobs from.
-        kube_kwargs: Optional extra keyword arguments to pass to the
+        **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
     Returns:
@@ -166,7 +166,7 @@ async def patch_namespaced_job(
         namespace: The Kubernetes namespace to patch this job in.
         kubernetes_credentials: KubernetesCredentials block
             holding authentication needed to generate the required API client.
-        kube_kwargs: Optional extra keyword arguments to pass to the
+        **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
     Raises:
@@ -218,7 +218,7 @@ async def read_namespaced_job(
         namespace: The Kubernetes namespace to read this job in.
         kubernetes_credentials: KubernetesCredentials block
             holding authentication needed to generate the required API client.
-        kube_kwargs: Optional extra keyword arguments to pass to the
+        **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
     Raises:
@@ -270,7 +270,7 @@ async def replace_namespaced_job(
         namespace: The Kubernetes namespace to replace this job in.
         kubernetes_credentials: KubernetesCredentials block
             holding authentication needed to generate the required API client.
-        kube_kwargs: Optional extra keyword arguments to pass to the
+        **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
     Returns:
