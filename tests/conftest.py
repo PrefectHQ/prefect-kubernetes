@@ -27,7 +27,6 @@ def successful_job_status():
 
 @pytest.fixture
 def kubernetes_credentials(kube_config_dict):
-
     return KubernetesCredentials(
         cluster_config=KubernetesClusterConfig(
             context_name="test", config=kube_config_dict

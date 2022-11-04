@@ -5,6 +5,7 @@ from typing import Dict, Optional
 from kubernetes import client
 from kubernetes.client.models import V1Job, V1JobList, V1Status
 from prefect import task
+from prefect.utilities.asyncutils import run_sync_in_worker_thread
 
 from prefect_kubernetes.credentials import KubernetesCredentials
 
@@ -32,13 +33,13 @@ async def create_namespaced_job(
     """
     api_client = kubernetes_credentials.get_batch_client()
 
-    return api_client.create_namespaced_job(
-        namespace=namespace, body=body, **kube_kwargs
+    return await run_sync_in_worker_thread(
+        api_client.create_namespaced_job, namespace=namespace, body=body, **kube_kwargs
     )
 
 
 @task
-def delete_namespaced_job(
+async def delete_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
@@ -69,13 +70,16 @@ def delete_namespaced_job(
     if delete_option_kwargs:
         kube_kwargs.update(body=client.V1DeleteOptions(**delete_option_kwargs))
 
-    return api_client.delete_namespaced_job(
-        name=job_name, namespace=namespace, **kube_kwargs
+    return await run_sync_in_worker_thread(
+        api_client.delete_namespaced_job,
+        name=job_name,
+        namespace=namespace,
+        **kube_kwargs,
     )
 
 
 @task
-def list_namespaced_job(
+async def list_namespaced_job(
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict] = None,
@@ -96,14 +100,15 @@ def list_namespaced_job(
 
     kube_kwargs = kube_kwargs or {}
 
-    return api_client.list_namespaced_job(
+    return await run_sync_in_worker_thread(
+        api_client.list_namespaced_job,
         namespace=namespace,
         **kube_kwargs,
     )
 
 
 @task
-def patch_namespaced_job(
+async def patch_namespaced_job(
     job_name: str,
     body: Dict,
     kubernetes_credentials: KubernetesCredentials = None,
@@ -133,13 +138,17 @@ def patch_namespaced_job(
 
     kube_kwargs = kube_kwargs or {}
 
-    return api_client.patch_namespaced_job(
-        name=job_name, namespace=namespace, body=body, **kube_kwargs
+    return await run_sync_in_worker_thread(
+        api_client.patch_namespaced_job,
+        name=job_name,
+        namespace=namespace,
+        body=body,
+        **kube_kwargs,
     )
 
 
 @task
-def read_namespaced_job(
+async def read_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
@@ -165,13 +174,16 @@ def read_namespaced_job(
 
     kube_kwargs = kube_kwargs or {}
 
-    return api_client.read_namespaced_job(
-        name=job_name, namespace=namespace, **kube_kwargs
+    return await run_sync_in_worker_thread(
+        api_client.read_namespaced_job,
+        name=job_name,
+        namespace=namespace,
+        **kube_kwargs,
     )
 
 
 @task
-def replace_namespaced_job(
+async def replace_namespaced_job(
     body: dict,
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
@@ -197,6 +209,10 @@ def replace_namespaced_job(
 
     kube_kwargs = kube_kwargs or {}
 
-    return api_client.replace_namespaced_job(
-        name=job_name, body=body, namespace=namespace, **kube_kwargs
+    return await run_sync_in_worker_thread(
+        api_client.replace_namespaced_job,
+        name=job_name,
+        body=body,
+        namespace=namespace,
+        **kube_kwargs,
     )
