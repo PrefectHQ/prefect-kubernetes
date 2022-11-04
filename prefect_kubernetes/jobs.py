@@ -1,6 +1,6 @@
 """Module to define tasks for interacting with Kubernetes jobs."""
 
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from kubernetes import client
 from kubernetes.client.models import V1Job, V1JobList, V1Status
@@ -57,7 +57,7 @@ async def delete_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = None,
+    kube_kwargs: Optional[Dict[str, Any]] = None,
     delete_option_kwargs: Optional[Dict] = None,
 ) -> V1Status:
     """Task for deleting a namespaced Kubernetes job.
@@ -110,7 +110,7 @@ async def delete_namespaced_job(
 async def list_namespaced_job(
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = None,
+    kube_kwargs: Optional[Dict[str, Any]] = None,
 ) -> V1JobList:
     """Task for listing namespaced Kubernetes jobs.
 
@@ -155,7 +155,7 @@ async def patch_namespaced_job(
     body: Dict,
     kubernetes_credentials: KubernetesCredentials = None,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = None,
+    kube_kwargs: Optional[Dict[str, Any]] = None,
 ) -> V1Job:
     """Task for deleting a namespaced Kubernetes job.
 
@@ -209,7 +209,7 @@ async def read_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = None,
+    kube_kwargs: Optional[Dict[str, Any]] = None,
 ) -> V1Job:
     """Task for reading a namespaced Kubernetes job.
 
@@ -259,7 +259,7 @@ async def replace_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    kube_kwargs: Optional[Dict] = None,
+    kube_kwargs: Optional[Dict[str, Any]] = None,
 ) -> V1Job:
     """Task for replacing a namespaced Kubernetes job.
 
