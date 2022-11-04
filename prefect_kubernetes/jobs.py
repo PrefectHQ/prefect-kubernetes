@@ -30,6 +30,20 @@ async def create_namespaced_job(
 
     Returns:
         A Kubernetes `V1Job` object.
+
+    Example:
+        Create a job in the default namespace:
+        ```python
+        from prefect import flow
+        from prefect_kubernetes import create_namespaced_job
+
+        @flow
+        def kubernetes_orchestrator():
+            v1_job_metadata = create_namespaced_job(
+                body={"metadata": {"name": "test-job"}},
+                kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+            )
+        ```
     """
     api_client = kubernetes_credentials.get_batch_client()
 
@@ -61,6 +75,20 @@ async def delete_namespaced_job(
 
     Returns:
         A Kubernetes `V1Status` object.
+
+    Example:
+        Delete "my-job" in the default namespace:
+        ```python
+        from prefect import flow
+        from prefect_kubernetes import delete_namespaced_job
+
+        @flow
+        def kubernetes_orchestrator():
+            v1_job_status = delete_namespaced_job(
+                job_name="my-job",
+                kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+            )
+        ```
     """
 
     api_client = kubernetes_credentials.get_batch_client()
@@ -95,6 +123,20 @@ async def list_namespaced_job(
 
     Returns:
         A Kubernetes `V1JobList` object.
+
+    Example:
+        List jobs in "my-namespace":
+        ```python
+        from prefect import flow
+        from prefect_kubernetes import list_namespaced_job
+
+        @flow
+        def kubernetes_orchestrator():
+            namespaced_job_list = list_namespaced_job(
+                namespace="my-namespace",
+                kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+            )
+        ```
     """
     api_client = kubernetes_credentials.get_batch_client()
 
@@ -132,6 +174,21 @@ async def patch_namespaced_job(
 
     Returns:
         A Kubernetes `V1Job` object.
+
+    Example:
+        Patch "my-job" in the default namespace:
+        ```python
+        from prefect import flow
+        from prefect_kubernetes import patch_namespaced_job
+
+        @flow
+        def kubernetes_orchestrator():
+            v1_job_metadata = patch_namespaced_job(
+                job_name="my-job",
+                body={"metadata": {"labels": {"foo": "bar"}}},
+                kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+            )
+        ```
     """
 
     api_client = kubernetes_credentials.get_batch_client()
@@ -169,6 +226,20 @@ async def read_namespaced_job(
 
     Returns:
         A Kubernetes `V1Job` object.
+
+    Example:
+        Read "my-job" in the default namespace:
+        ```python
+        from prefect import flow
+        from prefect_kubernetes import read_namespaced_job
+
+        @flow
+        def kubernetes_orchestrator():
+            v1_job_metadata = read_namespaced_job(
+                job_name="my-job",
+                kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+            )
+        ```
     """
     api_client = kubernetes_credentials.get_batch_client()
 
@@ -204,6 +275,21 @@ async def replace_namespaced_job(
 
     Returns:
         A Kubernetes `V1Job` object.
+
+    Example:
+        Replace "my-job" in the default namespace:
+        ```python
+        from prefect import flow
+        from prefect_kubernetes import replace_namespaced_job
+
+        @flow
+        def kubernetes_orchestrator():
+            v1_job_metadata = replace_namespaced_job(
+                body={"metadata": {"labels": {"foo": "bar"}}},
+                job_name="my-job",
+                kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+            )
+        ```
     """
     api_client = kubernetes_credentials.get_batch_client()
 
