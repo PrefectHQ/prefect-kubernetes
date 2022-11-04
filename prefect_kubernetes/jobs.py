@@ -38,7 +38,7 @@ async def create_namespaced_job(
 
 
 @task
-async def delete_namespaced_job(
+def delete_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
@@ -54,7 +54,7 @@ async def delete_namespaced_job(
             holding authentication needed to generate the required API client.
         kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
-        - delete_option_kwargs: Optional keyword arguments to pass to
+        delete_option_kwargs: Optional keyword arguments to pass to
             the V1DeleteOptions object (e.g. {"propagation_policy": "...",
             "grace_period_seconds": "..."}.
 
@@ -75,7 +75,7 @@ async def delete_namespaced_job(
 
 
 @task
-async def list_namespaced_job(
+def list_namespaced_job(
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict] = None,
@@ -103,7 +103,7 @@ async def list_namespaced_job(
 
 
 @task
-async def patch_namespaced_job(
+def patch_namespaced_job(
     job_name: str,
     body: Dict,
     kubernetes_credentials: KubernetesCredentials = None,
@@ -139,7 +139,7 @@ async def patch_namespaced_job(
 
 
 @task
-async def read_namespaced_job(
+def read_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
@@ -171,7 +171,7 @@ async def read_namespaced_job(
 
 
 @task
-async def replace_namespaced_job(
+def replace_namespaced_job(
     body: dict,
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
