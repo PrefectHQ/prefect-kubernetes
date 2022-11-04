@@ -35,7 +35,7 @@ async def create_namespaced_job(
         Create a job in the default namespace:
         ```python
         from prefect import flow
-        from prefect_kubernetes import create_namespaced_job
+        from prefect_kubernetes.jobs import create_namespaced_job
 
         @flow
         def kubernetes_orchestrator():
@@ -80,7 +80,7 @@ async def delete_namespaced_job(
         Delete "my-job" in the default namespace:
         ```python
         from prefect import flow
-        from prefect_kubernetes import delete_namespaced_job
+        from prefect_kubernetes.jobs import delete_namespaced_job
 
         @flow
         def kubernetes_orchestrator():
@@ -128,7 +128,7 @@ async def list_namespaced_job(
         List jobs in "my-namespace":
         ```python
         from prefect import flow
-        from prefect_kubernetes import list_namespaced_job
+        from prefect_kubernetes.jobs import list_namespaced_job
 
         @flow
         def kubernetes_orchestrator():
@@ -179,7 +179,7 @@ async def patch_namespaced_job(
         Patch "my-job" in the default namespace:
         ```python
         from prefect import flow
-        from prefect_kubernetes import patch_namespaced_job
+        from prefect_kubernetes.jobs import patch_namespaced_job
 
         @flow
         def kubernetes_orchestrator():
@@ -231,7 +231,7 @@ async def read_namespaced_job(
         Read "my-job" in the default namespace:
         ```python
         from prefect import flow
-        from prefect_kubernetes import read_namespaced_job
+        from prefect_kubernetes.jobs import read_namespaced_job
 
         @flow
         def kubernetes_orchestrator():
@@ -280,7 +280,7 @@ async def replace_namespaced_job(
         Replace "my-job" in the default namespace:
         ```python
         from prefect import flow
-        from prefect_kubernetes import replace_namespaced_job
+        from prefect_kubernetes.jobs import replace_namespaced_job
 
         @flow
         def kubernetes_orchestrator():
