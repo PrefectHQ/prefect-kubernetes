@@ -22,7 +22,7 @@ K8S_CLIENTS = {
 class KubernetesCredentials(Block):
     """Credentials block for generating configured Kubernetes API clients.
 
-    Args:
+    Attributes:
         cluster_config: a `KubernetesClusterConfig` block holding a JSON kube
             config for a specific kubernetes context
 
