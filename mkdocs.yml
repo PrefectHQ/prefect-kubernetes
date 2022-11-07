@@ -39,3 +39,4 @@ nav:
     - Credentials: credentials.md
     - Exceptions: exceptions.md
     - Jobs: jobs.md
+    - Pods: pods.md

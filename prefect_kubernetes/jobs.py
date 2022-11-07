@@ -58,7 +58,7 @@ async def delete_namespaced_job(
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
     kube_kwargs: Optional[Dict[str, Any]] = None,
-    delete_option_kwargs: Optional[Dict] = None,
+    delete_option_kwargs: Optional[Dict[str, Any]] = None,
 ) -> V1Status:
     """Task for deleting a namespaced Kubernetes job.
 
