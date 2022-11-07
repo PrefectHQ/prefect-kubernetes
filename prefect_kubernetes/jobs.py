@@ -96,9 +96,11 @@ async def delete_namespaced_job(
 
     api_client = kubernetes_credentials.get_batch_client()
 
+    if body:
+        kube_kwargs.update(body=V1DeleteOptions(**body))
+
     return await run_sync_in_worker_thread(
         api_client.delete_namespaced_job,
-        body=V1DeleteOptions(**body if body else None),
         name=job_name,
         namespace=namespace,
         **kube_kwargs,
