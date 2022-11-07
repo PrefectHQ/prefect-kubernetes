@@ -2,7 +2,6 @@
 
 from typing import Any, Dict, Optional
 
-from kubernetes import client
 from kubernetes.client.models import V1Job, V1JobList, V1Status
 from prefect import task
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
@@ -57,7 +56,6 @@ async def delete_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
-    delete_option_kwargs: Optional[Dict] = None,
     **kube_kwargs: Optional[Dict[str, Any]],
 ) -> V1Status:
     """Task for deleting a namespaced Kubernetes job.
@@ -67,9 +65,6 @@ async def delete_namespaced_job(
         namespace: The Kubernetes namespace to delete this job in.
         kubernetes_credentials: KubernetesCredentials block
             holding authentication needed to generate the required API client.
-        delete_option_kwargs: Optional keyword arguments to pass to
-            the V1DeleteOptions object (e.g. {"propagation_policy": "...",
-            "grace_period_seconds": "..."}.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
@@ -80,6 +75,7 @@ async def delete_namespaced_job(
     Example:
         Delete "my-job" in the default namespace:
         ```python
+        from kubernetes.client.models import V1DeleteOptions
         from prefect import flow
         from prefect_kubernetes.jobs import delete_namespaced_job
 
@@ -88,14 +84,12 @@ async def delete_namespaced_job(
             v1_job_status = delete_namespaced_job(
                 job_name="my-job",
                 kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+                body=V1DeleteOptions(propagation_policy="Foreground"),
             )
         ```
     """
 
     api_client = kubernetes_credentials.get_batch_client()
-
-    if delete_option_kwargs:
-        kube_kwargs.update(body=client.V1DeleteOptions(**delete_option_kwargs))
 
     return await run_sync_in_worker_thread(
         api_client.delete_namespaced_job,
@@ -258,7 +252,7 @@ async def replace_namespaced_job(
 
     Args:
         body: A dictionary representation of a Kubernetes V1Job
-            specification
+            specification.
         job_name: The name of a job to replace.
         namespace: The Kubernetes namespace to replace this job in.
         kubernetes_credentials: KubernetesCredentials block
