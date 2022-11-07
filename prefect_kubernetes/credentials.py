@@ -23,8 +23,8 @@ class KubernetesCredentials(Block):
     """Credentials block for generating configured Kubernetes API clients.
 
     Attributes:
-        cluster_config: a `KubernetesClusterConfig` block holding a JSON kube
-            config for a specific kubernetes context
+        cluster_config: A `KubernetesClusterConfig` block holding a JSON kube
+            config for a specific kubernetes context.
 
     Examples:
         Load stored Kubernetes credentials:
@@ -51,12 +51,15 @@ class KubernetesCredentials(Block):
         from prefect_kubernetes import KubernetesCredentials
         from prefect_kubernetes.job import create_namespaced_job
 
+        from kubernetes.client.models import V1Job
+
         kubernetes_credentials = KubernetesCredentials.load("my-k8s-credentials")
 
         @flow
         def kubernetes_orchestrator():
             create_namespaced_job(
-                body={"Marvin": "42"}, kubernetes_credentials=kubernetes_credentials
+                body=V1Job(**{"Marvin": "42"}),
+                kubernetes_credentials=kubernetes_credentials
             )
         ```
     """
@@ -67,19 +70,19 @@ class KubernetesCredentials(Block):
     cluster_config: Optional[KubernetesClusterConfig] = None
 
     def get_core_client(self) -> client.CoreV1Api:
-        """Convenience method for retrieving a kubernetes api client for core resources
+        """Convenience method for retrieving a kubernetes api client for core resources.
 
         Returns:
             client.CoreV1Api: Kubernetes api client to interact with "pod", "service"
-            and "secret" resources
+            and "secret" resources.
         """
         return self.get_kubernetes_client(resource="core")
 
     def get_batch_client(self) -> client.BatchV1Api:
-        """Convenience method for retrieving a kubernetes api client for job resources
+        """Convenience method for retrieving a kubernetes api client for job resources.
 
         Returns:
-            client.BatchV1Api: Kubernetes api client to interact with "job" resources
+            client.BatchV1Api: Kubernetes api client to interact with "job" resources.
         """
         return self.get_kubernetes_client(resource="job")
 

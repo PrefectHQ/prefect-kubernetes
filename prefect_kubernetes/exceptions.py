@@ -4,12 +4,12 @@ from kubernetes.client.exceptions import ApiException, OpenApiException
 
 
 class KubernetesJobDefinitionError(OpenApiException):
-    """An exception for when a Kubernetes job definition is invalid"""
+    """An exception for when a Kubernetes job definition is invalid."""
 
 
 class KubernetesJobFailedError(OpenApiException):
-    """An exception for when a Kubernetes job fails"""
+    """An exception for when a Kubernetes job fails."""
 
 
 class KubernetesResourceNotFoundError(ApiException):
-    """An exception for when a Kubernetes resource cannot be found by a client"""
+    """An exception for when a Kubernetes resource cannot be found by a client."""

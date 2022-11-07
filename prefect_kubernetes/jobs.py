@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Optional
 
-from kubernetes.client.models import V1Job, V1JobList, V1Status
+from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
 from prefect import task
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 
@@ -19,9 +19,9 @@ async def create_namespaced_job(
     """Task for creating a namespaced Kubernetes job.
 
     Args:
-        body: A dictionary representing a Kubernetes V1Job specification.
+        body: A Kubernetes `V1Job` specification.
         namespace: The Kubernetes namespace to create this job in.
-        kubernetes_credentials: KubernetesCredentials block
+        kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
@@ -36,11 +36,12 @@ async def create_namespaced_job(
         from prefect import flow
         from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.jobs import create_namespaced_job
+        from kubernetes.client.models import V1Job
 
         @flow
         def kubernetes_orchestrator():
             v1_job_metadata = create_namespaced_job(
-                body={"metadata": {"name": "test-job"}},
+                body=V1Job(**{"metadata": {"name": "test-job"}}),
                 kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
             )
         ```
@@ -56,6 +57,7 @@ async def create_namespaced_job(
 async def delete_namespaced_job(
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
+    body: Optional[V1DeleteOptions] = None,
     namespace: Optional[str] = "default",
     **kube_kwargs: Optional[Dict[str, Any]],
 ) -> V1Status:
@@ -63,9 +65,10 @@ async def delete_namespaced_job(
 
     Args:
         job_name: The name of a job to delete.
-        namespace: The Kubernetes namespace to delete this job in.
-        kubernetes_credentials: KubernetesCredentials block
+        kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
+        body: A Kubernetes `V1DeleteOptions` object.
+        namespace: The Kubernetes namespace to delete this job in.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
@@ -95,6 +98,7 @@ async def delete_namespaced_job(
 
     return await run_sync_in_worker_thread(
         api_client.delete_namespaced_job,
+        body=V1DeleteOptions(**body if body else None),
         name=job_name,
         namespace=namespace,
         **kube_kwargs,
@@ -110,7 +114,7 @@ async def list_namespaced_job(
     """Task for listing namespaced Kubernetes jobs.
 
     Args:
-        kubernetes_credentials: KubernetesCredentials block
+        kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
         namespace: The Kubernetes namespace to list jobs from.
         **kube_kwargs: Optional extra keyword arguments to pass to the
@@ -155,8 +159,7 @@ async def patch_namespaced_job(
 
     Args:
         job_name: The name of a job to patch.
-        body: A dictionary representation of a Kubernetes V1Job
-            specification.
+        body: A Kubernetes `V1Job` specification.
         namespace: The Kubernetes namespace to patch this job in.
         kubernetes_credentials: KubernetesCredentials block
             holding authentication needed to generate the required API client.
@@ -176,11 +179,13 @@ async def patch_namespaced_job(
         from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.jobs import patch_namespaced_job
 
+        from kubernetes.client.models import V1Job
+
         @flow
         def kubernetes_orchestrator():
             v1_job_metadata = patch_namespaced_job(
                 job_name="my-job",
-                body={"metadata": {"labels": {"foo": "bar"}}},
+                body=V1Job(**{"metadata": {"labels": {"foo": "bar"}}}),
                 kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
             )
         ```
@@ -209,7 +214,7 @@ async def read_namespaced_job(
     Args:
         job_name: The name of a job to read.
         namespace: The Kubernetes namespace to read this job in.
-        kubernetes_credentials: KubernetesCredentials block
+        kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
@@ -256,11 +261,10 @@ async def replace_namespaced_job(
     """Task for replacing a namespaced Kubernetes job.
 
     Args:
-        body: A dictionary representation of a Kubernetes V1Job
-            specification.
+        body: A Kubernetes `V1Job` specification.
         job_name: The name of a job to replace.
         namespace: The Kubernetes namespace to replace this job in.
-        kubernetes_credentials: KubernetesCredentials block
+        kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
