@@ -11,7 +11,7 @@ from prefect_kubernetes.credentials import KubernetesCredentials
 
 @task
 async def create_namespaced_job(
-    body: Dict,
+    body: V1Job,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
     **kube_kwargs: Optional[Dict],
@@ -34,6 +34,7 @@ async def create_namespaced_job(
         Create a job in the default namespace:
         ```python
         from prefect import flow
+        from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.jobs import create_namespaced_job
 
         @flow
@@ -77,6 +78,7 @@ async def delete_namespaced_job(
         ```python
         from kubernetes.client.models import V1DeleteOptions
         from prefect import flow
+        from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.jobs import delete_namespaced_job
 
         @flow
@@ -121,6 +123,7 @@ async def list_namespaced_job(
         List jobs in "my-namespace":
         ```python
         from prefect import flow
+        from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.jobs import list_namespaced_job
 
         @flow
@@ -143,7 +146,7 @@ async def list_namespaced_job(
 @task
 async def patch_namespaced_job(
     job_name: str,
-    body: Dict,
+    body: V1Job,
     kubernetes_credentials: KubernetesCredentials = None,
     namespace: Optional[str] = "default",
     **kube_kwargs: Optional[Dict[str, Any]],
@@ -170,6 +173,7 @@ async def patch_namespaced_job(
         Patch "my-job" in the default namespace:
         ```python
         from prefect import flow
+        from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.jobs import patch_namespaced_job
 
         @flow
@@ -220,6 +224,7 @@ async def read_namespaced_job(
         Read "my-job" in the default namespace:
         ```python
         from prefect import flow
+        from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.jobs import read_namespaced_job
 
         @flow
@@ -242,7 +247,7 @@ async def read_namespaced_job(
 
 @task
 async def replace_namespaced_job(
-    body: dict,
+    body: V1Job,
     job_name: str,
     kubernetes_credentials: KubernetesCredentials,
     namespace: Optional[str] = "default",
@@ -267,6 +272,7 @@ async def replace_namespaced_job(
         Replace "my-job" in the default namespace:
         ```python
         from prefect import flow
+        from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.jobs import replace_namespaced_job
 
         @flow
