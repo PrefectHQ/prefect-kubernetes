@@ -62,7 +62,7 @@ class KubernetesCredentials(Block):
     """
 
     _block_type_name = "Kubernetes Credentials"
-    _logo_url = "https://kubernetes-security.info/assets/img/logo.png?h=250"  # noqa
+    _logo_url = "https://images.ctfassets.net/zscdif0zqppk/oYuHjIbc26oilfQSEMjRv/a61f5f6ef406eead2df5231835b4c4c2/logo.png?h=250"  # noqa
 
     cluster_config: Optional[KubernetesClusterConfig] = None
 
