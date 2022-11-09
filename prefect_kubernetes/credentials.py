@@ -67,7 +67,7 @@ class KubernetesCredentials(Block):
         Returns:
             Kubernetes api client generator to interact with "deployment" resources.
         """
-        generic_client = self.get_kubernetes_client()
+        generic_client = self.get_generic_client()
         try:
             yield AppsV1Api(api_client=generic_client)
         finally:
@@ -80,7 +80,7 @@ class KubernetesCredentials(Block):
         Returns:
             Kubernetes api client generator to interact with "job" resources.
         """
-        generic_client = self.get_kubernetes_client()
+        generic_client = self.get_generic_client()
         try:
             yield BatchV1Api(api_client=generic_client)
         finally:
@@ -94,13 +94,13 @@ class KubernetesCredentials(Block):
             Kubernetes api client generator to interact with "pod", "service"
             and "secret" resources.
         """
-        generic_client = self.get_kubernetes_client()
+        generic_client = self.get_generic_client()
         try:
             yield CoreV1Api(api_client=generic_client)
         finally:
             generic_client.rest_client.pool_manager.clear()
 
-    def get_kubernetes_client(self) -> ApiClient:
+    def get_generic_client(self) -> ApiClient:
         """
         Utility function for configuring a generic Kubernetes client.
         It will attempt to connect to a Kubernetes cluster in three steps with
