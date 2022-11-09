@@ -1,22 +1,13 @@
 """Module for defining Kubernetes credential handling and client generation."""
 
-from typing import Optional, Union
+from contextlib import contextmanager
+from typing import Generator, Optional
 
-from kubernetes import client
 from kubernetes import config as kube_config
+from kubernetes.client import ApiClient, AppsV1Api, BatchV1Api, CoreV1Api
 from kubernetes.config.config_exception import ConfigException
 from prefect.blocks.core import Block
 from prefect.blocks.kubernetes import KubernetesClusterConfig
-
-KubernetesClient = Union[
-    client.BatchV1Api, client.CoreV1Api, client.AppsV1Api, client.ApiClient
-]
-
-K8S_CLIENTS = {
-    "job": client.BatchV1Api,
-    "core": client.CoreV1Api,
-    "deployment": client.AppsV1Api,
-}
 
 
 class KubernetesCredentials(Block):
@@ -69,66 +60,74 @@ class KubernetesCredentials(Block):
 
     cluster_config: Optional[KubernetesClusterConfig] = None
 
-    def get_core_client(self) -> client.CoreV1Api:
-        """Convenience method for retrieving a kubernetes api client for core resources.
-
-        Returns:
-            client.CoreV1Api: Kubernetes api client to interact with "pod", "service"
-            and "secret" resources.
-        """
-        return self.get_kubernetes_client(resource="core")
-
-    def get_batch_client(self) -> client.BatchV1Api:
-        """Convenience method for retrieving a kubernetes api client for job resources.
-
-        Returns:
-            client.BatchV1Api: Kubernetes api client to interact with "job" resources.
-        """
-        return self.get_kubernetes_client(resource="job")
-
-    def get_app_client(self) -> client.AppsV1Api:
+    @contextmanager
+    def get_app_client(self) -> Generator[AppsV1Api, None, None]:
         """Convenience method for retrieving a kubernetes api client for deployment resources
 
         Returns:
-            client.AppsV1Api: Kubernetes api client to interact with deployments
+            Kubernetes api client generator to interact with "deployment" resources.
         """
-        return self.get_kubernetes_client(resource="deployment")
+        generic_client = self.get_kubernetes_client()
+        try:
+            yield AppsV1Api(api_client=generic_client)
+        finally:
+            generic_client.rest_client.pool_manager.clear()
 
-    def get_kubernetes_client(self, resource: str) -> KubernetesClient:
+    @contextmanager
+    def get_batch_client(self) -> Generator[BatchV1Api, None, None]:
+        """Convenience method for retrieving a kubernetes api client for job resources.
+
+        Returns:
+            Kubernetes api client generator to interact with "job" resources.
         """
-        Utility function for loading kubernetes client object for a given resource.
+        generic_client = self.get_kubernetes_client()
+        try:
+            yield BatchV1Api(api_client=generic_client)
+        finally:
+            generic_client.rest_client.pool_manager.clear()
+
+    @contextmanager
+    def get_core_client(self) -> Generator[CoreV1Api, None, None]:
+        """Convenience method for retrieving a kubernetes api client for core resources.
+
+        Returns:
+            Kubernetes api client generator to interact with "pod", "service"
+            and "secret" resources.
+        """
+        generic_client = self.get_kubernetes_client()
+        try:
+            yield CoreV1Api(api_client=generic_client)
+        finally:
+            generic_client.rest_client.pool_manager.clear()
+
+    def get_kubernetes_client(self) -> ApiClient:
+        """
+        Utility function for configuring a generic Kubernetes client.
         It will attempt to connect to a Kubernetes cluster in three steps with
         the first successful connection attempt becoming the mode of communication with
         a cluster:
 
         1. It will first attempt to use a `KubernetesCredentials` block's
         `cluster_config` to configure a client using
-        `KubernetesClusterConfig.configure_client` and then return the
-        resource specific client.
+        `KubernetesClusterConfig.configure_client`.
 
         2. Attempt in-cluster connection (will only work when running on a pod).
+
         3. Attempt out-of-cluster connection using the default location for a
         kube config file.
 
-        Args:
-            resource: the name of the resource to retrieve a client for.
-                Currently you can use one of these values: `job`, `core`,
-                or `deployment`.
-
         Returns:
-            An authenticated and configured Kubernetes Client.
+            An authenticated, generic Kubernetes Client.
         """
 
-        resource_specific_client = K8S_CLIENTS[resource]
+        with ApiClient() as client:
+            if self.cluster_config:
+                self.cluster_config.configure_client()
+                return client
+            else:
+                try:
+                    kube_config.load_incluster_config()
+                except ConfigException:
+                    kube_config.load_kube_config()
 
-        if self.cluster_config:
-            self.cluster_config.configure_client()
-            return resource_specific_client()
-
-        else:
-            try:
-                kube_config.load_incluster_config()
-            except ConfigException:
-                kube_config.load_kube_config()
-
-            return resource_specific_client()
+                return client
