@@ -26,7 +26,6 @@ async def create_namespaced_job(
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
-
     Returns:
         A Kubernetes `V1Job` object.
 
@@ -170,7 +169,7 @@ async def patch_namespaced_job(
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
     Raises:
-        ValueError: if `job_name` is `None`
+        ValueError: if `job_name` is `None`.
 
     Returns:
         A Kubernetes `V1Job` object.
