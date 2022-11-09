@@ -23,21 +23,19 @@ pip install prefect-kubernetes
 ```
 
 ### Write and run a flow
+#### List jobs in a specific namespace
 
 ```python
 from prefect import flow
-from prefect_kubernetes.tasks import (
-    goodbye_prefect_kubernetes,
-    hello_prefect_kubernetes,
-)
-
+from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.jobs import list_namespaced_job
 
 @flow
-def example_flow():
-    hello_prefect_kubernetes
-    goodbye_prefect_kubernetes
-
-example_flow()
+def kubernetes_orchestrator():
+    namespaced_job_list = list_namespaced_job(
+        namespace="my-namespace",
+        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+    )
 ```
 
 ## Resources
