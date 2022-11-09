@@ -19,10 +19,10 @@ async def create_namespaced_job(
     """Task for creating a namespaced Kubernetes job.
 
     Args:
-        body: A Kubernetes `V1Job` specification.
-        namespace: The Kubernetes namespace to create this job in.
         kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
+        body: A Kubernetes `V1Job` specification.
+        namespace: The Kubernetes namespace to create this job in.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
@@ -67,9 +67,9 @@ async def delete_namespaced_job(
     """Task for deleting a namespaced Kubernetes job.
 
     Args:
-        job_name: The name of a job to delete.
         kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
+        job_name: The name of a job to delete.
         body: A Kubernetes `V1DeleteOptions` object.
         namespace: The Kubernetes namespace to delete this job in.
         **kube_kwargs: Optional extra keyword arguments to pass to the
@@ -161,11 +161,11 @@ async def patch_namespaced_job(
     """Task for deleting a namespaced Kubernetes job.
 
     Args:
+        kubernetes_credentials: KubernetesCredentials block
+            holding authentication needed to generate the required API client.
         job_name: The name of a job to patch.
         body: A Kubernetes `V1Job` specification.
         namespace: The Kubernetes namespace to patch this job in.
-        kubernetes_credentials: KubernetesCredentials block
-            holding authentication needed to generate the required API client.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
@@ -215,10 +215,10 @@ async def read_namespaced_job(
     """Task for reading a namespaced Kubernetes job.
 
     Args:
-        job_name: The name of a job to read.
-        namespace: The Kubernetes namespace to read this job in.
         kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
+        job_name: The name of a job to read.
+        namespace: The Kubernetes namespace to read this job in.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
@@ -264,11 +264,11 @@ async def replace_namespaced_job(
     """Task for replacing a namespaced Kubernetes job.
 
     Args:
-        body: A Kubernetes `V1Job` specification.
-        job_name: The name of a job to replace.
-        namespace: The Kubernetes namespace to replace this job in.
         kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
+        job_name: The name of a job to replace.
+        body: A Kubernetes `V1Job` specification.
+        namespace: The Kubernetes namespace to replace this job in.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
