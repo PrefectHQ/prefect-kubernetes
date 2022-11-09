@@ -62,43 +62,43 @@ class KubernetesCredentials(Block):
 
     @contextmanager
     def get_app_client(self) -> Generator[AppsV1Api, None, None]:
-        """Convenience method for retrieving a kubernetes api client for deployment resources
+        """Convenience method for retrieving a Kubernetes API client for deployment resources.
 
-        Returns:
-            Kubernetes api client generator to interact with "deployment" resources.
+        Yields:
+            Kubernetes API client to interact with "deployment" resources.
         """
-        generic_client = self.get_generic_client()
-        try:
-            yield AppsV1Api(api_client=generic_client)
-        finally:
-            generic_client.rest_client.pool_manager.clear()
+        with self.get_generic_client() as generic_client:
+            try:
+                yield AppsV1Api(api_client=generic_client)
+            finally:
+                generic_client.rest_client.pool_manager.clear()
 
     @contextmanager
     def get_batch_client(self) -> Generator[BatchV1Api, None, None]:
-        """Convenience method for retrieving a kubernetes api client for job resources.
+        """Convenience method for retrieving a Kubernetes API client for job resources.
 
-        Returns:
-            Kubernetes api client generator to interact with "job" resources.
+        Yields:
+            Kubernetes API client to interact with "job" resources.
         """
-        generic_client = self.get_generic_client()
-        try:
-            yield BatchV1Api(api_client=generic_client)
-        finally:
-            generic_client.rest_client.pool_manager.clear()
+        with self.get_generic_client() as generic_client:
+            try:
+                yield BatchV1Api(api_client=generic_client)
+            finally:
+                generic_client.rest_client.pool_manager.clear()
 
     @contextmanager
     def get_core_client(self) -> Generator[CoreV1Api, None, None]:
-        """Convenience method for retrieving a kubernetes api client for core resources.
+        """Convenience method for retrieving a Kubernetes API client for core resources.
 
-        Returns:
-            Kubernetes api client generator to interact with "pod", "service"
+        Yields:
+            Kubernetes API client to interact with "pod", "service"
             and "secret" resources.
         """
-        generic_client = self.get_generic_client()
-        try:
-            yield CoreV1Api(api_client=generic_client)
-        finally:
-            generic_client.rest_client.pool_manager.clear()
+        with self.get_generic_client() as generic_client:
+            try:
+                yield CoreV1Api(api_client=generic_client)
+            finally:
+                generic_client.rest_client.pool_manager.clear()
 
     def get_generic_client(self) -> ApiClient:
         """
@@ -120,14 +120,13 @@ class KubernetesCredentials(Block):
             An authenticated, generic Kubernetes Client.
         """
 
-        with ApiClient() as client:
-            if self.cluster_config:
-                self.cluster_config.configure_client()
-                return client
-            else:
-                try:
-                    kube_config.load_incluster_config()
-                except ConfigException:
-                    kube_config.load_kube_config()
+        if self.cluster_config:
+            self.cluster_config.configure_client()
+        else:
+            try:
+                kube_config.load_incluster_config()
+            except ConfigException:
+                kube_config.load_kube_config()
 
-                return client
+        client = ApiClient()
+        return client
