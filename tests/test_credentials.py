@@ -11,5 +11,7 @@ from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api
     ],
 )
 def test_client_return_type(kubernetes_credentials, resource_type_method, client_type):
-    resource_specific_client = getattr(kubernetes_credentials, resource_type_method)()
-    assert isinstance(resource_specific_client, client_type)
+    resource_specific_client = getattr(kubernetes_credentials, resource_type_method)
+
+    with resource_specific_client() as client:
+        assert isinstance(client, client_type)

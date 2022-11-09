@@ -27,6 +27,7 @@ pip install prefect-kubernetes
 
 ```python
 from prefect import flow
+from prefect_kubernetes.credentials import KubernetesCredentials
 from prefect_kubernetes.jobs import list_namespaced_job
 
 @flow

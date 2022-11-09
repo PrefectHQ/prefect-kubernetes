@@ -1,8 +1,10 @@
+from contextlib import contextmanager
 from pathlib import Path
-from unittest import mock
+from unittest.mock import MagicMock
 
 import pytest
 import yaml
+from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 
 from prefect_kubernetes.credentials import KubernetesCredentials
@@ -18,7 +20,7 @@ def kube_config_dict():
 
 @pytest.fixture
 def successful_job_status():
-    job_status = mock.MagicMock()
+    job_status = MagicMock()
     job_status.status.active = None
     job_status.status.failed = None
     job_status.status.succeeded = 1
@@ -36,11 +38,15 @@ def kubernetes_credentials(kube_config_dict):
 
 @pytest.fixture
 def _mock_api_app_client(monkeypatch):
-    app_client = mock.MagicMock()
+    app_client = MagicMock(spec=AppsV1Api)
+
+    @contextmanager
+    def get_app_client(_):
+        yield app_client
 
     monkeypatch.setattr(
         "prefect_kubernetes.credentials.KubernetesCredentials.get_app_client",
-        mock.MagicMock(return_value=app_client),
+        get_app_client,
     )
 
     return app_client
@@ -48,11 +54,15 @@ def _mock_api_app_client(monkeypatch):
 
 @pytest.fixture
 def _mock_api_batch_client(monkeypatch):
-    batch_client = mock.MagicMock()
+    batch_client = MagicMock(spec=BatchV1Api)
+
+    @contextmanager
+    def get_batch_client(_):
+        yield batch_client
 
     monkeypatch.setattr(
         "prefect_kubernetes.credentials.KubernetesCredentials.get_batch_client",
-        mock.MagicMock(return_value=batch_client),
+        get_batch_client,
     )
 
     return batch_client
@@ -60,11 +70,15 @@ def _mock_api_batch_client(monkeypatch):
 
 @pytest.fixture
 def _mock_api_core_client(monkeypatch):
-    core_client = mock.MagicMock()
+    core_client = MagicMock(spec=CoreV1Api)
+
+    @contextmanager
+    def get_core_client(_):
+        yield core_client
 
     monkeypatch.setattr(
         "prefect_kubernetes.credentials.KubernetesCredentials.get_core_client",
-        mock.MagicMock(return_value=core_client),
+        get_core_client,
     )
 
     return core_client
