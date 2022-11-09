@@ -65,7 +65,7 @@ class KubernetesCredentials(Block):
         """Convenience method for retrieving a Kubernetes API client for deployment resources.
 
         Yields:
-            Kubernetes API client generator to interact with "deployment" resources.
+            Kubernetes API client to interact with "deployment" resources.
         """
         with self.get_generic_client() as generic_client:
             try:
@@ -78,7 +78,7 @@ class KubernetesCredentials(Block):
         """Convenience method for retrieving a Kubernetes API client for job resources.
 
         Yields:
-            Kubernetes API client generator to interact with "job" resources.
+            Kubernetes API client to interact with "job" resources.
         """
         with self.get_generic_client() as generic_client:
             try:
