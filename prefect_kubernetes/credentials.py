@@ -36,13 +36,19 @@ class KubernetesCredentials(Block):
 
         Create resource-specific API clients from KubernetesCredentials:
         ```python
+        from kubernetes.client.models import AppsV1Api, BatchV1Api, CoreV1Api
         from prefect_kubernetes import KubernetesCredentials
 
         kubernetes_credentials = KubernetesCredentials.load("my-k8s-credentials")
 
-        kubernetes_app_v1_client = kubernetes_credentials.get_app_client()
-        kubernetes_batch_v1_client = kubernetes_credentials.get_batch_client()
-        kubernetes_core_v1_client = kubernetes_credentials.get_core_client()
+        with kubernetes_credentials.get_client("apps") as v1_apps_client:
+            assert isinstance(v1_apps_client, AppsV1Api)
+
+        with kubernetes_credentials.get_client("batch") as v1_batch_client:
+            assert isinstance(v1_batch_client, BatchV1Api)
+
+        with kubernetes_credentials.get_client("core") as v1_core_client:
+            assert isinstance(v1_core_client, CoreV1Api)
         ```
 
         Create a namespaced job:
@@ -58,8 +64,8 @@ class KubernetesCredentials(Block):
         @flow
         def kubernetes_orchestrator():
             create_namespaced_job(
+                kubernetes_credentials=kubernetes_credentials,
                 body=V1Job(**{"metadata": {"name": "my-job"}}),
-                kubernetes_credentials=kubernetes_credentials
             )
         ```
     """
@@ -103,7 +109,7 @@ class KubernetesCredentials(Block):
     def get_resource_specific_client(
         self,
         client_type: str,
-    ) -> KubernetesClient:
+    ) -> Union[AppsV1Api, BatchV1Api, CoreV1Api]:
         """
         Utility function for configuring a generic Kubernetes client.
         It will attempt to connect to a Kubernetes cluster in three steps with
@@ -120,10 +126,14 @@ class KubernetesCredentials(Block):
         kube config file.
 
         Args:
-            resource: The Kubernetes resource to configure a client for.
+            client_type: The Kubernetes API client type for interacting with specific
+                Kubernetes resources.
 
         Returns:
-            An authenticated, generic Kubernetes Client.
+            KubernetesClient: An authenticated, resource-specific Kubernetes Client.
+
+        Raises:
+            ValueError: If `client_type` is not a valid Kubernetes API client type.
         """
 
         if self.cluster_config:
