@@ -45,10 +45,10 @@ async def create_namespaced_job(
             )
         ```
     """
-    with kubernetes_credentials.get_batch_client() as api_client:
+    with kubernetes_credentials.get_client("batch") as batch_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.create_namespaced_job,
+            batch_v1_client.create_namespaced_job,
             namespace=namespace,
             body=body,
             **kube_kwargs,
@@ -96,10 +96,10 @@ async def delete_namespaced_job(
         ```
     """
 
-    with kubernetes_credentials.get_batch_client() as api_client:
+    with kubernetes_credentials.get_client("batch") as batch_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.delete_namespaced_job,
+            batch_v1_client.delete_namespaced_job,
             name=job_name,
             body=body,
             namespace=namespace,
@@ -140,10 +140,10 @@ async def list_namespaced_job(
             )
         ```
     """
-    with kubernetes_credentials.get_batch_client() as api_client:
+    with kubernetes_credentials.get_client("batch") as batch_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.list_namespaced_job,
+            batch_v1_client.list_namespaced_job,
             namespace=namespace,
             **kube_kwargs,
         )
@@ -193,10 +193,10 @@ async def patch_namespaced_job(
         ```
     """
 
-    with kubernetes_credentials.get_batch_client() as api_client:
+    with kubernetes_credentials.get_client("batch") as batch_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.patch_namespaced_job,
+            batch_v1_client.patch_namespaced_job,
             name=job_name,
             namespace=namespace,
             body=body,
@@ -242,10 +242,10 @@ async def read_namespaced_job(
             )
         ```
     """
-    with kubernetes_credentials.get_batch_client() as api_client:
+    with kubernetes_credentials.get_client("batch") as batch_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.read_namespaced_job,
+            batch_v1_client.read_namespaced_job,
             name=job_name,
             namespace=namespace,
             **kube_kwargs,
@@ -290,10 +290,10 @@ async def replace_namespaced_job(
             )
         ```
     """
-    with kubernetes_credentials.get_batch_client() as api_client:
+    with kubernetes_credentials.get_client("batch") as batch_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.replace_namespaced_job,
+            batch_v1_client.replace_namespaced_job,
             name=job_name,
             body=body,
             namespace=namespace,

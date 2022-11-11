@@ -1,7 +1,9 @@
 """Module for interacting with Kubernetes pods from Prefect flows."""
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 
+from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1DeleteOptions, V1Pod, V1PodList
+from kubernetes.watch import Watch
 from prefect import task
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 
@@ -11,12 +13,12 @@ from prefect_kubernetes.credentials import KubernetesCredentials
 @task
 async def create_namespaced_pod(
     kubernetes_credentials: KubernetesCredentials,
-    body: Dict,
+    body: V1Pod,
     namespace: Optional[str] = "default",
     **kube_kwargs: Dict[str, Any],
 ) -> V1Pod:
     """Create a Kubernetes pod in a given namespace.
-    
+
     Args:
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
@@ -34,7 +36,7 @@ async def create_namespaced_pod(
         from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.pods import create_namespaced_pod
         from kubernetes.client.models import V1Pod
-        
+
         @flow
         def kubernetes_orchestrator():
             v1_pod_metadata = create_namespaced_pod(
@@ -43,10 +45,10 @@ async def create_namespaced_pod(
             )
         ```
     """
-    with kubernetes_credentials.get_core_client() as api_client:
+    with kubernetes_credentials.get_client("core") as core_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.create_namespaced_pod,
+            core_v1_client.create_namespaced_pod,
             namespace=namespace,
             body=body,
             **kube_kwargs,
@@ -62,7 +64,7 @@ async def delete_namespaced_pod(
     **kube_kwargs: Dict[str, Any],
 ) -> V1Pod:
     """Delete a Kubernetes pod in a given namespace.
-    
+
     Args:
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
@@ -70,10 +72,10 @@ async def delete_namespaced_pod(
         body: A Kubernetes `V1DeleteOptions` object.
         namespace: The Kubernetes namespace to delete this pod from.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
-    
+
     Returns:
         A Kubernetes `V1Pod` object.
-        
+
     Example:
         Delete a pod in the default namespace:
         ```python
@@ -81,7 +83,7 @@ async def delete_namespaced_pod(
         from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.pods import delete_namespaced_pod
         from kubernetes.client.models import V1DeleteOptions
-        
+
         @flow
         def kubernetes_orchestrator():
             v1_pod_metadata = delete_namespaced_pod(
@@ -91,10 +93,10 @@ async def delete_namespaced_pod(
             )
         ```
     """
-    with kubernetes_credentials.get_core_client() as api_client:
+    with kubernetes_credentials.get_client("core") as core_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.delete_namespaced_pod,
+            core_v1_client.delete_namespaced_pod,
             pod_name,
             body=body,
             namespace=namespace,
@@ -109,23 +111,23 @@ async def list_namespaced_pod(
     **kube_kwargs: Dict[str, Any],
 ) -> V1PodList:
     """List all pods in a given namespace.
-    
+
     Args:
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
         namespace: The Kubernetes namespace to list pods from.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
-        
+
     Returns:
         A Kubernetes `V1PodList` object.
-    
+
     Example:
         List all pods in the default namespace:
         ```python
         from prefect import flow
         from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.pods import list_namespaced_pod
-        
+
         @flow
         def kubernetes_orchestrator():
             v1_pod_list = list_namespaced_pod(
@@ -133,10 +135,10 @@ async def list_namespaced_pod(
             )
         ```
     """
-    with kubernetes_credentials.get_core_client() as api_client:
+    with kubernetes_credentials.get_client("core") as core_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.list_namespaced_pod, namespace=namespace, **kube_kwargs
+            core_v1_client.list_namespaced_pod, namespace=namespace, **kube_kwargs
         )
 
 
@@ -149,7 +151,7 @@ async def patch_namespaced_pod(
     **kube_kwargs: Dict[str, Any],
 ) -> V1Pod:
     """Patch a Kubernetes pod in a given namespace.
-    
+
     Args:
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
@@ -157,10 +159,10 @@ async def patch_namespaced_pod(
         body: A Kubernetes `V1Pod` object.
         namespace: The Kubernetes namespace to patch this pod in.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
-        
+
     Returns:
         A Kubernetes `V1Pod` object.
-    
+
     Example:
         Patch a pod in the default namespace:
         ```python
@@ -168,7 +170,7 @@ async def patch_namespaced_pod(
         from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.pods import patch_namespaced_pod
         from kubernetes.client.models import V1Pod
-        
+
         @flow
         def kubernetes_orchestrator():
             v1_pod_metadata = patch_namespaced_pod(
@@ -178,10 +180,10 @@ async def patch_namespaced_pod(
             )
         ```
     """
-    with kubernetes_credentials.get_core_client() as api_client:
+    with kubernetes_credentials.get_client("core") as core_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.patch_namespaced_pod,
+            core_v1_client.patch_namespaced_pod,
             name=pod_name,
             namespace=namespace,
             body=body,
@@ -197,23 +199,23 @@ async def read_namespaced_pod(
     **kube_kwargs: Dict[str, Any],
 ) -> V1Pod:
     """Read information on a Kubernetes pod in a given namespace.
-    
+
     Args:
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
         pod_name: The name of the pod to read.
         namespace: The Kubernetes namespace to read this pod from.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
-        
+
     Returns:
         A Kubernetes `V1Pod` object.
-    
+
     Example:
         Read a pod in the default namespace:
         ```python
         from prefect import flow
         from prefect_kubernetes.credentials import KubernetesCredentials
-        
+
         @flow
         def kubernetes_orchestrator():
             v1_pod_metadata = read_namespaced_pod(
@@ -222,10 +224,10 @@ async def read_namespaced_pod(
             )
         ```
     """
-    with kubernetes_credentials.get_core_client() as api_client:
+    with kubernetes_credentials.get_client("core") as core_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.read_namespaced_pod,
+            core_v1_client.read_namespaced_pod,
             name=pod_name,
             namespace=namespace,
             **kube_kwargs,
@@ -238,46 +240,77 @@ async def read_namespaced_pod_logs(
     pod_name: str,
     container: str,
     namespace: Optional[str] = "default",
+    print_func: Optional[Callable] = None,
     **kube_kwargs: Dict[str, Any],
-) -> str:
+) -> Union[str, None]:
     """Read logs from a Kubernetes pod in a given namespace.
-    
+
     Args:
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
         pod_name: The name of the pod to read logs from.
         container: The name of the container to read logs from.
         namespace: The Kubernetes namespace to read this pod from.
+        print_func: If provided, it will stream the pod logs by calling `print_func`
+            for every line and returning `None`. If not provided, the current pod
+            logs will be returned immediately.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
-        
+
     Returns:
         A string containing the logs from the pod's container.
-        
+
     Example:
         Read logs from a pod in the default namespace:
         ```python
-        from prefect import flow
+        from prefect import flow, get_run_logger
         from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.pods import read_namespaced_pod_logs
-        
+
         @flow
         def kubernetes_orchestrator():
+            logger = get_run_logger()
+
             pod_logs = read_namespaced_pod_logs(
                 kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
                 pod_name="test-pod",
-                container="test-container"
+                container="test-container",
+                print_func=logger.info
             )
         ```
     """
-    with kubernetes_credentials.get_core_client() as api_client:
+    with kubernetes_credentials.get_client("core") as core_v1_client:
 
-        return await run_sync_in_worker_thread(
-            api_client.read_namespaced_pod_log,
+        if print_func is None:
+            return await run_sync_in_worker_thread(
+                core_v1_client.read_namespaced_pod_log,
+                name=pod_name,
+                namespace=namespace,
+                container=container,
+                **kube_kwargs,
+            )
+
+        # From the kubernetes.watch documentation:
+        # Note that watching an API resource can expire. The method tries to
+        # resume automatically once from the last result, but if that last result
+        # is too old as well, an `ApiException` exception will be thrown with
+        # ``code`` 410.
+
+        read_logs_coroutine = run_sync_in_worker_thread(
+            core_v1_client.read_namespaced_pod_log,
             name=pod_name,
             namespace=namespace,
             container=container,
-            **kube_kwargs,
         )
+
+        while True:
+            try:
+                for log_line in Watch().stream(await read_logs_coroutine):
+                    print_func(log_line)
+                return
+
+            except ApiException as e:
+                if e.status != 410:
+                    raise
 
 
 @task
@@ -289,7 +322,7 @@ async def replace_namespaced_pod(
     **kube_kwargs: Dict[str, Any],
 ) -> V1Pod:
     """Replace a Kubernetes pod in a given namespace.
-    
+
     Args:
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
@@ -297,10 +330,10 @@ async def replace_namespaced_pod(
         body: A Kubernetes `V1Pod` object.
         namespace: The Kubernetes namespace to replace this pod in.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
-        
+
     Returns:
         A Kubernetes `V1Pod` object.
-    
+
     Example:
         Replace a pod in the default namespace:
         ```python
@@ -308,7 +341,7 @@ async def replace_namespaced_pod(
         from prefect_kubernetes.credentials import KubernetesCredentials
         from prefect_kubernetes.pods import replace_namespaced_pod
         from kubernetes.client.models import V1Pod
-        
+
         @flow
         def kubernetes_orchestrator():
             v1_pod_metadata = replace_namespaced_pod(
@@ -318,10 +351,10 @@ async def replace_namespaced_pod(
             )
         ```
     """
-    with kubernetes_credentials.get_core_client() as api_client:
+    with kubernetes_credentials.get_client("core") as core_v1_client:
 
         return await run_sync_in_worker_thread(
-            api_client.replace_namespaced_pod,
+            core_v1_client.replace_namespaced_pod,
             body=body,
             name=pod_name,
             namespace=namespace,
