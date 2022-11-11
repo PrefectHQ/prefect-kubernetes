@@ -2,7 +2,7 @@
 
 ## Welcome!
 
-Prefect integrations for interacting with prefect-kubernetes.
+Prefect integrations for interacting with Kubernetes resources.
 
 ## Getting Started
 
@@ -23,6 +23,21 @@ pip install prefect-kubernetes
 ```
 
 ### Write and run a flow
+#### Generate a resource-specific client from `KubernetesClusterConfig`
+
+```python
+from prefect.blocks.kubernetes import KubernetesClusterConfig
+from prefect_kubernetes.credentials import KubernetesCredentials
+
+k8s_config = KubernetesClusterConfig.from_file('~/.kube/config')
+
+k8s_credentials = KubernetesCredentials(cluster_config=k8s_config)
+
+with k8s_credentials.get_client("core") as v1_core_client:
+    for pod in v1_core_client.list_namespaced_pod('default').items:
+        print(pod.metadata.name)
+```
+
 #### List jobs in a specific namespace
 
 ```python
@@ -32,9 +47,27 @@ from prefect_kubernetes.jobs import list_namespaced_job
 
 @flow
 def kubernetes_orchestrator():
-    namespaced_job_list = list_namespaced_job(
-        namespace="my-namespace",
+    v1_job_list = list_namespaced_job(
         kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+        namespace="my-namespace",
+    )
+```
+
+#### Delete a pod using `V1DeleteOptions`
+
+```python
+from kubernetes.client.models import V1DeleteOptions
+
+from prefect import flow
+from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.pods import delete_namespaced_pod
+
+@flow
+def kubernetes_orchestrator():
+    v1_pod_list = delete_namespaced_pod(
+        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+        body=V1DeleteOptions(grace_period_seconds=42),
+        namespace="my-namespace"
     )
 ```
 
