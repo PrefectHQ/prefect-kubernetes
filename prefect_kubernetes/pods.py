@@ -1,4 +1,5 @@
 """Module for interacting with Kubernetes pods from Prefect flows."""
+
 from typing import Any, Callable, Dict, Optional, Union
 
 from kubernetes.client.exceptions import ApiException
@@ -289,22 +290,20 @@ async def read_namespaced_pod_logs(
                 **kube_kwargs,
             )
 
-        # From the kubernetes.watch documentation:
+        # From the `kubernetes.watch` documentation:
         # Note that watching an API resource can expire. The method tries to
         # resume automatically once from the last result, but if that last result
         # is too old as well, an `ApiException` exception will be thrown with
         # ``code`` 410.
 
-        read_logs_coroutine = run_sync_in_worker_thread(
-            core_v1_client.read_namespaced_pod_log,
-            name=pod_name,
-            namespace=namespace,
-            container=container,
-        )
-
         while True:
             try:
-                for log_line in Watch().stream(await read_logs_coroutine):
+                for log_line in Watch().stream(
+                    core_v1_client.read_namespaced_pod_log,
+                    name=pod_name,
+                    namespace=namespace,
+                    container=container,
+                ):
                     print_func(log_line)
                 return
 

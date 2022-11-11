@@ -1,5 +1,5 @@
 import pytest
-from kubernetes.client.exceptions import ApiValueError
+from kubernetes.client.exceptions import ApiException, ApiValueError
 from kubernetes.client.models import V1DeleteOptions, V1Pod
 
 from prefect_kubernetes.pods import (
@@ -152,4 +152,17 @@ async def test_bad_v1_pod_kwargs(kubernetes_credentials, task_accepting_pod):
         await task_accepting_pod.fn(
             body=V1Pod(**{"random_not_real": "shabba-ranks"}),
             kubernetes_credentials=kubernetes_credentials,
+        )
+
+
+async def test_read_pod_logs_custom_print_func_timeout(
+    kubernetes_credentials, mock_stream_timeout
+):
+    with pytest.raises(ApiException):
+        await read_namespaced_pod_logs.fn(
+            kubernetes_credentials=kubernetes_credentials,
+            pod_name="test_pod",
+            container="test_container",
+            namespace="ns",
+            print_func=print,
         )
