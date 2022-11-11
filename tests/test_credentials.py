@@ -17,6 +17,8 @@ def test_client_return_type(kubernetes_credentials, resource_type, client_type):
 
 
 def test_client_bad_resource_type(kubernetes_credentials):
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Invalid client type provided 'shoo-ba-daba-doo'"
+    ):
         with kubernetes_credentials.get_client("shoo-ba-daba-doo"):
             pass

@@ -1,5 +1,4 @@
 """Module for interacting with Kubernetes pods from Prefect flows."""
-
 from typing import Any, Callable, Dict, Optional, Union
 
 from kubernetes.client.exceptions import ApiException
@@ -14,7 +13,7 @@ from prefect_kubernetes.credentials import KubernetesCredentials
 @task
 async def create_namespaced_pod(
     kubernetes_credentials: KubernetesCredentials,
-    body: V1Pod,
+    new_pod: V1Pod,
     namespace: Optional[str] = "default",
     **kube_kwargs: Dict[str, Any],
 ) -> V1Pod:
@@ -23,7 +22,7 @@ async def create_namespaced_pod(
     Args:
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
-        body: A Kubernetes `V1Pod` specification.
+        new_pod: A Kubernetes `V1Pod` specification.
         namespace: The Kubernetes namespace to create this pod in.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
 
@@ -42,7 +41,7 @@ async def create_namespaced_pod(
         def kubernetes_orchestrator():
             v1_pod_metadata = create_namespaced_pod(
                 kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-                body=V1Pod(**{"metadata": {"name": "test-pod"}}),
+                new_pod=V1Pod(metadata={"name": "test-pod"}),
             )
         ```
     """
@@ -51,7 +50,7 @@ async def create_namespaced_pod(
         return await run_sync_in_worker_thread(
             core_v1_client.create_namespaced_pod,
             namespace=namespace,
-            body=body,
+            body=new_pod,
             **kube_kwargs,
         )
 
@@ -60,7 +59,7 @@ async def create_namespaced_pod(
 async def delete_namespaced_pod(
     kubernetes_credentials: KubernetesCredentials,
     pod_name: str,
-    body: Optional[V1DeleteOptions] = None,
+    delete_options: Optional[V1DeleteOptions] = None,
     namespace: Optional[str] = "default",
     **kube_kwargs: Dict[str, Any],
 ) -> V1Pod:
@@ -70,7 +69,7 @@ async def delete_namespaced_pod(
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
         pod_name: The name of the pod to delete.
-        body: A Kubernetes `V1DeleteOptions` object.
+        delete_options: A Kubernetes `V1DeleteOptions` object.
         namespace: The Kubernetes namespace to delete this pod from.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
 
@@ -90,7 +89,7 @@ async def delete_namespaced_pod(
             v1_pod_metadata = delete_namespaced_pod(
                 kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
                 pod_name="test-pod",
-                body=V1DeleteOptions(grace_period_seconds=0),
+                delete_options=V1DeleteOptions(grace_period_seconds=0),
             )
         ```
     """
@@ -99,7 +98,7 @@ async def delete_namespaced_pod(
         return await run_sync_in_worker_thread(
             core_v1_client.delete_namespaced_pod,
             pod_name,
-            body=body,
+            body=delete_options,
             namespace=namespace,
             **kube_kwargs,
         )
@@ -147,7 +146,7 @@ async def list_namespaced_pod(
 async def patch_namespaced_pod(
     kubernetes_credentials: KubernetesCredentials,
     pod_name: str,
-    body: V1Pod,
+    pod_updates: V1Pod,
     namespace: Optional[str] = "default",
     **kube_kwargs: Dict[str, Any],
 ) -> V1Pod:
@@ -157,7 +156,7 @@ async def patch_namespaced_pod(
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
         pod_name: The name of the pod to patch.
-        body: A Kubernetes `V1Pod` object.
+        pod_updates: A Kubernetes `V1Pod` object.
         namespace: The Kubernetes namespace to patch this pod in.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
 
@@ -177,7 +176,7 @@ async def patch_namespaced_pod(
             v1_pod_metadata = patch_namespaced_pod(
                 kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
                 pod_name="test-pod",
-                body=V1Pod(**{"metadata": {"labels": {"foo": "bar"}}}),
+                pod_updates=V1Pod(metadata={"labels": {"foo": "bar"}}),
             )
         ```
     """
@@ -187,7 +186,7 @@ async def patch_namespaced_pod(
             core_v1_client.patch_namespaced_pod,
             name=pod_name,
             namespace=namespace,
-            body=body,
+            body=pod_updates,
             **kube_kwargs,
         )
 
@@ -316,7 +315,7 @@ async def read_namespaced_pod_logs(
 async def replace_namespaced_pod(
     kubernetes_credentials: KubernetesCredentials,
     pod_name: str,
-    body: V1Pod,
+    new_pod: V1Pod,
     namespace: Optional[str] = "default",
     **kube_kwargs: Dict[str, Any],
 ) -> V1Pod:
@@ -326,7 +325,7 @@ async def replace_namespaced_pod(
         kubernetes_credentials: `KubernetesCredentials` block for creating
             authenticated Kubernetes API clients.
         pod_name: The name of the pod to replace.
-        body: A Kubernetes `V1Pod` object.
+        new_pod: A Kubernetes `V1Pod` object.
         namespace: The Kubernetes namespace to replace this pod in.
         **kube_kwargs: Optional extra keyword arguments to pass to the Kubernetes API.
 
@@ -346,7 +345,7 @@ async def replace_namespaced_pod(
             v1_pod_metadata = replace_namespaced_pod(
                 kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
                 pod_name="test-pod",
-                body=V1Pod(**{"metadata": {"labels": {"foo": "bar"}}})
+                new_pod=V1Pod(metadata={"labels": {"foo": "bar"}})
             )
         ```
     """
@@ -354,7 +353,7 @@ async def replace_namespaced_pod(
 
         return await run_sync_in_worker_thread(
             core_v1_client.replace_namespaced_pod,
-            body=body,
+            body=new_pod,
             name=pod_name,
             namespace=namespace,
             **kube_kwargs,

@@ -1,7 +1,7 @@
 """Module for defining Kubernetes credential handling and client generation."""
 
 from contextlib import contextmanager
-from typing import Generator, Optional, Union
+from typing import Generator, Literal, Optional, Union
 
 from kubernetes import config as kube_config
 from kubernetes.client import ApiClient, AppsV1Api, BatchV1Api, Configuration, CoreV1Api
@@ -78,7 +78,7 @@ class KubernetesCredentials(Block):
     @contextmanager
     def get_client(
         self,
-        client_type: str,
+        client_type: Literal["apps", "batch", "core"],
         configuration: Optional[Configuration] = None,
     ) -> Generator[KubernetesClient, None, None]:
         """Convenience method for retrieving a Kubernetes API client for deployment resources.

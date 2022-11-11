@@ -16,17 +16,17 @@ from prefect_kubernetes.pods import (
 async def test_invalid_body_raises_error(kubernetes_credentials):
     with pytest.raises(ApiValueError):
         await create_namespaced_pod.fn(
-            body=None, kubernetes_credentials=kubernetes_credentials
+            new_pod=None, kubernetes_credentials=kubernetes_credentials
         )
     with pytest.raises(ApiValueError):
         await patch_namespaced_pod.fn(
-            body=None, pod_name="", kubernetes_credentials=kubernetes_credentials
+            pod_updates=None, pod_name="", kubernetes_credentials=kubernetes_credentials
         )
 
 
 async def test_create_namespaced_pod(kubernetes_credentials, _mock_api_core_client):
     await create_namespaced_pod.fn(
-        body=V1Pod(**{"metadata": {"name": "test-pod"}}),
+        new_pod=V1Pod(metadata={"name": "test-pod"}),
         a="test",
         kubernetes_credentials=kubernetes_credentials,
     )
@@ -41,7 +41,7 @@ async def test_delete_namespaced_pod(kubernetes_credentials, _mock_api_core_clie
     await delete_namespaced_pod.fn(
         kubernetes_credentials=kubernetes_credentials,
         pod_name="test_pod",
-        body=V1DeleteOptions(grace_period_seconds=42),
+        delete_options=V1DeleteOptions(grace_period_seconds=42),
         a="test",
     )
     assert (
@@ -62,7 +62,7 @@ async def test_bad_v1_delete_options(kubernetes_credentials, _mock_api_core_clie
         await delete_namespaced_pod.fn(
             kubernetes_credentials=kubernetes_credentials,
             pod_name="test_pod",
-            body=V1DeleteOptions(skrrrt_skrrrt="yeehaw"),
+            delete_options=V1DeleteOptions(skrrrt_skrrrt="yeehaw"),
         )
 
 
@@ -78,10 +78,10 @@ async def test_list_namespaced_pod(kubernetes_credentials, _mock_api_core_client
 
 async def test_patch_namespaced_pod(kubernetes_credentials, _mock_api_core_client):
     await patch_namespaced_pod.fn(
-        body=V1Pod(**{"metadata": {"name": "test-pod"}}),
+        kubernetes_credentials=kubernetes_credentials,
+        pod_updates=V1Pod(metadata={"name": "test-pod"}),
         pod_name="test_pod",
         a="test",
-        kubernetes_credentials=kubernetes_credentials,
     )
     assert _mock_api_core_client.patch_namespaced_pod.call_args[1]["body"].metadata == {
         "name": "test-pod"
@@ -126,7 +126,7 @@ async def test_read_namespaced_pod_logs(kubernetes_credentials, _mock_api_core_c
 async def test_replace_namespaced_pod(kubernetes_credentials, _mock_api_core_client):
     await replace_namespaced_pod.fn(
         pod_name="test_pod",
-        body=V1Pod(**{"metadata": {"name": "test-pod"}}),
+        new_pod=V1Pod(metadata={"name": "test-pod"}),
         namespace="ns",
         a="test",
         kubernetes_credentials=kubernetes_credentials,
@@ -144,13 +144,17 @@ async def test_replace_namespaced_pod(kubernetes_credentials, _mock_api_core_cli
 
 
 @pytest.mark.parametrize(
-    "task_accepting_pod",
-    [create_namespaced_pod, patch_namespaced_pod, replace_namespaced_pod],
+    "task_accepting_pod, pod_kwarg",
+    [
+        (create_namespaced_pod, "new_pod"),
+        (patch_namespaced_pod, "pod_updates"),
+        (replace_namespaced_pod, "new_pod"),
+    ],
 )
-async def test_bad_v1_pod_kwargs(kubernetes_credentials, task_accepting_pod):
+async def test_bad_v1_pod_kwargs(kubernetes_credentials, task_accepting_pod, pod_kwarg):
     with pytest.raises(TypeError):
         await task_accepting_pod.fn(
-            body=V1Pod(**{"random_not_real": "shabba-ranks"}),
+            **{pod_kwarg: V1Pod(skrrrt_skrrrt="yeehaw")},
             kubernetes_credentials=kubernetes_credentials,
         )
 
