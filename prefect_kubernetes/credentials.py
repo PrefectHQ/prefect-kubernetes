@@ -1,7 +1,7 @@
 """Module for defining Kubernetes credential handling and client generation."""
 
 from contextlib import contextmanager
-from typing import Generator, Literal, Optional, Union
+from typing import Generator, Optional, Union
 
 from kubernetes import config as kube_config
 from kubernetes.client import ApiClient, AppsV1Api, BatchV1Api, Configuration, CoreV1Api
@@ -9,6 +9,7 @@ from kubernetes.config.config_exception import ConfigException
 from prefect.blocks.core import Block
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect.utilities.collections import listrepr
+from typing_extensions import Literal
 
 KubernetesClient = Union[AppsV1Api, BatchV1Api, CoreV1Api]
 

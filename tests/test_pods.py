@@ -8,7 +8,7 @@ from prefect_kubernetes.pods import (
     list_namespaced_pod,
     patch_namespaced_pod,
     read_namespaced_pod,
-    read_namespaced_pod_logs,
+    read_namespaced_pod_log,
     replace_namespaced_pod,
 )
 
@@ -103,7 +103,7 @@ async def test_read_namespaced_pod(kubernetes_credentials, _mock_api_core_client
 
 
 async def test_read_namespaced_pod_logs(kubernetes_credentials, _mock_api_core_client):
-    await read_namespaced_pod_logs.fn(
+    await read_namespaced_pod_log.fn(
         pod_name="test_pod",
         container="test_container",
         namespace="ns",
@@ -159,11 +159,36 @@ async def test_bad_v1_pod_kwargs(kubernetes_credentials, task_accepting_pod, pod
         )
 
 
-async def test_read_pod_logs_custom_print_func_timeout(
+async def test_read_pod_log_custom_print_func(
+    kubernetes_credentials, _mock_api_core_client
+):
+    s = await read_namespaced_pod_log.fn(
+        kubernetes_credentials=kubernetes_credentials,
+        pod_name="test_pod",
+        container="test_container",
+        namespace="ns",
+        print_func=print,
+    )
+
+    assert not s
+
+    assert (
+        _mock_api_core_client.read_namespaced_pod_log.call_args[1]["name"] == "test_pod"
+    )
+    assert (
+        _mock_api_core_client.read_namespaced_pod_log.call_args[1]["container"]
+        == "test_container"
+    )
+    assert (
+        _mock_api_core_client.read_namespaced_pod_log.call_args[1]["namespace"] == "ns"
+    )
+
+
+async def test_read_pod_log_custom_print_func_timeout(
     kubernetes_credentials, mock_stream_timeout
 ):
     with pytest.raises(ApiException):
-        await read_namespaced_pod_logs.fn(
+        await read_namespaced_pod_log.fn(
             kubernetes_credentials=kubernetes_credentials,
             pod_name="test_pod",
             container="test_container",

@@ -1,7 +1,6 @@
 """Module for interacting with Kubernetes pods from Prefect flows."""
 from typing import Any, Callable, Dict, Optional, Union
 
-from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1DeleteOptions, V1Pod, V1PodList
 from kubernetes.watch import Watch
 from prefect import task
@@ -235,7 +234,7 @@ async def read_namespaced_pod(
 
 
 @task
-async def read_namespaced_pod_logs(
+async def read_namespaced_pod_log(
     kubernetes_credentials: KubernetesCredentials,
     pod_name: str,
     container: str,
@@ -244,6 +243,9 @@ async def read_namespaced_pod_logs(
     **kube_kwargs: Dict[str, Any],
 ) -> Union[str, None]:
     """Read logs from a Kubernetes pod in a given namespace.
+
+    If `print_func` is provided, the logs will be streamed using that function.
+    If the pod is no longer running, logs generated up to that point will be returned.
 
     Args:
         kubernetes_credentials: `KubernetesCredentials` block for creating
@@ -289,26 +291,15 @@ async def read_namespaced_pod_logs(
                 **kube_kwargs,
             )
 
-        # From the `kubernetes.watch` documentation:
-        # Note that watching an API resource can expire. The method tries to
-        # resume automatically once from the last result, but if that last result
-        # is too old as well, an `ApiException` exception will be thrown with
-        # ``code`` 410.
-
-        while True:
-            try:
-                for log_line in Watch().stream(
-                    core_v1_client.read_namespaced_pod_log,
-                    name=pod_name,
-                    namespace=namespace,
-                    container=container,
-                ):
-                    print_func(log_line)
-                return
-
-            except ApiException as e:
-                if e.status != 410:
-                    raise
+        # should no longer need to manually refresh on ApiException.status == 410
+        # as of https://github.com/kubernetes-client/python-base/pull/133
+        for log_line in Watch().stream(
+            core_v1_client.read_namespaced_pod_log,
+            name=pod_name,
+            namespace=namespace,
+            container=container,
+        ):
+            print_func(log_line)
 
 
 @task

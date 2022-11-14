@@ -15,21 +15,21 @@ from prefect_kubernetes.jobs import (
 async def test_null_body_raises_error(kubernetes_credentials):
     with pytest.raises(ApiValueError):
         await create_namespaced_job.fn(
-            body=None, kubernetes_credentials=kubernetes_credentials
+            new_job=None, kubernetes_credentials=kubernetes_credentials
         )
     with pytest.raises(ApiValueError):
         await patch_namespaced_job.fn(
-            body=None, job_name="", kubernetes_credentials=kubernetes_credentials
+            job_updates=None, job_name="", kubernetes_credentials=kubernetes_credentials
         )
     with pytest.raises(ApiValueError):
         await replace_namespaced_job.fn(
-            body=None, job_name="", kubernetes_credentials=kubernetes_credentials
+            new_job=None, job_name="", kubernetes_credentials=kubernetes_credentials
         )
 
 
 async def test_create_namespaced_job(kubernetes_credentials, _mock_api_batch_client):
     await create_namespaced_job.fn(
-        body=V1Job(**{"metadata": {"name": "test-job"}}),
+        new_job=V1Job(metadata={"name": "test-job"}),
         a="test",
         kubernetes_credentials=kubernetes_credentials,
     )
@@ -64,7 +64,7 @@ async def test_list_namespaced_job(kubernetes_credentials, _mock_api_batch_clien
 
 async def test_patch_namespaced_job(kubernetes_credentials, _mock_api_batch_client):
     await patch_namespaced_job.fn(
-        body=V1Job(**{"metadata": {"name": "test-job"}}),
+        job_updates=V1Job(metadata={"name": "test-job"}),
         job_name="test-job",
         a="test",
         kubernetes_credentials=kubernetes_credentials,
@@ -93,7 +93,7 @@ async def test_read_namespaced_job(kubernetes_credentials, _mock_api_batch_clien
 async def test_replace_namespaced_job(kubernetes_credentials, _mock_api_batch_client):
     await replace_namespaced_job.fn(
         job_name="test-job",
-        body=V1Job(**{"metadata": {"name": "test-job"}}),
+        new_job=V1Job(metadata={"name": "test-job"}),
         namespace="ns",
         a="test",
         kubernetes_credentials=kubernetes_credentials,
