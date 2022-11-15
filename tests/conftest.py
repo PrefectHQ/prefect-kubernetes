@@ -92,3 +92,12 @@ def mock_stream_timeout(monkeypatch):
         "kubernetes.watch.Watch.stream",
         MagicMock(side_effect=ApiException(status=408)),
     )
+
+
+@pytest.fixture
+def mock_pod_log(monkeypatch):
+
+    monkeypatch.setattr(
+        "kubernetes.watch.Watch.stream",
+        MagicMock(return_value=["test log"]),
+    )
