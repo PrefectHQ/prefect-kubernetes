@@ -1,0 +1,19 @@
+{
+  "template": "https://github.com/PrefectHQ/prefect-collection-template",
+  "commit": "7f892ebc5bc38071e6392b20ad6511ca0291c4fb",
+  "context": {
+    "cookiecutter": {
+      "full_name": "Prefect Technologies",
+      "email": "help@prefect.io",
+      "github_organization": "PrefectHQ",
+      "collection_name": "prefect-kubernetes",
+      "collection_slug": "prefect_kubernetes",
+      "collection_short_description": "Prefect Collection Template contains all the boilerplate that you need to create a Prefect collection.",
+      "_copy_without_render": [
+        ".github/workflows/*.yml"
+      ],
+      "_template": "https://github.com/PrefectHQ/prefect-collection-template"
+    }
+  },
+  "directory": null
+}
