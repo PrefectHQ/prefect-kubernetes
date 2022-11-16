@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 import yaml
 from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api
+from kubernetes.client.exceptions import ApiException
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 
 from prefect_kubernetes.credentials import KubernetesCredentials
@@ -41,12 +42,12 @@ def _mock_api_app_client(monkeypatch):
     app_client = MagicMock(spec=AppsV1Api)
 
     @contextmanager
-    def get_app_client(_):
+    def get_client(self, _):
         yield app_client
 
     monkeypatch.setattr(
-        "prefect_kubernetes.credentials.KubernetesCredentials.get_app_client",
-        get_app_client,
+        "prefect_kubernetes.credentials.KubernetesCredentials.get_client",
+        get_client,
     )
 
     return app_client
@@ -57,12 +58,12 @@ def _mock_api_batch_client(monkeypatch):
     batch_client = MagicMock(spec=BatchV1Api)
 
     @contextmanager
-    def get_batch_client(_):
+    def get_client(self, _):
         yield batch_client
 
     monkeypatch.setattr(
-        "prefect_kubernetes.credentials.KubernetesCredentials.get_batch_client",
-        get_batch_client,
+        "prefect_kubernetes.credentials.KubernetesCredentials.get_client",
+        get_client,
     )
 
     return batch_client
@@ -73,12 +74,30 @@ def _mock_api_core_client(monkeypatch):
     core_client = MagicMock(spec=CoreV1Api)
 
     @contextmanager
-    def get_core_client(_):
+    def get_client(self, _):
         yield core_client
 
     monkeypatch.setattr(
-        "prefect_kubernetes.credentials.KubernetesCredentials.get_core_client",
-        get_core_client,
+        "prefect_kubernetes.credentials.KubernetesCredentials.get_client",
+        get_client,
     )
 
     return core_client
+
+
+@pytest.fixture
+def mock_stream_timeout(monkeypatch):
+
+    monkeypatch.setattr(
+        "kubernetes.watch.Watch.stream",
+        MagicMock(side_effect=ApiException(status=408)),
+    )
+
+
+@pytest.fixture
+def mock_pod_log(monkeypatch):
+
+    monkeypatch.setattr(
+        "kubernetes.watch.Watch.stream",
+        MagicMock(return_value=["test log"]),
+    )
