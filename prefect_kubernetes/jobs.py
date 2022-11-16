@@ -157,7 +157,7 @@ async def patch_namespaced_job(
     namespace: Optional[str] = "default",
     **kube_kwargs: Dict[str, Any],
 ) -> V1Job:
-    """Task for deleting a namespaced Kubernetes job.
+    """Task for patching a namespaced Kubernetes job.
 
     Args:
         kubernetes_credentials: KubernetesCredentials block
