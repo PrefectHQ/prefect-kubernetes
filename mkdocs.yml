@@ -37,6 +37,7 @@ plugins:
 nav:
     - Home: index.md
     - Credentials: credentials.md
+    - Deployments: deployments.md
     - Exceptions: exceptions.md
     - Jobs: jobs.md
     - Pods: pods.md
