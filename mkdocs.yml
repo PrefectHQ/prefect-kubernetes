@@ -40,3 +40,4 @@ nav:
     - Exceptions: exceptions.md
     - Jobs: jobs.md
     - Pods: pods.md
+    - Services: services.md
