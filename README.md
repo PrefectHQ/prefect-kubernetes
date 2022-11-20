@@ -90,10 +90,41 @@ from prefect_kubernetes.pods import delete_namespaced_pod
 
 @flow
 def kubernetes_orchestrator():
-    v1_pod_list = delete_namespaced_pod(
+    v1_pod = delete_namespaced_pod(
         kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
         body=V1DeleteOptions(grace_period_seconds=42),
         namespace="my-namespace"
+    )
+```
+#### Patch an existing deployment
+
+```python
+from kubernetes.client.models import V1Deployment
+
+from prefect import flow
+from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.deployments import patch_namespaced_deployment
+
+@flow
+def kubernetes_orchestrator():
+    v1_deployment = patch_namespaced_deployment(
+        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+        deployment_name="my-deployment",
+        deployment_updates=V1Deployment(spec={"replicas": 2}),
+        namespace="my-namespace"
+    )
+```
+### List services in a namespace
+```python
+from prefect import flow
+from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.services import list_namespaced_service
+
+@flow
+def kubernetes_orchestrator():
+    v1_service_list = list_namespaced_service(
+        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+        namespace="my-namespace",
     )
 ```
 
