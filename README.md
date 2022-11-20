@@ -92,7 +92,8 @@ from prefect_kubernetes.pods import delete_namespaced_pod
 def kubernetes_orchestrator():
     v1_pod = delete_namespaced_pod(
         kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-        body=V1DeleteOptions(grace_period_seconds=42),
+        pod_name="my-pod-to-delete",
+        delete_options=V1DeleteOptions(grace_period_seconds=42),
         namespace="my-namespace"
     )
 ```
