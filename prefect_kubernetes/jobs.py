@@ -1,12 +1,16 @@
 """Module to define tasks for interacting with Kubernetes jobs."""
 
+from asyncio import sleep
 from typing import Any, Dict, Optional
 
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
-from prefect import task
+from prefect import get_run_logger, task
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
+from typing_extensions import Literal
 
 from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.exceptions import KubernetesJobFailedError
+from prefect_kubernetes.pods import list_namespaced_pod, read_namespaced_pod_log
 
 
 @task
@@ -299,3 +303,106 @@ async def replace_namespaced_job(
             namespace=namespace,
             **kube_kwargs,
         )
+
+
+@task
+async def run_namespaced_job(
+    kubernetes_credentials: KubernetesCredentials,
+    job_to_run: V1Job,
+    namespace: Optional[str] = "default",
+    job_status_poll_interval: Optional[int] = 5,
+    log_level: Optional[
+        Literal["INFO", "DEBUG", "ERROR", "WARN", "CRITICAL", None]
+    ] = None,
+    delete_job_after_completion: Optional[bool] = True,
+):
+    """Task for running a namespaced Kubernetes job.
+
+    Args:
+        kubernetes_credentials: `KubernetesCredentials` block
+            holding authentication needed to generate the required API client.
+        job_to_run: A Kubernetes `V1Job` specification.
+        namespace: The Kubernetes namespace to run this job in.
+        job_status_poll_interval: The number of seconds to wait between job status checks.
+        log_level: The log level to use when outputting job logs. If `None`, logs from the
+            job will not be captured.
+        delete_job_after_completion: Whether to delete the job after it has completed.
+
+    """
+    logger = get_run_logger()
+
+    job_name = job_to_run.metadata.name
+
+    if not job_name:
+        raise ValueError(
+            "The job name must be defined in the metadata of the V1Job specification."
+        )
+
+    await create_namespaced_job.fn(
+        kubernetes_credentials=kubernetes_credentials,
+        new_job=job_to_run,
+        namespace=namespace,
+    )
+
+    logger.info(f"Job {job_name} created.")
+
+    pod_log_streams = {}
+
+    with kubernetes_credentials.get_client("batch") as batch_v1_client:
+
+        completed = False
+
+        while not completed:
+            v1_job = await run_sync_in_worker_thread(
+                batch_v1_client.read_namespaced_job_status,
+                name=job_name,
+                namespace=namespace,
+            )
+
+            if log_level is not None:
+                log_func = getattr(logger, log_level.lower())
+
+                pod_selector = (
+                    f"controller-uid={v1_job.metadata.labels['controller-uid']}"
+                )
+
+                v1_pod_list = await list_namespaced_pod.fn(
+                    kubernetes_credentials=kubernetes_credentials,
+                    namespace=namespace,
+                    label_selector=pod_selector,
+                )
+
+                for pod in v1_pod_list.items:
+                    pod_name = pod.metadata.name
+
+                    if pod.status.phase == "Pending" or pod_name in pod_log_streams:
+                        continue
+
+                    pod_log = await read_namespaced_pod_log.fn(
+                        kubernetes_credentials=kubernetes_credentials,
+                        name=pod_name,
+                        namespace=namespace,
+                        print_func=log_func,
+                    )
+
+                    logger.info(f"Started logging for pod {pod_name}.")
+
+                    pod_log_streams[pod_name] = pod_log
+
+            if v1_job.status.active:
+                await sleep(job_status_poll_interval)
+            elif v1_job.status.failed:
+                raise KubernetesJobFailedError(
+                    f"Job {job_name} failed, check Kubernetes pod logs for more information."
+                )
+            elif v1_job.status.succeeded:
+                completed = True
+                logger.info(f"Job {job_name} has completed.")
+
+        if delete_job_after_completion:
+            await delete_namespaced_job.fn(
+                kubernetes_credentials=kubernetes_credentials,
+                job_name=job_name,
+                namespace=namespace,
+            )
+            logger.info(f"Job {job_name} deleted.")
