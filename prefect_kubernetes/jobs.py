@@ -323,9 +323,10 @@ async def run_namespaced_job(
             holding authentication needed to generate the required API client.
         job_to_run: A Kubernetes `V1Job` specification.
         namespace: The Kubernetes namespace to run this job in.
-        job_status_poll_interval: The number of seconds to wait between job status checks.
-        log_level: The log level to use when outputting job logs. If `None`, logs from the
-            job will not be captured.
+        job_status_poll_interval: The number of seconds to wait between job status
+            checks.
+        log_level: The log level to use when outputting job logs. If `None`, logs
+            from the job will not be captured.
         delete_job_after_completion: Whether to delete the job after it has completed.
 
     """
@@ -393,11 +394,17 @@ async def run_namespaced_job(
                 await sleep(job_status_poll_interval)
             elif v1_job.status.failed:
                 raise KubernetesJobFailedError(
-                    f"Job {job_name} failed, check Kubernetes pod logs for more information."
+                    f"Job {job_name} failed, check the Kubernetes pod logs "
+                    "for more information."
                 )
             elif v1_job.status.succeeded:
                 completed = True
                 logger.info(f"Job {job_name} has completed.")
+
+            else:
+                raise ValueError(
+                    f"Job {job_name} has an unexpected status: {v1_job.status}"
+                )
 
         if delete_job_after_completion:
             await delete_namespaced_job.fn(
