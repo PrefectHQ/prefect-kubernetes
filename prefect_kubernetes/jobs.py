@@ -1,7 +1,7 @@
 """Module to define tasks for interacting with Kubernetes jobs."""
 
 from asyncio import sleep
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
 from prefect import get_run_logger, task
@@ -316,7 +316,7 @@ async def run_namespaced_job(
         Literal["INFO", "DEBUG", "ERROR", "WARN", "CRITICAL", None]
     ] = None,
     delete_job_after_completion: Optional[bool] = True,
-):
+) -> Tuple[V1Job, Dict[str, str]]:
     """Task for running a namespaced Kubernetes job.
 
     Args:
@@ -330,11 +330,15 @@ async def run_namespaced_job(
             from the job will not be captured.
         delete_job_after_completion: Whether to delete the job after it has completed.
 
+    Returns:
+        A tuple of the Kubernetes `V1Job` object and a dictionary of pod logs stored
+        by pod name.
+
     """
     logger = get_run_logger()
 
     if isinstance(job_to_run, dict):
-        job_to_run = convert_manifest_to_model(job_to_run)
+        job_to_run = convert_manifest_to_model(manifest=job_to_run, v1_model=V1Job)
 
     job_name = job_to_run.metadata.name
 
@@ -383,16 +387,14 @@ async def run_namespaced_job(
                     if pod.status.phase == "Pending" or pod_name in pod_log_streams:
                         continue
 
-                    pod_log = await read_namespaced_pod_log.fn(
+                    logger.info(f"Capturing logs for pod {pod_name}.")
+
+                    pod_log_streams[pod_name] = await read_namespaced_pod_log.fn(
                         kubernetes_credentials=kubernetes_credentials,
                         name=pod_name,
                         namespace=namespace,
                         print_func=log_func,
                     )
-
-                    logger.info(f"Started logging for pod {pod_name}.")
-
-                    pod_log_streams[pod_name] = pod_log
 
             if v1_job.status.active:
                 await sleep(job_status_poll_interval)
@@ -412,3 +414,5 @@ async def run_namespaced_job(
                 namespace=namespace,
             )
             logger.info(f"Job {job_name} deleted.")
+
+        return v1_job, pod_log_streams

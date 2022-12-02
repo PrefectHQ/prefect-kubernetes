@@ -1,57 +1,62 @@
 """ Utilities for working with the Python Kubernetes API. """
-import yaml
+from pathlib import Path
+from typing import TypeVar, Union
+
 from kubernetes.client import models as k8s_models
-from prefect.infrastructure.kubernetes import KubernetesManifest
+from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
 
 base_types = {"str", "int", "float", "bool", "list[str]", "dict(str, str)"}
 
-
-def parse_manifest_file(manifest_file: str) -> KubernetesManifest:
-    """Parse a Kubernetes manifest file into a Python object.
-
-    Args:
-        manifest_file: A path to a Kubernetes manifest file.
-
-    Returns:
-        A `dict` representation of the Kubernetes manifest.
-    """
-    with open(manifest_file, "r") as f:
-        yaml_dict = yaml.safe_load(f)
-
-    return yaml_dict
+V1Model = TypeVar("V1Model")
 
 
-def convert_manifest_to_model(manifest: KubernetesManifest, v1_model: object) -> object:
+def convert_manifest_to_model(
+    manifest: Union[Path, KubernetesManifest], v1_model_name: str
+) -> V1Model:
     """Recursively converts a `dict` representation of a Kubernetes resource to the
     corresponding Python model containing the Python models that compose it,
-    according to the `openapi_types` on the given `model` class.
+    according to the `openapi_types` on the class retrieved with `v1_model_name`.
 
     Args:
-        manifest: A `dict` representation of a Kubernetes resource.
+        manifest: A path to a Kubernetes resource manifest or its `dict` representation.
+        v1_model_name: The name of a Kubernetes client model to convert the manifest to.
 
     Returns:
-        A Kubernetes client model of type `model`.
+        A populated instance of a Kubernetes client model with type `v1_model_name`.
+
+    Raises:
+        ValueError: If the given `v1_model_name` is not a Kubernetes client model name.
+        ValueError: If the given `manifest` is path-like and is a valid yaml filename.
     """
+
+    if v1_model_name not in dir(k8s_models):
+        raise ValueError(
+            "`v1_model` must be the name of a valid Kubernetes client model."
+        )
+
+    if isinstance(manifest, (Path, str)):
+        str_path = str(manifest)
+        if not (str_path.endswith(".yaml") or str_path.endswith(".yml")):
+            raise ValueError("Manifest must be a valid dict or path to a .yaml file.")
+        manifest = KubernetesJob.job_from_file(manifest)
+
     converted_manifest = {}
+    v1_model = getattr(k8s_models, v1_model_name)
 
-    if isinstance(manifest, str):
-        return manifest
-
-    for key, value_type_name in v1_model.openapi_types.items():
-        if v1_model.attribute_map[key] not in manifest:
+    for field, value_type in v1_model.openapi_types.items():
+        if v1_model.attribute_map[field] not in manifest:
             continue
-        elif value_type_name.startswith("V1"):
-            value_type = getattr(k8s_models, value_type_name)
-            converted_manifest[key] = convert_manifest_to_model(
-                manifest[key], value_type
+        elif value_type.startswith("V1"):
+            converted_manifest[field] = convert_manifest_to_model(
+                manifest[field], value_type
             )
-        elif value_type_name.startswith("list[V1"):
-            value_item_type_name = value_type_name.replace("list[", "").replace("]", "")
-            value_type = getattr(k8s_models, value_item_type_name)
-            converted_manifest[key] = [
-                convert_manifest_to_model(item, value_type) for item in manifest[key]
+        elif value_type.startswith("list[V1"):
+            field_item_type = value_type.replace("list[", "").replace("]", "")
+            converted_manifest[field] = [
+                convert_manifest_to_model(item, field_item_type)
+                for item in manifest[field]
             ]
-        elif value_type_name in base_types:
-            converted_manifest[key] = manifest.get(v1_model.attribute_map[key])
+        elif value_type in base_types:
+            converted_manifest[field] = manifest[v1_model.attribute_map[field]]
 
     return v1_model(**converted_manifest)
