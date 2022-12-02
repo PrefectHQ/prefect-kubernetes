@@ -1,7 +1,7 @@
 """Module to define tasks for interacting with Kubernetes jobs."""
 
 from asyncio import sleep
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
 from prefect import get_run_logger, task
@@ -11,6 +11,7 @@ from typing_extensions import Literal
 from prefect_kubernetes.credentials import KubernetesCredentials
 from prefect_kubernetes.exceptions import KubernetesJobFailedError
 from prefect_kubernetes.pods import list_namespaced_pod, read_namespaced_pod_log
+from prefect_kubernetes.utilities import convert_manifest_to_model
 
 
 @task
@@ -308,7 +309,7 @@ async def replace_namespaced_job(
 @task
 async def run_namespaced_job(
     kubernetes_credentials: KubernetesCredentials,
-    job_to_run: V1Job,
+    job_to_run: Union[V1Job, Dict[str, Any]],
     namespace: Optional[str] = "default",
     job_status_poll_interval: Optional[int] = 5,
     log_level: Optional[
@@ -331,6 +332,9 @@ async def run_namespaced_job(
 
     """
     logger = get_run_logger()
+
+    if isinstance(job_to_run, dict):
+        job_to_run = convert_manifest_to_model(job_to_run)
 
     job_name = job_to_run.metadata.name
 
