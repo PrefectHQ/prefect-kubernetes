@@ -101,3 +101,12 @@ def mock_pod_log(monkeypatch):
         "kubernetes.watch.Watch.stream",
         MagicMock(return_value=["test log"]),
     )
+
+
+@pytest.fixture
+def mock_read_pod_log(monkeypatch):
+
+    monkeypatch.setattr(
+        "prefect_kubernetes.pods.read_namespaced_pod_log.fn",
+        MagicMock(return_value="test log"),
+    )

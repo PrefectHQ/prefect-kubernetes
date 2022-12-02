@@ -1,6 +1,9 @@
+from unittest.mock import MagicMock
+
 import pytest
 from kubernetes.client.exceptions import ApiValueError
 from kubernetes.client.models import V1Job
+from prefect import flow
 
 from prefect_kubernetes.jobs import (
     create_namespaced_job,
@@ -9,6 +12,7 @@ from prefect_kubernetes.jobs import (
     patch_namespaced_job,
     read_namespaced_job,
     replace_namespaced_job,
+    run_namespaced_job,
 )
 
 
@@ -108,3 +112,66 @@ async def test_replace_namespaced_job(kubernetes_credentials, _mock_api_batch_cl
         "body"
     ].metadata == {"name": "test-job"}
     assert _mock_api_batch_client.replace_namespaced_job.call_args[1]["a"] == "test"
+
+
+async def test_run_namespaced_job_invalid_log_level_raises(
+    kubernetes_credentials, _mock_api_batch_client
+):
+    @flow
+    def test_flow():
+        run_namespaced_job(
+            kubernetes_credentials=kubernetes_credentials,
+            job_to_run="tests/sample_k8s_resources/sample_job.yaml",
+            log_level="invalid",
+        )
+
+    with pytest.raises(ValueError):
+        test_flow()
+
+
+async def test_run_namespaced_job_successful(
+    kubernetes_credentials,
+    _mock_api_batch_client,
+    successful_job_status,
+    mock_read_pod_log,
+):
+    _mock_api_batch_client.read_namespaced_job_status.return_value = MagicMock(
+        return_value=successful_job_status
+    )
+
+    @flow
+    def test_flow():
+        return run_namespaced_job(
+            kubernetes_credentials=kubernetes_credentials,
+            job_to_run={"metadata": {"name": "success"}},
+        )
+
+    v1_job, pod_logs = test_flow()
+
+    assert _mock_api_batch_client.create_namespaced_job.call_count == 1
+    assert (
+        _mock_api_batch_client.create_namespaced_job.call_args[1]["namespace"]
+        == "default"
+    )
+    assert _mock_api_batch_client.create_namespaced_job.call_args[1]["body"] == {
+        "metadata": {"name": "success"}
+    }
+
+    assert _mock_api_batch_client.read_namespaced_job_status.call_count == 1
+    assert (
+        _mock_api_batch_client.read_namespaced_job_status.call_args[1]["name"]
+        == "success"
+    )
+    assert (
+        _mock_api_batch_client.read_namespaced_job_status.call_args[1]["namespace"]
+        == "default"
+    )
+
+    assert _mock_api_batch_client.delete_namespaced_job.call_count == 1
+    assert (
+        _mock_api_batch_client.delete_namespaced_job.call_args[1]["name"] == "success"
+    )
+    assert (
+        _mock_api_batch_client.delete_namespaced_job.call_args[1]["namespace"]
+        == "default"
+    )

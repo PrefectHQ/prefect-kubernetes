@@ -42,11 +42,14 @@ def convert_manifest_to_model(
 
     converted_manifest = {}
     v1_model = getattr(k8s_models, v1_model_name)
+    valid_supplied_fields = (  # fields that provided and valid for the given model
+        (k, v)
+        for k, v in v1_model.openapi_types.items()
+        if v1_model.attribute_map[k] in manifest
+    )
 
-    for field, value_type in v1_model.openapi_types.items():
-        if v1_model.attribute_map[field] not in manifest:  # field not in manifest
-            continue
-        elif value_type.startswith("V1"):  # field value is another model
+    for field, value_type in valid_supplied_fields:
+        if value_type.startswith("V1"):  # field value is another model
             converted_manifest[field] = convert_manifest_to_model(
                 manifest[field], value_type
             )

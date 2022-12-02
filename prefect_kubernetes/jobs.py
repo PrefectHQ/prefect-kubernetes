@@ -352,17 +352,18 @@ async def run_namespaced_job(
     """
     logger = get_run_logger()
 
+    if log_level is not None and getattr(logger, log_level.lower(), None) is None:
+        raise ValueError(
+            f"Invalid log level {log_level!r}. Must be one of "
+            f"{['INFO', 'DEBUG', 'ERROR', 'WARN', 'CRITICAL', None]}."
+        )
+
     if isinstance(job_to_run, (Dict, Path, str)):
         job_to_run = convert_manifest_to_model(
             manifest=job_to_run, v1_model_name="V1Job"
         )
 
     job_name = job_to_run.metadata.name
-
-    if not job_name:
-        raise ValueError(
-            "The job name must be defined in the metadata of the V1Job specification."
-        )
 
     await create_namespaced_job.fn(
         kubernetes_credentials=kubernetes_credentials,
@@ -384,7 +385,6 @@ async def run_namespaced_job(
                 name=job_name,
                 namespace=namespace,
             )
-
             if log_level is not None:
                 log_func = getattr(logger, log_level.lower())
 
