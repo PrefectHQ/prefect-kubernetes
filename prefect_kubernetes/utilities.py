@@ -44,19 +44,19 @@ def convert_manifest_to_model(
     v1_model = getattr(k8s_models, v1_model_name)
 
     for field, value_type in v1_model.openapi_types.items():
-        if v1_model.attribute_map[field] not in manifest:
+        if v1_model.attribute_map[field] not in manifest:  # field not in manifest
             continue
-        elif value_type.startswith("V1"):
+        elif value_type.startswith("V1"):  # field value is another model
             converted_manifest[field] = convert_manifest_to_model(
                 manifest[field], value_type
             )
-        elif value_type.startswith("list[V1"):
+        elif value_type.startswith("list[V1"):  # field value is a list of models
             field_item_type = value_type.replace("list[", "").replace("]", "")
             converted_manifest[field] = [
                 convert_manifest_to_model(item, field_item_type)
                 for item in manifest[field]
             ]
-        elif value_type in base_types:
+        elif value_type in base_types:  # field value is a primitive Python type
             converted_manifest[field] = manifest[v1_model.attribute_map[field]]
 
     return v1_model(**converted_manifest)

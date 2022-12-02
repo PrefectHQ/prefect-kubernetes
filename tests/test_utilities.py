@@ -47,9 +47,16 @@ def test_bad_manifest_filename_raises():
         convert_manifest_to_model("isaid86753OHnahhhEEEIIIEEEYEN", "V1Deployment")
 
 
-def test_bad_model_type_raises():
+@pytest.mark.parametrize(
+    "v1_model_name",
+    [
+        "V1Schledloyment",
+        ["V1Deployment"],
+    ],
+)
+def test_bad_model_type_raises(v1_model_name):
     with pytest.raises(
         ValueError,
         match="`v1_model` must be the name of a valid Kubernetes client model.",
     ):
-        convert_manifest_to_model(sample_deployment_manifest, ["V1Deployment"])
+        convert_manifest_to_model(sample_deployment_manifest, v1_model_name)

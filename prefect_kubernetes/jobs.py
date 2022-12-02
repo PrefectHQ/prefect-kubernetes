@@ -1,6 +1,7 @@
 """Module to define tasks for interacting with Kubernetes jobs."""
 
 from asyncio import sleep
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
@@ -309,7 +310,7 @@ async def replace_namespaced_job(
 @task
 async def run_namespaced_job(
     kubernetes_credentials: KubernetesCredentials,
-    job_to_run: Union[V1Job, Dict[str, Any]],
+    job_to_run: Union[V1Job, Dict[str, Any], Path, str],
     namespace: Optional[str] = "default",
     job_status_poll_interval: Optional[int] = 5,
     log_level: Optional[
@@ -334,11 +335,27 @@ async def run_namespaced_job(
         A tuple of the Kubernetes `V1Job` object and a dictionary of pod logs stored
         by pod name.
 
+    ```python
+
+    from prefect import flow
+    from prefect_kubernetes.credentials import KubernetesCredentials
+    from prefect_kubernetes.jobs import run_namespaced_job
+    from prefect_kubernetes.utilites import convert_manifest_to_model
+
+    @flow
+    def kubernetes_orchestrator():
+        v1_job, pod_logs = run_namespaced_job(
+            kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+            job_to_run=convert_manifest_to_model("job.yaml", "V1Job"),
+        )
+    ```
     """
     logger = get_run_logger()
 
-    if isinstance(job_to_run, dict):
-        job_to_run = convert_manifest_to_model(manifest=job_to_run, v1_model=V1Job)
+    if isinstance(job_to_run, (Dict, Path, str)):
+        job_to_run = convert_manifest_to_model(
+            manifest=job_to_run, v1_model_name="V1Job"
+        )
 
     job_name = job_to_run.metadata.name
 
