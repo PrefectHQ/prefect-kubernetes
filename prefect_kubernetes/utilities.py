@@ -55,30 +55,3 @@ def convert_manifest_to_model(manifest: KubernetesManifest, v1_model: object) ->
             converted_manifest[key] = manifest.get(v1_model.attribute_map[key])
 
     return v1_model(**converted_manifest)
-
-
-if __name__ == "__main__":
-
-    job_dict = {
-        "apiVersion": "batch/v1",
-        "kind": "Job",
-        "metadata": {"name": "test-job"},
-        "spec": {
-            "template": {
-                "spec": {
-                    "containers": [{"name": "test-container", "image": "test-image"}],
-                    "restartPolicy": "Never",
-                }
-            }
-        },
-        "status": "active",
-    }
-
-    job = convert_manifest_to_model(job_dict, model=k8s_models.V1Affinity)
-
-    print(
-        job,
-        type(job)
-        # job.metadata.name,
-        # job.spec.template.spec.containers[0].image
-    )

@@ -405,11 +405,6 @@ async def run_namespaced_job(
                 completed = True
                 logger.info(f"Job {job_name} has completed.")
 
-            else:
-                raise ValueError(
-                    f"Job {job_name} has an unexpected status: {v1_job.status}"
-                )
-
         if delete_job_after_completion:
             await delete_namespaced_job.fn(
                 kubernetes_credentials=kubernetes_credentials,
