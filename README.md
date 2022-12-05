@@ -64,6 +64,21 @@ with k8s_credentials.get_client("core") as v1_core_client:
         print(pod.metadata.name)
 ```
 
+#### Run a Kubernetes Job specified by a `yaml` file
+
+```python
+from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.jobs import run_namespaced_job
+
+@flow
+def kubernetes_orchestrator():
+    run_namespaced_job(
+        kubernetes_credentials=KubernetesCredentials.load("testing"),
+        job_to_run="../sample_job.yaml",
+        delete_job_after_completion=True,
+    )
+```
+
 #### List jobs in a specific namespace
 
 ```python
