@@ -95,6 +95,14 @@ def mock_stream_timeout(monkeypatch):
 
 
 @pytest.fixture
+def mock_pod_log(monkeypatch):
+    monkeypatch.setattr(
+        "kubernetes.watch.Watch.stream",
+        MagicMock(return_value=["test log"]),
+    )
+
+
+@pytest.fixture
 def mock_list_namespaced_pod(monkeypatch):
 
     mock_pods = AsyncMock(
