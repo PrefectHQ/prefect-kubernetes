@@ -385,6 +385,7 @@ async def run_namespaced_job(
                 name=job_name,
                 namespace=namespace,
             )
+
             if log_level is not None:
                 log_func = getattr(logger, log_level.lower())
 

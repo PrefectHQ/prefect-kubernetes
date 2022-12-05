@@ -19,6 +19,10 @@ sample_service_manifest = KubernetesJob.job_from_file(
 @pytest.mark.parametrize(
     "manifest, model",
     [
+        (f"{base_path}/sample_deployment.yaml", "V1Deployment"),
+        (f"{base_path}/sample_job.yaml", "V1Job"),
+        (f"{base_path}/sample_pod.yaml", "V1Pod"),
+        (f"{base_path}/sample_service.yaml", "V1Service"),
         (sample_deployment_manifest, "V1Deployment"),
         (sample_job_manifest, "V1Job"),
         (sample_pod_manifest, "V1Pod"),
@@ -31,6 +35,9 @@ def test_convert_manifest_to_model(manifest, model):
     assert isinstance(v1_model, getattr(k8s_models, model))
 
     assert isinstance(v1_model.metadata, getattr(k8s_models, "V1ObjectMeta"))
+
+    if isinstance(manifest, str):
+        manifest = KubernetesJob.job_from_file(manifest)
 
     assert v1_model.metadata.name == manifest["metadata"]["name"]
 

@@ -1,10 +1,10 @@
 from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import yaml
-from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api
+from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, models
 from kubernetes.client.exceptions import ApiException
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 
@@ -95,18 +95,26 @@ def mock_stream_timeout(monkeypatch):
 
 
 @pytest.fixture
-def mock_pod_log(monkeypatch):
+def mock_list_namespaced_pod(monkeypatch):
 
-    monkeypatch.setattr(
-        "kubernetes.watch.Watch.stream",
-        MagicMock(return_value=["test log"]),
+    mock_pods = AsyncMock(
+        return_value=models.V1PodList(
+            items=[
+                models.V1Pod(
+                    metadata=models.V1ObjectMeta(name="test-pod"),
+                    status=models.V1PodStatus(phase="Completed"),
+                )
+            ]
+        )
     )
+
+    monkeypatch.setattr("prefect_kubernetes.pods.list_namespaced_pod.fn", mock_pods)
 
 
 @pytest.fixture
-def mock_read_pod_log(monkeypatch):
-
+def read_pod_logs(monkeypatch):
+    read_pod_logs = AsyncMock(return_value=None)
     monkeypatch.setattr(
-        "prefect_kubernetes.pods.read_namespaced_pod_log.fn",
-        MagicMock(return_value="test log"),
+        "prefect_kubernetes.pods.read_namespaced_pod_log.fn", read_pod_logs
     )
+    return read_pod_logs
