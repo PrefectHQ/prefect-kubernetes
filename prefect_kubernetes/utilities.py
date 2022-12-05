@@ -25,8 +25,8 @@ def convert_manifest_to_model(
         A populated instance of a Kubernetes client model with type `v1_model_name`.
 
     Raises:
-        ValueError: If the given `v1_model_name` is not a Kubernetes client model name.
-        ValueError: If the given `manifest` is path-like and is a valid yaml filename.
+        ValueError: If `v1_model_name` is not a valid Kubernetes client model name.
+        ValueError: If `manifest` is path-like and is not a valid yaml filename.
     """
 
     if v1_model_name not in dir(k8s_models):
