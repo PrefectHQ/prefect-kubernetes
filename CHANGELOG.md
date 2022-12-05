@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `run_namespaced_job` task allowing easy execution of a well-specified job on a cluster specified by
+    a `KubernetesCredentials` block - [#28](https://github.com/PrefectHQ/prefect-kubernetes/pull/28)
+
+- `convert_manifest_to_model` utility function for converting a Kubernetes manifest to a model object
+    - [#28](https://github.com/PrefectHQ/prefect-kubernetes/pull/28)
+
 ### Changed
 
 ### Deprecated
