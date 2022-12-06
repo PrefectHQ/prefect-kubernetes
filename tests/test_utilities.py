@@ -172,7 +172,7 @@ expected_service_model = k8s_models.V1Service(
         (sample_service_manifest, "V1Service", expected_service_model),
     ],
 )
-def test_convert_deployment_manifest_to_model(manifest, model_name, expected_model):
+def test_convert_manifest_to_model(manifest, model_name, expected_model):
     v1_model = convert_manifest_to_model(manifest, model_name)
 
     assert isinstance(v1_model, getattr(k8s_models, model_name))
