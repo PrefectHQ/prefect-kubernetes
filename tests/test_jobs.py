@@ -272,7 +272,7 @@ async def test_run_namespaced_job_successful_with_logging(
     def test_flow():
         return run_namespaced_job(
             kubernetes_credentials=kubernetes_credentials,
-            job_to_run={"metadata": {"name": "success"}},
+            job_to_run={"metadata": {"name": "test-job"}},
             log_level="INFO",
         )
 
@@ -285,13 +285,13 @@ async def test_run_namespaced_job_successful_with_logging(
     )
     assert (
         _mock_api_batch_client.create_namespaced_job.call_args[1]["body"].metadata.name
-        == "success"
+        == "test-job"
     )
 
     assert _mock_api_batch_client.read_namespaced_job_status.call_count == 1
     assert (
         _mock_api_batch_client.read_namespaced_job_status.call_args[1]["name"]
-        == "success"
+        == "test-job"
     )
     assert (
         _mock_api_batch_client.read_namespaced_job_status.call_args[1]["namespace"]
@@ -304,7 +304,7 @@ async def test_run_namespaced_job_successful_with_logging(
 
     assert _mock_api_batch_client.delete_namespaced_job.call_count == 1
     assert (
-        _mock_api_batch_client.delete_namespaced_job.call_args[1]["name"] == "success"
+        _mock_api_batch_client.delete_namespaced_job.call_args[1]["name"] == "test-job"
     )
     assert (
         _mock_api_batch_client.delete_namespaced_job.call_args[1]["namespace"]

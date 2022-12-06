@@ -42,3 +42,4 @@ nav:
     - Jobs: jobs.md
     - Pods: pods.md
     - Services: services.md
+    - Utilities: utilities.md

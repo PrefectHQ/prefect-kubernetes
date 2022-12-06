@@ -7,12 +7,12 @@ from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
 
 base_types = {"str", "int", "float", "bool", "list[str]", "dict(str, str)"}
 
-V1Model = TypeVar("V1Model")
+V1KubernetesModel = TypeVar("V1KubernetesModel")
 
 
 def convert_manifest_to_model(
     manifest: Union[Path, KubernetesManifest], v1_model_name: str
-) -> V1Model:
+) -> V1KubernetesModel:
     """Recursively converts a `dict` representation of a Kubernetes resource to the
     corresponding Python model containing the Python models that compose it,
     according to the `openapi_types` on the class retrieved with `v1_model_name`.
