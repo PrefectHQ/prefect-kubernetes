@@ -64,19 +64,37 @@ with k8s_credentials.get_client("core") as v1_core_client:
         print(pod.metadata.name)
 ```
 
-#### Run a Kubernetes Job specified by a `yaml` file
+#### Run a Kubernetes Job specified by a `V1Job`, `yaml` file, or `dict`
 
 The job is deleted by default after completion. To keep the job, set `delete_job_after_completion` to `False`.
 
 ```python
+from kubernetes.client.models import V1Job, V1ObjectMeta, V1JobSpec
 from prefect_kubernetes.credentials import KubernetesCredentials
 from prefect_kubernetes.jobs import run_namespaced_job
 
 @flow
 def kubernetes_orchestrator():
     v1_job, pod_logs = run_namespaced_job( 
-        kubernetes_credentials=KubernetesCredentials.load("testing"),
+        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+        job_to_run=V1Job(metadata=V1ObjectMeta(name="pi"), spec=V1JobSpec(...)),
+    )
+
+    other_v1_job, other_pod_logs = run_namespaced_job( 
+        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
         job_to_run="path/to/some/job.yaml",
+    )
+
+    last_v1_job, last_pod_logs = run_namespaced_job( 
+        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+        job_to_run={
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "name": "pi"
+            },
+            "spec": {...} # see https://kubernetes.io/docs/concepts/workloads/controllers/job
+        },
     )
 ```
 
