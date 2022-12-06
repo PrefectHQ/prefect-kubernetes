@@ -51,16 +51,18 @@ def convert_manifest_to_model(
         if v1_model.attribute_map[k] in manifest  # map goes 🐍 -> 🐫, user supplies 🐫
     )
 
+    print(manifest, "\n")
+
     for field, value_type in valid_supplied_fields:
         if value_type.startswith("V1"):  # field value is another model
             converted_manifest[field] = convert_manifest_to_model(
-                manifest[field], value_type
+                manifest[v1_model.attribute_map[field]], value_type
             )
         elif value_type.startswith("list[V1"):  # field value is a list of models
             field_item_type = value_type.replace("list[", "").replace("]", "")
             converted_manifest[field] = [
                 convert_manifest_to_model(item, field_item_type)
-                for item in manifest[field]
+                for item in manifest[v1_model.attribute_map[field]]
             ]
         elif value_type in base_types:  # field value is a primitive Python type
             converted_manifest[field] = manifest[v1_model.attribute_map[field]]
