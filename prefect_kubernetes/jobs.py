@@ -334,8 +334,8 @@ async def run_namespaced_job(
         delete_job_after_completion: Whether to delete the job after it has completed.
 
     Returns:
-        A tuple of the Kubernetes `V1Job` object and a dictionary of pod logs stored
-        by pod name.
+        A `V1Job` object
+        A `dict` of pod logs stored by pod name.
 
     ```python
 
