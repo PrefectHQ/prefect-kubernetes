@@ -177,9 +177,6 @@ def test_convert_manifest_to_model(manifest, model_name, expected_model):
 
     assert isinstance(v1_model, getattr(k8s_models, model_name))
 
-    if isinstance(manifest, str):
-        manifest = KubernetesJob.job_from_file(manifest)
-
     assert v1_model == expected_model
 
 
