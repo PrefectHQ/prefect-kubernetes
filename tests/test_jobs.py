@@ -276,7 +276,7 @@ async def test_run_namespaced_job_successful_with_logging(
             log_level="INFO",
         )
 
-    _, _ = test_flow()
+    test_flow()
 
     assert _mock_api_batch_client.create_namespaced_job.call_count == 1
     assert (

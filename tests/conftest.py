@@ -1,6 +1,7 @@
+import asyncio
 from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 import yaml
@@ -104,9 +105,10 @@ def mock_pod_log(monkeypatch):
 
 @pytest.fixture
 def mock_list_namespaced_pod(monkeypatch):
+    future = asyncio.Future()  # AsyncMock fails on Python 3.7
 
-    mock_pods = AsyncMock(
-        return_value=models.V1PodList(
+    future.set_result(
+        models.V1PodList(
             items=[
                 models.V1Pod(
                     metadata=models.V1ObjectMeta(name="test-pod"),
@@ -116,13 +118,17 @@ def mock_list_namespaced_pod(monkeypatch):
         )
     )
 
-    monkeypatch.setattr("prefect_kubernetes.pods.list_namespaced_pod.fn", mock_pods)
+    future_result = MagicMock(return_value=future)
+
+    monkeypatch.setattr("prefect_kubernetes.pods.list_namespaced_pod.fn", future_result)
 
 
 @pytest.fixture
 def read_pod_logs(monkeypatch):
-    read_pod_logs = AsyncMock(return_value=None)
+    future = asyncio.Future()
+    future.set_result("test log")
+    future_result = MagicMock(return_value=future)
     monkeypatch.setattr(
-        "prefect_kubernetes.pods.read_namespaced_pod_log.fn", read_pod_logs
+        "prefect_kubernetes.pods.read_namespaced_pod_log.fn", future_result
     )
-    return read_pod_logs
+    return future_result

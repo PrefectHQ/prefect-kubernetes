@@ -42,7 +42,7 @@ def convert_manifest_to_model(
 
     converted_manifest = {}
     v1_model = getattr(k8s_models, v1_model_name)
-    valid_supplied_fields = (  # fields that provided and valid for the given model
+    valid_supplied_fields = (  # valid and specified fields for current `v1_model_name`
         (k, v)
         for k, v in v1_model.openapi_types.items()
         if v1_model.attribute_map[k] in manifest

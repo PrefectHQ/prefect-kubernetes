@@ -66,16 +66,17 @@ with k8s_credentials.get_client("core") as v1_core_client:
 
 #### Run a Kubernetes Job specified by a `yaml` file
 
+The job is deleted by default after completion. To keep the job, set `delete_job_after_completion` to `False`.
+
 ```python
 from prefect_kubernetes.credentials import KubernetesCredentials
 from prefect_kubernetes.jobs import run_namespaced_job
 
 @flow
 def kubernetes_orchestrator():
-    run_namespaced_job(
+    v1_job, pod_logs = run_namespaced_job( 
         kubernetes_credentials=KubernetesCredentials.load("testing"),
-        job_to_run="../sample_job.yaml",
-        delete_job_after_completion=True,
+        job_to_run="path/to/some/job.yaml",
     )
 ```
 
