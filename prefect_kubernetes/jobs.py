@@ -348,7 +348,7 @@ async def run_namespaced_job(
     def kubernetes_orchestrator():
         v1_job, pod_logs = run_namespaced_job(
             kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-            job_to_run=convert_manifest_to_model("job.yaml", "V1Job"),
+            job_to_run="job.yaml", # or V1Job object or dict
         )
     ```
     """
