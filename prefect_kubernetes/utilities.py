@@ -17,6 +17,9 @@ def convert_manifest_to_model(
     corresponding Python model containing the Python models that compose it,
     according to the `openapi_types` on the class retrieved with `v1_model_name`.
 
+    If `manifest` is a path-like object with a `.yaml` or `.yml` extension, it will be
+    treated as a path to a Kubernetes resource manifest and loaded into a `dict`.
+
     Args:
         manifest: A path to a Kubernetes resource manifest or its `dict` representation.
         v1_model_name: The name of a Kubernetes client model to convert the manifest to.
@@ -29,7 +32,7 @@ def convert_manifest_to_model(
         ValueError: If `manifest` is path-like and is not a valid yaml filename.
     """
 
-    if v1_model_name not in dir(k8s_models):
+    if not (isinstance(v1_model_name, str) and v1_model_name in set(dir(k8s_models))):
         raise ValueError(
             "`v1_model` must be the name of a valid Kubernetes client model."
         )
@@ -45,7 +48,7 @@ def convert_manifest_to_model(
     valid_supplied_fields = (  # valid and specified fields for current `v1_model_name`
         (k, v)
         for k, v in v1_model.openapi_types.items()
-        if v1_model.attribute_map[k] in manifest
+        if v1_model.attribute_map[k] in manifest  # map goes 🐍 -> 🐫, user supplies 🐫
     )
 
     for field, value_type in valid_supplied_fields:

@@ -323,12 +323,14 @@ async def run_namespaced_job(
     Args:
         kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
-        job_to_run: A Kubernetes `V1Job` specification.
+        job_to_run: A Kubernetes `V1Job` manifest: either a `V1Job` object,
+            a dictionary of job fields (e.g. `yaml.safe_load('file.yaml')`),
+            or path to a `.yaml` file containing a single job specification.
         namespace: The Kubernetes namespace to run this job in.
         job_status_poll_interval: The number of seconds to wait between job status
             checks.
-        log_level: The log level to use when outputting job logs. If `None`, logs
-            from the job will not be captured.
+        log_level: The log level to use when outputting job logs. If not set,
+            defaults to `None`, where logs from the job will not be captured.
         delete_job_after_completion: Whether to delete the job after it has completed.
 
     Returns:

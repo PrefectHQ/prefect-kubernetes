@@ -128,6 +128,7 @@ def read_pod_logs(monkeypatch):
     future = asyncio.Future()
     future.set_result("test log")
     future_result = MagicMock(return_value=future)
+
     monkeypatch.setattr(
         "prefect_kubernetes.pods.read_namespaced_pod_log.fn", future_result
     )
