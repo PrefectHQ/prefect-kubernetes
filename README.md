@@ -71,7 +71,7 @@ The job is deleted by default after completion. To keep the job, set `delete_job
 ```python
 from kubernetes.client.models import V1Job, V1ObjectMeta, V1JobSpec
 from prefect_kubernetes.credentials import KubernetesCredentials
-from prefect_kubernetes.jobs import run_namespaced_job
+from prefect_kubernetes.jobs import run_namespaced_job # `run_namespaced_job` is a flow
 
 @flow
 def kubernetes_orchestrator():

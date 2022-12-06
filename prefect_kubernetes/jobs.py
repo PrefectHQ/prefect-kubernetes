@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
-from prefect import get_run_logger, task
+from prefect import flow, get_run_logger, task
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 from typing_extensions import Literal
 
@@ -307,7 +307,7 @@ async def replace_namespaced_job(
         )
 
 
-@task
+@flow(validate_parameters=False)
 async def run_namespaced_job(
     kubernetes_credentials: KubernetesCredentials,
     job_to_run: Union[V1Job, Dict[str, Any], Path, str],
@@ -318,7 +318,7 @@ async def run_namespaced_job(
     ] = None,
     delete_job_after_completion: Optional[bool] = True,
 ) -> Tuple[V1Job, Dict[str, str]]:
-    """Task for running a namespaced Kubernetes job.
+    """Flow for running a namespaced Kubernetes job.
 
     Args:
         kubernetes_credentials: `KubernetesCredentials` block
@@ -337,20 +337,22 @@ async def run_namespaced_job(
         A `V1Job` object
         A `dict` of pod logs stored by pod name.
 
-    ```python
+    Example:
+        Run a job in the default namespace according to some `job.yaml`:
+        ```python
 
-    from prefect import flow
-    from prefect_kubernetes.credentials import KubernetesCredentials
-    from prefect_kubernetes.jobs import run_namespaced_job
-    from prefect_kubernetes.utilites import convert_manifest_to_model
+        from prefect import flow
+        from prefect_kubernetes.credentials import KubernetesCredentials
+        from prefect_kubernetes.jobs import run_namespaced_job
+        from prefect_kubernetes.utilites import convert_manifest_to_model
 
-    @flow
-    def kubernetes_orchestrator():
-        v1_job, pod_logs = run_namespaced_job(
-            kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-            job_to_run="job.yaml", # or V1Job object or dict
-        )
-    ```
+        @flow
+        def kubernetes_orchestrator():
+            v1_job, pod_logs = run_namespaced_job(
+                kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+                job_to_run="job.yaml", # or V1Job object or dict
+            )
+        ```
     """
     logger = get_run_logger()
 
@@ -367,7 +369,7 @@ async def run_namespaced_job(
 
     job_name = job_to_run.metadata.name
 
-    await create_namespaced_job.fn(
+    await create_namespaced_job(
         kubernetes_credentials=kubernetes_credentials,
         new_job=job_to_run,
         namespace=namespace,
@@ -395,7 +397,7 @@ async def run_namespaced_job(
                     f"controller-uid={v1_job.metadata.labels['controller-uid']}"
                 )
 
-                v1_pod_list = await list_namespaced_pod.fn(
+                v1_pod_list = await list_namespaced_pod(
                     kubernetes_credentials=kubernetes_credentials,
                     namespace=namespace,
                     label_selector=pod_selector,
@@ -409,7 +411,7 @@ async def run_namespaced_job(
 
                     logger.info(f"Capturing logs for pod {pod_name}.")
 
-                    pod_log_streams[pod_name] = await read_namespaced_pod_log.fn(
+                    pod_log_streams[pod_name] = await read_namespaced_pod_log(
                         kubernetes_credentials=kubernetes_credentials,
                         name=pod_name,
                         namespace=namespace,
@@ -428,7 +430,7 @@ async def run_namespaced_job(
                 logger.info(f"Job {job_name} has completed.")
 
         if delete_job_after_completion:
-            await delete_namespaced_job.fn(
+            await delete_namespaced_job(
                 kubernetes_credentials=kubernetes_credentials,
                 job_name=job_name,
                 namespace=namespace,
