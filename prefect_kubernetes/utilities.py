@@ -5,7 +5,7 @@ from typing import TypeVar, Union
 from kubernetes.client import models as k8s_models
 from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
 
-base_types = {"str", "int", "float", "bool", "list[str]", "dict(str, str)"}
+base_types = {"str", "int", "float", "bool", "list[str]", "dict(str, str)", "object"}
 
 V1KubernetesModel = TypeVar("V1KubernetesModel")
 

@@ -15,36 +15,172 @@ sample_service_manifest = KubernetesJob.job_from_file(
     f"{base_path}/sample_service.yaml"
 )
 
+expected_deployment_model = k8s_models.V1Deployment(
+    **dict(
+        api_version="apps/v1",
+        kind="Deployment",
+        metadata=k8s_models.V1ObjectMeta(
+            **dict(
+                name="nginx-deployment",
+                labels={"app": "nginx"},
+            )
+        ),
+        spec=k8s_models.V1DeploymentSpec(
+            **dict(
+                replicas=3,
+                selector=k8s_models.V1LabelSelector(
+                    **dict(
+                        match_labels={"app": "nginx"},
+                    )
+                ),
+                template=k8s_models.V1PodTemplateSpec(
+                    **dict(
+                        metadata=k8s_models.V1ObjectMeta(
+                            **dict(
+                                labels={"app": "nginx"},
+                            )
+                        ),
+                        spec=k8s_models.V1PodSpec(
+                            **dict(
+                                containers=[
+                                    k8s_models.V1Container(
+                                        **dict(
+                                            name="nginx",
+                                            image="nginx:1.14.2",
+                                            ports=[
+                                                k8s_models.V1ContainerPort(
+                                                    **dict(container_port=80)
+                                                )
+                                            ],
+                                        )
+                                    )
+                                ]
+                            )
+                        ),
+                    )
+                ),
+            )
+        ),
+    )
+)
+
+expected_pod_model = k8s_models.V1Pod(
+    **dict(
+        api_version="v1",
+        kind="Pod",
+        metadata=k8s_models.V1ObjectMeta(**dict(name="nginx")),
+        spec=k8s_models.V1PodSpec(
+            **dict(
+                containers=[
+                    k8s_models.V1Container(
+                        **dict(
+                            name="nginx",
+                            image="nginx:1.14.2",
+                            ports=[
+                                k8s_models.V1ContainerPort(**dict(container_port=80))
+                            ],
+                        )
+                    )
+                ]
+            )
+        ),
+    )
+)
+
+expected_job_model = k8s_models.V1Job(
+    **dict(
+        api_version="batch/v1",
+        kind="Job",
+        metadata=k8s_models.V1ObjectMeta(
+            **dict(
+                name="pi",
+            )
+        ),
+        spec=k8s_models.V1JobSpec(
+            **dict(
+                template=k8s_models.V1PodTemplateSpec(
+                    **dict(
+                        spec=k8s_models.V1PodSpec(
+                            **dict(
+                                containers=[
+                                    k8s_models.V1Container(
+                                        **dict(
+                                            name="pi",
+                                            image="perl:5.34.0",
+                                            command=[
+                                                "perl",
+                                                "-Mbignum=bpi",
+                                                "-wle",
+                                                "print bpi(2000)",
+                                            ],
+                                        )
+                                    )
+                                ],
+                                restart_policy="Never",
+                            )
+                        ),
+                    )
+                ),
+                backoff_limit=4,
+            )
+        ),
+    )
+)
+
+expected_service_model = k8s_models.V1Service(
+    **dict(
+        api_version="v1",
+        kind="Service",
+        metadata=k8s_models.V1ObjectMeta(
+            **dict(
+                name="nginx-service",
+            )
+        ),
+        spec=k8s_models.V1ServiceSpec(
+            **dict(
+                selector={"app.kubernetes.io/name": "proxy"},
+                ports=[
+                    k8s_models.V1ServicePort(
+                        **dict(
+                            name="name-of-service-port",
+                            protocol="TCP",
+                            port=80,
+                            target_port="http-web-svc",
+                        )
+                    )
+                ],
+            )
+        ),
+    )
+)
+
 
 @pytest.mark.parametrize(
-    "manifest, model",
+    "manifest,model_name,expected_model",
     [
-        (f"{base_path}/sample_deployment.yaml", "V1Deployment"),
-        (f"{base_path}/sample_job.yaml", "V1Job"),
-        (f"{base_path}/sample_pod.yaml", "V1Pod"),
-        (f"{base_path}/sample_service.yaml", "V1Service"),
-        (sample_deployment_manifest, "V1Deployment"),
-        (sample_job_manifest, "V1Job"),
-        (sample_pod_manifest, "V1Pod"),
-        (sample_service_manifest, "V1Service"),
+        (
+            f"{base_path}/sample_deployment.yaml",
+            "V1Deployment",
+            expected_deployment_model,
+        ),
+        (sample_deployment_manifest, "V1Deployment", expected_deployment_model),
+        (f"{base_path}/sample_pod.yaml", "V1Pod", expected_pod_model),
+        (sample_pod_manifest, "V1Pod", expected_pod_model),
+        (f"{base_path}/sample_job.yaml", "V1Job", expected_job_model),
+        (sample_job_manifest, "V1Job", expected_job_model),
+        (f"{base_path}/sample_service.yaml", "V1Service", expected_service_model),
+        (sample_service_manifest, "V1Service", expected_service_model),
     ],
 )
-def test_convert_manifest_to_model(manifest, model):
-    v1_model = convert_manifest_to_model(manifest, model)
+def test_convert_deployment_manifest_to_model(manifest, model_name, expected_model):
+    v1_model = convert_manifest_to_model(manifest, model_name)
 
-    assert isinstance(v1_model, getattr(k8s_models, model))
-
-    assert isinstance(v1_model.metadata, getattr(k8s_models, "V1ObjectMeta"))
+    assert isinstance(v1_model, getattr(k8s_models, model_name))
 
     if isinstance(manifest, str):
         manifest = KubernetesJob.job_from_file(manifest)
 
-    assert v1_model.metadata.name == manifest["metadata"]["name"]
-
-    # models' fields default to None if not specified in the manifest
-    assert {k: v for k, v in v1_model.metadata.to_dict().items() if v} == manifest[
-        "metadata"
-    ]
+    assert v1_model == expected_model
 
 
 def test_bad_manifest_filename_raises():
