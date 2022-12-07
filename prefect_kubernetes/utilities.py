@@ -51,8 +51,6 @@ def convert_manifest_to_model(
         if v1_model.attribute_map[k] in manifest  # map goes 🐍 -> 🐫, user supplies 🐫
     )
 
-    print(manifest, "\n")
-
     for field, value_type in valid_supplied_fields:
         if value_type.startswith("V1"):  # field value is another model
             converted_manifest[field] = convert_manifest_to_model(
