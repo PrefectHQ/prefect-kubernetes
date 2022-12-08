@@ -1,18 +1,12 @@
 """Module to define tasks for interacting with Kubernetes jobs."""
 
-from asyncio import sleep
-from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional
 
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
-from prefect import flow, get_run_logger, task
+from prefect import task
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
-from typing_extensions import Literal
 
 from prefect_kubernetes.credentials import KubernetesCredentials
-from prefect_kubernetes.exceptions import KubernetesJobFailedError
-from prefect_kubernetes.pods import list_namespaced_pod, read_namespaced_pod_log
-from prefect_kubernetes.utilities import convert_manifest_to_model
 
 
 @task
@@ -305,136 +299,3 @@ async def replace_namespaced_job(
             namespace=namespace,
             **kube_kwargs,
         )
-
-
-@flow(validate_parameters=False)
-async def run_namespaced_job(
-    kubernetes_credentials: KubernetesCredentials,
-    job_to_run: Union[V1Job, Dict[str, Any], Path, str],
-    namespace: Optional[str] = "default",
-    job_status_poll_interval: Optional[int] = 5,
-    log_level: Optional[
-        Literal["INFO", "DEBUG", "ERROR", "WARN", "CRITICAL", None]
-    ] = None,
-    delete_job_after_completion: Optional[bool] = True,
-) -> Tuple[V1Job, Dict[str, str]]:
-    """Flow for running a namespaced Kubernetes job.
-
-    Args:
-        kubernetes_credentials: `KubernetesCredentials` block
-            holding authentication needed to generate the required API client.
-        job_to_run: A Kubernetes `V1Job` manifest: either a `V1Job` object,
-            a dictionary of job fields (e.g. `yaml.safe_load('file.yaml')`),
-            or path to a `.yaml` file containing a single job specification.
-        namespace: The Kubernetes namespace to run this job in.
-        job_status_poll_interval: The number of seconds to wait between job status
-            checks.
-        log_level: The log level to use when outputting job logs. If not set,
-            defaults to `None`, where logs from the job will not be captured.
-        delete_job_after_completion: Whether to delete the job after it has completed.
-
-    Returns:
-        A `V1Job` object
-        A `dict` of pod logs stored by pod name.
-
-    Example:
-        Run a job in the default namespace according to some `job.yaml`:
-        ```python
-
-        from prefect import flow
-        from prefect_kubernetes.credentials import KubernetesCredentials
-        from prefect_kubernetes.jobs import run_namespaced_job
-        from prefect_kubernetes.utilites import convert_manifest_to_model
-
-        @flow
-        def kubernetes_orchestrator():
-            v1_job, pod_logs = run_namespaced_job(
-                kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-                job_to_run="job.yaml", # or V1Job object or dict
-            )
-        ```
-    """
-    logger = get_run_logger()
-
-    if log_level is not None and getattr(logger, log_level.lower(), None) is None:
-        raise ValueError(
-            f"Invalid log level {log_level!r}. Must be one of "
-            f"{['INFO', 'DEBUG', 'ERROR', 'WARN', 'CRITICAL', None]}."
-        )
-
-    if isinstance(job_to_run, (Dict, Path, str)):
-        job_to_run = convert_manifest_to_model(
-            manifest=job_to_run, v1_model_name="V1Job"
-        )
-
-    job_name = job_to_run.metadata.name
-
-    await create_namespaced_job(
-        kubernetes_credentials=kubernetes_credentials,
-        new_job=job_to_run,
-        namespace=namespace,
-    )
-
-    logger.info(f"Job {job_name} created.")
-
-    pod_log_streams = {}
-
-    with kubernetes_credentials.get_client("batch") as batch_v1_client:
-
-        completed = False
-
-        while not completed:
-            v1_job = await run_sync_in_worker_thread(
-                batch_v1_client.read_namespaced_job_status,
-                name=job_name,
-                namespace=namespace,
-            )
-
-            if log_level is not None:
-                log_func = getattr(logger, log_level.lower())
-
-                pod_selector = (
-                    f"controller-uid={v1_job.metadata.labels['controller-uid']}"
-                )
-
-                v1_pod_list = await list_namespaced_pod(
-                    kubernetes_credentials=kubernetes_credentials,
-                    namespace=namespace,
-                    label_selector=pod_selector,
-                )
-
-                for pod in v1_pod_list.items:
-                    pod_name = pod.metadata.name
-
-                    if pod.status.phase == "Pending" or pod_name in pod_log_streams:
-                        continue
-
-                    logger.info(f"Capturing logs for pod {pod_name}.")
-
-                    pod_log_streams[pod_name] = await read_namespaced_pod_log(
-                        kubernetes_credentials=kubernetes_credentials,
-                        name=pod_name,
-                        namespace=namespace,
-                        print_func=log_func,
-                    )
-
-            if v1_job.status.active:
-                await sleep(job_status_poll_interval)
-            elif v1_job.status.failed:
-                raise KubernetesJobFailedError(
-                    f"Job {job_name} failed, check the Kubernetes pod logs "
-                    "for more information."
-                )
-            elif v1_job.status.succeeded:
-                completed = True
-                logger.info(f"Job {job_name} has completed.")
-
-        if delete_job_after_completion:
-            await delete_namespaced_job(
-                kubernetes_credentials=kubernetes_credentials,
-                job_name=job_name,
-                namespace=namespace,
-            )
-            logger.info(f"Job {job_name} deleted.")
-
-        return v1_job, pod_log_streams

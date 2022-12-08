@@ -1,3 +1,5 @@
+""" Tasks for working with Kubernetes services. """
+
 from typing import Any, Dict, Optional
 
 from kubernetes.client.models import V1DeleteOptions, V1Service, V1ServiceList
