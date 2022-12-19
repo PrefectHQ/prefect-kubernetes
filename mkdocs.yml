@@ -39,6 +39,7 @@ nav:
     - Credentials: credentials.md
     - Deployments: deployments.md
     - Exceptions: exceptions.md
+    - Flows: flows.md
     - Jobs: jobs.md
     - Pods: pods.md
     - Services: services.md

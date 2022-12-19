@@ -10,6 +10,7 @@ from kubernetes.client.exceptions import ApiException
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 
 from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.jobs import KubernetesJob
 
 BASEDIR = Path("tests")
 GOOD_CONFIG_FILE_PATH = BASEDIR / "kube_config.yaml"
@@ -133,3 +134,11 @@ def read_pod_logs(monkeypatch):
         "prefect_kubernetes.pods.read_namespaced_pod_log.fn", future_result
     )
     return future_result
+
+
+@pytest.fixture
+def valid_kubernetes_job_block(kubernetes_credentials):
+    return KubernetesJob(
+        credentials=kubernetes_credentials,
+        v1_job="tests/sample_k8s_resources/sample_job.yaml",
+    )

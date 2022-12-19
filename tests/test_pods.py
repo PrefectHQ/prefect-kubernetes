@@ -162,7 +162,7 @@ async def test_bad_v1_pod_kwargs(kubernetes_credentials, task_accepting_pod, pod
 async def test_read_pod_log_custom_print_func(
     kubernetes_credentials, _mock_api_core_client, mock_pod_log, capsys
 ):
-    s = await read_namespaced_pod_log.fn(
+    await read_namespaced_pod_log.fn(
         kubernetes_credentials=kubernetes_credentials,
         pod_name="test_pod",
         container="test_container",
@@ -170,9 +170,18 @@ async def test_read_pod_log_custom_print_func(
         print_func=print,
     )
 
-    assert not s
-
     assert capsys.readouterr().out == "test log\n"
+
+    assert (
+        _mock_api_core_client.read_namespaced_pod_log.call_args[1]["name"] == "test_pod"
+    )
+    assert (
+        _mock_api_core_client.read_namespaced_pod_log.call_args[1]["namespace"] == "ns"
+    )
+    assert (
+        _mock_api_core_client.read_namespaced_pod_log.call_args[1]["container"]
+        == "test_container"
+    )
 
 
 async def test_read_pod_log_custom_print_func_timeout(
