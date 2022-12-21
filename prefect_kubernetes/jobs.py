@@ -342,7 +342,6 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                     namespace=self._kubernetes_job.namespace,
                     **self._kubernetes_job.api_kwargs,
                 )
-                print(latest_v1_job.status)
 
                 v1_pod_list = await run_sync_in_worker_thread(
                     core_v1_client.list_namespaced_pod,

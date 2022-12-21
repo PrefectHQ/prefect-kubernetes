@@ -19,7 +19,9 @@
 
 ## Welcome!
 
-Prefect integrations for interacting with Kubernetes resources.
+`prefect-kubernetes` is a collection of Prefect tasks, flows, and blocks enabling orchestration, observation and management of Kubernetes resources.
+
+[jump to examples](#write-and-run-a-flow)
 
 ## Getting Started
 
@@ -48,29 +50,31 @@ prefect block register -m prefect_kubernetes
 Note, to use the `load` method on Blocks, you must already have a block document [saved through code](https://orion-docs.prefect.io/concepts/blocks/#saving-blocks) or [saved through the UI](https://orion-docs.prefect.io/ui/blocks/).
 
 
-### Write and run a flow
+### Build on top of this collection
 
 #### Specify and run a Kubernetes Job from a yaml file
 
 ```python
 from prefect_kubernetes.credentials import KubernetesCredentials
-from prefect_kubernetes.flows import run_namespaced_job
+from prefect_kubernetes.flows import run_namespaced_job # this is a flow
 from prefect_kubernetes.jobs import KubernetesJob
 
 k8s_creds = KubernetesCredentials.load("k8s-creds")
 
-job = KubernetesJob.from_yaml_file(
+job = KubernetesJob.from_yaml_file( # or create in the UI with a dict manifest
     credentials=k8s_creds,
     manifest_path="path/to/job.yaml",
 )
 
 if __name__ == "__main__":
+    # run the flow
     run_namespaced_job(job)
 ```
 
 #### Generate a resource-specific client from `KubernetesClusterConfig`
 
 ```python
+# with minikube / docker desktop & a valid ~/.kube/config this should ~just work~™️
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect_kubernetes.credentials import KubernetesCredentials
 
@@ -79,43 +83,10 @@ k8s_config = KubernetesClusterConfig.from_file('~/.kube/config')
 k8s_credentials = KubernetesCredentials(cluster_config=k8s_config)
 
 with k8s_credentials.get_client("core") as v1_core_client:
-    for pod in v1_core_client.list_namespaced_pod('default').items:
-        print(pod.metadata.name)
+    for namespace in v1_core_client.list_namespace().items:
+        print(namespace.metadata.name)
 ```
 
-#### Run a Kubernetes Job specified by a `V1Job`, `yaml` file, or `dict`
-
-The job is deleted by default after completion. To keep the job, set `delete_job_after_completion` to `False`.
-
-```python
-from kubernetes.client.models import V1Job, V1ObjectMeta, V1JobSpec
-from prefect_kubernetes.credentials import KubernetesCredentials
-from prefect_kubernetes.jobs import run_namespaced_job # `run_namespaced_job` is a flow
-
-@flow
-def kubernetes_orchestrator():
-    v1_job, pod_logs = run_namespaced_job( 
-        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-        job_to_run=V1Job(metadata=V1ObjectMeta(name="pi"), spec=V1JobSpec(...)),
-    )
-
-    other_v1_job, other_pod_logs = run_namespaced_job( 
-        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-        job_to_run="path/to/some/job.yaml",
-    )
-
-    last_v1_job, last_pod_logs = run_namespaced_job( 
-        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-        job_to_run={
-            "apiVersion": "batch/v1",
-            "kind": "Job",
-            "metadata": {
-                "name": "pi"
-            },
-            "spec": {...} # see https://kubernetes.io/docs/concepts/workloads/controllers/job
-        },
-    )
-```
 
 #### List jobs in a specific namespace
 
@@ -132,24 +103,6 @@ def kubernetes_orchestrator():
     )
 ```
 
-#### Delete a pod using `V1DeleteOptions`
-
-```python
-from kubernetes.client.models import V1DeleteOptions
-
-from prefect import flow
-from prefect_kubernetes.credentials import KubernetesCredentials
-from prefect_kubernetes.pods import delete_namespaced_pod
-
-@flow
-def kubernetes_orchestrator():
-    v1_pod = delete_namespaced_pod(
-        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-        pod_name="my-pod-to-delete",
-        delete_options=V1DeleteOptions(grace_period_seconds=42),
-        namespace="my-namespace"
-    )
-```
 #### Patch an existing deployment
 
 ```python
@@ -158,27 +111,21 @@ from kubernetes.client.models import V1Deployment
 from prefect import flow
 from prefect_kubernetes.credentials import KubernetesCredentials
 from prefect_kubernetes.deployments import patch_namespaced_deployment
+from prefect_kubernetes.utilities import convert_manifest_to_model
 
 @flow
 def kubernetes_orchestrator():
+
+    v1_deployment_updates = convert_manifest_to_model(
+        manifest="path/to/manifest.yaml",
+        model_type=V1Deployment,
+    )
+
     v1_deployment = patch_namespaced_deployment(
         kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
         deployment_name="my-deployment",
-        deployment_updates=V1Deployment(spec={"replicas": 2}),
+        deployment_updates=v1_deployment_updates,
         namespace="my-namespace"
-    )
-```
-### List services in a namespace
-```python
-from prefect import flow
-from prefect_kubernetes.credentials import KubernetesCredentials
-from prefect_kubernetes.services import list_namespaced_service
-
-@flow
-def kubernetes_orchestrator():
-    v1_service_list = list_namespaced_service(
-        kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
-        namespace="my-namespace",
     )
 ```
 
