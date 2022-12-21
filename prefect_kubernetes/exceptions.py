@@ -13,3 +13,7 @@ class KubernetesJobFailedError(OpenApiException):
 
 class KubernetesResourceNotFoundError(ApiException):
     """An exception for when a Kubernetes resource cannot be found by a client."""
+
+
+class KubernetesJobTimeoutError(OpenApiException):
+    """An exception for when a Kubernetes job times out."""

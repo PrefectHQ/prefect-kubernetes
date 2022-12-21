@@ -1,5 +1,6 @@
 import pytest
 
+from prefect_kubernetes.exceptions import KubernetesJobTimeoutError
 from prefect_kubernetes.flows import run_namespaced_job
 
 
@@ -17,7 +18,7 @@ async def test_run_namespaced_job_timeout_respected(
 
     valid_kubernetes_job_block.timeout_seconds = 1
 
-    with pytest.raises(TimeoutError):
+    with pytest.raises(KubernetesJobTimeoutError):
         await run_namespaced_job(kubernetes_job=valid_kubernetes_job_block)
 
     assert mock_create_namespaced_job.call_count == 1

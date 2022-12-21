@@ -14,6 +14,7 @@ from pydantic import Field, validator
 from typing_extensions import Self
 
 from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.exceptions import KubernetesJobTimeoutError
 from prefect_kubernetes.utilities import convert_manifest_to_model
 
 KubernetesManifest = Union[Dict, Path, str]
@@ -323,6 +324,7 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
 
         Raises:
             RuntimeError: If the Kubernetes job fails.
+            KubernetesJobTimeoutError: If the Kubernetes job times out.
         """
         with self._kubernetes_job.credentials.get_client(
             "batch"
@@ -340,7 +342,9 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                     else False
                 )
                 if job_expired:
-                    raise TimeoutError(f"Job timed out after {elapsed_time} seconds.")
+                    raise KubernetesJobTimeoutError(
+                        f"Job timed out after {elapsed_time} seconds."
+                    )
 
                 latest_v1_job = await run_sync_in_worker_thread(
                     batch_v1_client.read_namespaced_job_status,
@@ -348,20 +352,23 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                     namespace=self._kubernetes_job.namespace,
                     **self._kubernetes_job.api_kwargs,
                 )
-
+                pod_selector = (
+                    "controller-uid="
+                    f"{latest_v1_job.metadata.labels['controller-uid']}"
+                )
                 v1_pod_list = await run_sync_in_worker_thread(
                     core_v1_client.list_namespaced_pod,
                     namespace=self._kubernetes_job.namespace,
-                    label_selector=(
-                        f"controller-uid="
-                        f"{latest_v1_job.metadata.labels['controller-uid']}"
-                    ),
+                    label_selector=pod_selector,
                     **self._kubernetes_job.api_kwargs,
                 )
                 for pod in v1_pod_list.items:
                     pod_name = pod.metadata.name
 
-                    if pod.status.phase == "Pending" or pod_name in self.pod_logs:
+                    if (
+                        pod.status.phase == "Pending"
+                        or pod_name in self.pod_logs.keys()
+                    ):
                         continue
 
                     self.logger.info(f"Capturing logs for pod {pod_name!r}.")
@@ -416,14 +423,14 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
 class KubernetesJob(JobBlock):
     """A block representing a Kubernetes job configuration."""
 
-    v1_job: Dict = Field(
+    v1_job: Dict[str, Any] = Field(
         default=...,
         description=(
             "The Kubernetes job manifest to run. This dictionary can be produced "
             "using `yaml.safe_load`."
         ),
     )
-    api_kwargs: Optional[Dict[str, Any]] = Field(
+    api_kwargs: Dict[str, Any] = Field(
         default_factory=dict,
         description="The kwargs to pass to all Kubernetes API calls.",
         example={"pretty": "true"},
@@ -491,9 +498,7 @@ class KubernetesJob(JobBlock):
                 **self.api_kwargs,
             )
 
-        return KubernetesJobRun(
-            kubernetes_job=self,
-        )
+        return KubernetesJobRun(kubernetes_job=self)
 
     @classmethod
     def from_yaml_file(
