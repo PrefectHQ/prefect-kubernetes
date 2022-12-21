@@ -1,4 +1,4 @@
-"""A module to define blocks and flows for running a Kubernetes job."""
+"""A module to define flows interacting with Kubernetes resources."""
 
 from prefect import flow
 

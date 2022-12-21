@@ -5,6 +5,7 @@ from asyncio import sleep
 from pathlib import Path
 from typing import Any, Dict, Optional, Type, Union
 
+import yaml
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
 from prefect import task
 from prefect.blocks.abstract import JobBlock, JobRun
@@ -13,7 +14,6 @@ from pydantic import Field, validator
 from typing_extensions import Self
 
 from prefect_kubernetes.credentials import KubernetesCredentials
-from prefect_kubernetes.pods import list_namespaced_pod, read_namespaced_pod_log
 from prefect_kubernetes.utilities import convert_manifest_to_model
 
 KubernetesManifest = Union[Dict, Path, str]
@@ -311,88 +311,66 @@ async def replace_namespaced_job(
         )
 
 
-class KubernetesJobRun(JobRun):
+class KubernetesJobRun(JobRun[Dict[str, Any]]):
     """A run of a Kubernetes job.
 
     Attributes:
-        api_kwargs: The kwargs to pass to the Kubernetes API.
-        credentials: The credentials to configure a client from.
-        delete_after_completion: Whether to delete the job after it completes.
-        interval_seconds: The number of seconds to wait between polling for job status.
-        log_level: The log level to use for the job.
-        namespace: The namespace to create the job in.
-        pod_logs: The logs from each of the pods in the job.
-        timeout_seconds: The number of seconds to wait for the job to complete.
-        v1_job: A populated Kubernetes client model representing the job to run.
+        _kubernetes_job: The Kubernetes job this run is for.
     """
 
-    def __init__(
-        self,
-        api_kwargs: Dict[str, Any] = None,
-        credentials: KubernetesCredentials = None,
-        delete_after_completion: bool = True,
-        interval_seconds: int = 5,
-        log_level: str = None,
-        timeout_seconds: int = None,
-        v1_job: V1Job = None,
-    ):
-
-        self.api_kwargs = api_kwargs
-        self.delete_after_completion = delete_after_completion
-        self.interval_seconds = interval_seconds
-        self.kubernetes_credentials = credentials
-        self.log_level = log_level
+    def __init__(self, kubernetes_job: "KubernetesJob"):
+        self._kubernetes_job = kubernetes_job
         self.pod_logs = {}
-        self.timeout_seconds = timeout_seconds
-        self.v1_job = v1_job
 
     async def wait_for_completion(self):
         """Waits for the job to complete.
 
         Raises:
-            RuntimeError: When the Kubernetes job fails.
+            RuntimeError: If the Kubernetes job fails.
         """
-        with self.kubernetes_credentials.get_client("batch") as batch_v1_client:
+        with self._kubernetes_job.credentials.get_client(
+            "batch"
+        ) as batch_v1_client, self._kubernetes_job.credentials.get_client(
+            "core"
+        ) as core_v1_client:
             completed = False
 
             while not completed:
                 latest_v1_job = await run_sync_in_worker_thread(
                     batch_v1_client.read_namespaced_job_status,
-                    name=self.v1_job.metadata.name,
-                    **self.api_kwargs,
+                    name=self._kubernetes_job.v1_job.metadata.name,
+                    namespace=self._kubernetes_job.namespace,
+                    **self._kubernetes_job.api_kwargs,
                 )
+                print(latest_v1_job.status)
 
-                if self.log_level is not None:
-                    log_func = getattr(self.logger, self.log_level.lower())
+                v1_pod_list = await run_sync_in_worker_thread(
+                    core_v1_client.list_namespaced_pod,
+                    namespace=self._kubernetes_job.namespace,
+                    label_selector=(
+                        f"controller-uid="
+                        f"{latest_v1_job.metadata.labels['controller-uid']}"
+                    ),
+                    **self._kubernetes_job.api_kwargs,
+                )
+                for pod in v1_pod_list.items:
+                    pod_name = pod.metadata.name
 
-                    v1_pod_list = await list_namespaced_pod(
-                        kubernetes_credentials=self.kubernetes_credentials,
-                        label_selector=(
-                            f"controller-uid="
-                            f"{latest_v1_job.metadata.labels['controller-uid']}"
-                        ),
-                        **self.api_kwargs,
+                    if pod.status.phase == "Pending" or pod_name in self.pod_logs:
+                        continue
+
+                    self.logger.info(f"Capturing logs for pod {pod_name}.")
+
+                    self.pod_logs[pod_name] = await run_sync_in_worker_thread(
+                        core_v1_client.read_namespaced_pod_log,
+                        namespace=self._kubernetes_job.namespace,
+                        name=pod_name,
+                        container=latest_v1_job.spec.template.spec.containers[0].name,
+                        **self._kubernetes_job.api_kwargs,
                     )
-                    for pod in v1_pod_list.items:
-                        pod_name = pod.metadata.name
-
-                        if pod.status.phase == "Pending" or pod_name in self.pod_logs:
-                            continue
-
-                        self.logger.info(f"Capturing logs for pod {pod_name}.")
-
-                        self.pod_logs[pod_name] = await read_namespaced_pod_log(
-                            kubernetes_credentials=self.kubernetes_credentials,
-                            pod_name=pod_name,
-                            container=latest_v1_job.spec.template.spec.containers[
-                                0
-                            ].name,
-                            print_func=log_func,
-                            **self.api_kwargs,
-                        )
 
                 if latest_v1_job.status.active:
-                    await sleep(self.interval_seconds)
+                    await sleep(self._kubernetes_job.interval_seconds)
                 elif latest_v1_job.status.failed:
                     raise RuntimeError(
                         f"Job {latest_v1_job.metadata.name} failed, check the "
@@ -404,7 +382,7 @@ class KubernetesJobRun(JobRun):
                         f"Job {latest_v1_job.metadata.name} has completed."
                     )
 
-    async def fetch_result(self: Type[Self]) -> Self:
+    async def fetch_result(self) -> Dict[str, Any]:
         """Fetch the results of the job.
 
         Args:
@@ -414,35 +392,79 @@ class KubernetesJobRun(JobRun):
         Returns:
             The job and the logs from each of the pods in the job.
         """
-        if self.delete_after_completion:
-            deleted_v1_job = await delete_namespaced_job(
-                kubernetes_credentials=self.kubernetes_credentials,
-                job_name=self.v1_job.metadata.name,
-                **self.api_kwargs,
-            )
-            self.logger.info(
-                f"Job {self.v1_job.metadata.name} deleted "
-                f"with {deleted_v1_job.status!r}."
-            )
+        if self._kubernetes_job.delete_after_completion:
+            with self._kubernetes_job.credentials.get_client(
+                "batch"
+            ) as batch_v1_client:
+                deleted_v1_job = await run_sync_in_worker_thread(
+                    batch_v1_client.delete_namespaced_job,
+                    namespace=self._kubernetes_job.namespace,
+                    name=self._kubernetes_job.v1_job.metadata.name,
+                    **self._kubernetes_job.api_kwargs,
+                )
+                self.logger.info(
+                    f"Job {self._kubernetes_job.v1_job.metadata.name} deleted "
+                    f"with {deleted_v1_job.status!r}."
+                )
 
-        return self
+        return self.pod_logs
 
 
 class KubernetesJob(JobBlock):
     """A block representing a Kubernetes job configuration."""
 
-    api_kwargs: Dict[str, Any] = Field(default_factory=dict)
-    credentials: KubernetesCredentials = Field(default=None)
-    delete_after_completion: bool = Field(default=True)
-    interval_seconds: int = Field(default=5)
-    log_level: str = Field(default=None)
-    namespace: str = Field(default="default")
-    timeout_seconds: int = Field(default=None)
-    v1_job: KubernetesManifest = Field(...)
+    api_kwargs: Optional[Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="The kwargs to pass to all Kubernetes API calls.",
+        example={"pretty": "true"},
+    )
+    credentials: KubernetesCredentials = Field(
+        default=..., description="The credentials to configure a client from."
+    )
+    delete_after_completion: bool = Field(
+        default=True,
+        description="Whether to delete the job after it has completed.",
+    )
+    interval_seconds: Optional[int] = Field(
+        default=5,
+        description="The number of seconds to wait between job status checks.",
+    )
+    log_level: Optional[str] = Field(
+        default="info",
+        description="The log level to use when capturing logs from the job's pods.",
+        example="INFO",
+    )
+    namespace: str = Field(
+        default="default",
+        description="The namespace to create and run the job in.",
+    )
+    timeout_seconds: Optional[int] = Field(
+        default=None,
+        description="The number of seconds to wait for the job run before timing out.",
+    )
+    v1_job: Dict = Field(
+        default=...,
+        description=(
+            "The Kubernetes job manifest to run. This dictionary can be produced "
+            "using `yaml.safe_load`."
+        ),
+    )
 
-    @validator("v1_job")
-    def validate_v1_job(cls, v):
-        return convert_manifest_to_model(v, "V1Job")
+    _block_type_name = "Kubernetes Job"
+
+    class Config:
+        """Add support for arbitrary types to support `V1Job` serialization."""
+
+        arbitrary_types_allowed = True
+        json_encoders = {V1Job: lambda job: job.to_dict()}
+
+    def dict(self, *args, **kwargs) -> Dict:
+        """
+        Convert to a dictionary to support serialization of the `V1Job` type.
+        """
+        d = super().dict(*args, **kwargs)
+        d["v1_job"] = d["v1_job"].to_dict()
+        return d
 
     @validator("log_level")
     def check_valid_log_level(cls, value):
@@ -451,21 +473,37 @@ class KubernetesJob(JobBlock):
         logging._checkLevel(value)
         return value
 
+    def block_initialization(self):
+        self.v1_job = convert_manifest_to_model(self.v1_job, "V1Job")
+        super().block_initialization()
+
     async def trigger(self):
-        """Triggers the job."""
-        v1_job = await create_namespaced_job(
-            kubernetes_credentials=self.credentials,
-            new_job=self.v1_job,
-            namespace=self.namespace,
-            **self.api_kwargs,
-        )
+        """Create a Kubernetes job and return a `KubernetesJobRun` object"""
+        with self.credentials.get_client("batch") as batch_v1_client:
+            await run_sync_in_worker_thread(
+                batch_v1_client.create_namespaced_job,
+                body=self.v1_job,
+                namespace=self.namespace,
+                **self.api_kwargs,
+            )
 
         return KubernetesJobRun(
-            api_kwargs=self.api_kwargs or {"namespace": self.namespace},
-            credentials=self.credentials,
-            delete_after_completion=self.delete_after_completion,
-            interval_seconds=self.interval_seconds,
-            log_level=self.log_level,
-            timeout_seconds=self.timeout_seconds,
-            v1_job=v1_job,
+            kubernetes_job=self,
         )
+
+    @classmethod
+    def from_yaml_file(
+        cls: Type[Self], manifest_path: Union[Path, str], **kwargs
+    ) -> Self:
+        """Create a `KubernetesJob` from a YAML file.
+
+        Args:
+            manifest_path: The YAML file to create the `KubernetesJob` from.
+
+        Returns:
+            A KubernetesJob object.
+        """
+        with open(manifest_path, "r") as yaml_stream:
+            yaml_dict = yaml.safe_load(yaml_stream)
+
+        return cls(v1_job=yaml_dict, **kwargs)
