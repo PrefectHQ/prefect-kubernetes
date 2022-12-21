@@ -115,10 +115,10 @@ from prefect_kubernetes.utilities import convert_manifest_to_model
 
 @flow
 def kubernetes_orchestrator():
-
+    
     v1_deployment_updates = convert_manifest_to_model(
         manifest="path/to/manifest.yaml",
-        model_type=V1Deployment,
+        v1_model_name="V1Deployment",
     )
 
     v1_deployment = patch_namespaced_deployment(
