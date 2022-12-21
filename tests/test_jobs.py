@@ -118,3 +118,12 @@ async def test_job_block_invalid_log_level_raises_error(kubernetes_credentials):
             v1_job={"metadata": {"name": "test-job"}},
             log_level="invalid",
         )
+
+
+async def test_job_block_from_job_yaml(kubernetes_credentials):
+    job = KubernetesJob.from_yaml_file(
+        credentials=kubernetes_credentials,
+        manifest_path="tests/sample_k8s_resources/sample_job.yaml",
+    )
+    assert isinstance(job, KubernetesJob)
+    assert job.v1_job.metadata.name == "pi"
