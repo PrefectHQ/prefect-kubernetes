@@ -127,3 +127,17 @@ async def test_job_block_from_job_yaml(kubernetes_credentials):
     )
     assert isinstance(job, KubernetesJob)
     assert job.v1_job.metadata.name == "pi"
+
+
+async def test_job_block_wait_never_called_raises(
+    valid_kubernetes_job_block,
+    mock_create_namespaced_job,
+    mock_delete_namespaced_job,
+):
+
+    job_run = await valid_kubernetes_job_block.trigger()
+
+    with pytest.raises(
+        ValueError, match="`KubernetesJobRun.wait_for_completion` was never called"
+    ):
+        await job_run.fetch_result()

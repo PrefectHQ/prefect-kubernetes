@@ -317,7 +317,7 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
 
     def __init__(self, kubernetes_job: "KubernetesJob"):
         self._kubernetes_job = kubernetes_job
-        self.pod_logs = {}
+        self.pod_logs = None
 
     async def wait_for_completion(self):
         """Waits for the job to complete.
@@ -325,7 +325,10 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
         Raises:
             RuntimeError: If the Kubernetes job fails.
             KubernetesJobTimeoutError: If the Kubernetes job times out.
+            ValueError: If `wait_for_completion` is never called.
         """
+        self.pod_logs = {}
+
         with self._kubernetes_job.credentials.get_client(
             "batch"
         ) as batch_v1_client, self._kubernetes_job.credentials.get_client(
@@ -417,6 +420,11 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                     f"with {deleted_v1_job.status!r}."
                 )
 
+        if self.pod_logs is None:
+            raise ValueError(
+                "`KubernetesJobRun.wait_for_completion` was never called - "
+                "therefore no pod logs were collected and they cannot be returned."
+            )
         return self.pod_logs
 
 
