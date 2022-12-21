@@ -39,16 +39,35 @@ Install `prefect-kubernetes` with `pip`:
 pip install prefect-kubernetes
 ```
 
-Then, register to [view the block](https://orion-docs.prefect.io/ui/blocks/) on Prefect Cloud:
+Then, to register [blocks](https://orion-docs.prefect.io/ui/blocks/) on Prefect Cloud:
 
 ```bash
-prefect block register -m prefect_kubernetes.credentials
+prefect block register -m prefect_kubernetes
 ```
 
 Note, to use the `load` method on Blocks, you must already have a block document [saved through code](https://orion-docs.prefect.io/concepts/blocks/#saving-blocks) or [saved through the UI](https://orion-docs.prefect.io/ui/blocks/).
 
 
 ### Write and run a flow
+
+#### Specify and run a Kubernetes Job from a yaml file
+
+```python
+from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.flows import run_namespaced_job
+from prefect_kubernetes.jobs import KubernetesJob
+
+k8s_creds = KubernetesCredentials.load("k8s-creds")
+
+job = KubernetesJob.from_yaml_file(
+    credentials=k8s_creds,
+    manifest_path="path/to/job.yaml",
+)
+
+if __name__ == "__main__":
+    run_namespaced_job(job)
+```
+
 #### Generate a resource-specific client from `KubernetesClusterConfig`
 
 ```python

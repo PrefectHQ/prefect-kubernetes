@@ -31,6 +31,8 @@ def convert_manifest_to_model(
         ValueError: If `v1_model_name` is not a valid Kubernetes client model name.
         ValueError: If `manifest` is path-like and is not a valid yaml filename.
     """
+    if not manifest:
+        return None
 
     if not (isinstance(v1_model_name, str) and v1_model_name in set(dir(k8s_models))):
         raise ValueError(
@@ -51,8 +53,6 @@ def convert_manifest_to_model(
         if v1_model.attribute_map[k] in manifest  # map goes 🐍 -> 🐫, user supplies 🐫
     )
 
-    print(manifest, "\n")
-
     for field, value_type in valid_supplied_fields:
         if value_type.startswith("V1"):  # field value is another model
             converted_manifest[field] = convert_manifest_to_model(
@@ -60,10 +60,13 @@ def convert_manifest_to_model(
             )
         elif value_type.startswith("list[V1"):  # field value is a list of models
             field_item_type = value_type.replace("list[", "").replace("]", "")
-            converted_manifest[field] = [
-                convert_manifest_to_model(item, field_item_type)
-                for item in manifest[v1_model.attribute_map[field]]
-            ]
+            try:
+                converted_manifest[field] = [
+                    convert_manifest_to_model(item, field_item_type)
+                    for item in manifest[v1_model.attribute_map[field]]
+                ]
+            except TypeError:
+                converted_manifest[field] = manifest[v1_model.attribute_map[field]]
         elif value_type in base_types:  # field value is a primitive Python type
             converted_manifest[field] = manifest[v1_model.attribute_map[field]]
 
