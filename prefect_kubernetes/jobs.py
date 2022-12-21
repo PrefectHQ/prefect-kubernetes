@@ -435,7 +435,7 @@ class KubernetesJob(JobBlock):
         default=True,
         description="Whether to delete the job after it has completed.",
     )
-    interval_seconds: Optional[int] = Field(
+    interval_seconds: int = Field(
         default=5,
         description="The number of seconds to wait between job status checks.",
     )
