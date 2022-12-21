@@ -5,6 +5,8 @@ from typing import TypeVar, Union
 from kubernetes.client import models as k8s_models
 from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
 
+# Note: `dict(str, str)` is the Kubernetes API convention for
+# representing an OpenAPI `dict` with `str` keys and values.
 base_types = {"str", "int", "float", "bool", "list[str]", "dict(str, str)", "object"}
 
 V1KubernetesModel = TypeVar("V1KubernetesModel")
