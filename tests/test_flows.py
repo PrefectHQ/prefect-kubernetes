@@ -3,6 +3,30 @@ import pytest
 from prefect_kubernetes.flows import run_namespaced_job
 
 
+async def test_run_namespaced_job_timeout_respected(
+    valid_kubernetes_job_block,
+    mock_create_namespaced_job,
+    mock_read_namespaced_job_status,
+    mock_list_namespaced_pod,
+    read_pod_logs,
+    successful_job_status,
+):
+    successful_job_status.status.active = 1
+    successful_job_status.status.succeeded = None
+    mock_read_namespaced_job_status.return_value = successful_job_status
+
+    valid_kubernetes_job_block.timeout_seconds = 1
+
+    with pytest.raises(TimeoutError):
+        await run_namespaced_job(kubernetes_job=valid_kubernetes_job_block)
+
+    assert mock_create_namespaced_job.call_count == 1
+    assert mock_create_namespaced_job.call_args[1]["namespace"] == "default"
+    assert mock_create_namespaced_job.call_args[1]["body"].metadata.name == "pi"
+
+    assert mock_read_namespaced_job_status.call_count == 1
+
+
 async def test_run_namespaced_job_successful(
     valid_kubernetes_job_block,
     mock_create_namespaced_job,

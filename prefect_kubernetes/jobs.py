@@ -312,11 +312,7 @@ async def replace_namespaced_job(
 
 
 class KubernetesJobRun(JobRun[Dict[str, Any]]):
-    """A run of a Kubernetes job.
-
-    Attributes:
-        _kubernetes_job: The Kubernetes job this run is for.
-    """
+    """A container representing a run of a Kubernetes job."""
 
     def __init__(self, kubernetes_job: "KubernetesJob"):
         self._kubernetes_job = kubernetes_job
@@ -335,7 +331,17 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
         ) as core_v1_client:
             completed = False
 
+            elapsed_time = 0
+
             while not completed:
+                job_expired = (
+                    elapsed_time > self._kubernetes_job.timeout_seconds
+                    if self._kubernetes_job.timeout_seconds
+                    else False
+                )
+                if job_expired:
+                    raise TimeoutError(f"Job timed out after {elapsed_time} seconds.")
+
                 latest_v1_job = await run_sync_in_worker_thread(
                     batch_v1_client.read_namespaced_job_status,
                     name=self._kubernetes_job.v1_job.metadata.name,
@@ -358,7 +364,7 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                     if pod.status.phase == "Pending" or pod_name in self.pod_logs:
                         continue
 
-                    self.logger.info(f"Capturing logs for pod {pod_name}.")
+                    self.logger.info(f"Capturing logs for pod {pod_name!r}.")
 
                     self.pod_logs[pod_name] = await run_sync_in_worker_thread(
                         core_v1_client.read_namespaced_pod_log,
@@ -370,15 +376,17 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
 
                 if latest_v1_job.status.active:
                     await sleep(self._kubernetes_job.interval_seconds)
+                    if self._kubernetes_job.timeout_seconds:
+                        elapsed_time += self._kubernetes_job.interval_seconds
                 elif latest_v1_job.status.failed:
                     raise RuntimeError(
-                        f"Job {latest_v1_job.metadata.name} failed, check the "
+                        f"Job {latest_v1_job.metadata.name!r} failed, check the "
                         "Kubernetes pod logs for more information."
                     )
                 elif latest_v1_job.status.succeeded:
                     completed = True
                     self.logger.info(
-                        f"Job {latest_v1_job.metadata.name} has completed."
+                        f"Job {latest_v1_job.metadata.name!r} has completed."
                     )
 
     async def fetch_result(self) -> Dict[str, Any]:
@@ -408,6 +416,13 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
 class KubernetesJob(JobBlock):
     """A block representing a Kubernetes job configuration."""
 
+    v1_job: Dict = Field(
+        default=...,
+        description=(
+            "The Kubernetes job manifest to run. This dictionary can be produced "
+            "using `yaml.safe_load`."
+        ),
+    )
     api_kwargs: Optional[Dict[str, Any]] = Field(
         default_factory=dict,
         description="The kwargs to pass to all Kubernetes API calls.",
@@ -437,15 +452,9 @@ class KubernetesJob(JobBlock):
         default=None,
         description="The number of seconds to wait for the job run before timing out.",
     )
-    v1_job: Dict = Field(
-        default=...,
-        description=(
-            "The Kubernetes job manifest to run. This dictionary can be produced "
-            "using `yaml.safe_load`."
-        ),
-    )
 
     _block_type_name = "Kubernetes Job"
+    _logo_url = "https://images.ctfassets.net/zscdif0zqppk/531JKlIwMeEXcBnoK0yeB8/e304dc11a9d25c831901e9cd668433fa/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
 
     class Config:
         """Add support for arbitrary types to support `V1Job` serialization."""

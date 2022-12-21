@@ -1,24 +1,26 @@
 """A module to define flows interacting with Kubernetes resources."""
 
+from typing import Any, Dict
+
 from prefect import flow
 
-from prefect_kubernetes.jobs import KubernetesJob, KubernetesJobRun
+from prefect_kubernetes.jobs import KubernetesJob
 
 
 @flow
 async def run_namespaced_job(
     kubernetes_job: KubernetesJob,
-) -> KubernetesJobRun:
+) -> Dict[str, Any]:
     """Flow for running a namespaced Kubernetes job.
 
     Args:
-        kubernetes_job: The job to run.
+        kubernetes_job: The `KubernetesJob` block that specifies the job to run.
 
     Returns:
-        The logs from each pod in the job.
+        The a dict of logs from each pod in the job, e.g. {'pod_name': 'pod_log_str'}.
 
     Raises:
-        RuntimeError: If the job fails.
+        RuntimeError: If the created Kubernetes job attains a failed status.
 
     Example:
 

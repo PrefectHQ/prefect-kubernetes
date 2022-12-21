@@ -11,7 +11,7 @@ V1KubernetesModel = TypeVar("V1KubernetesModel")
 
 
 def convert_manifest_to_model(
-    manifest: Union[Path, KubernetesManifest], v1_model_name: str
+    manifest: Union[Path, str, KubernetesManifest], v1_model_name: str
 ) -> V1KubernetesModel:
     """Recursively converts a `dict` representation of a Kubernetes resource to the
     corresponding Python model containing the Python models that compose it,
@@ -36,12 +36,13 @@ def convert_manifest_to_model(
 
     if not (isinstance(v1_model_name, str) and v1_model_name in set(dir(k8s_models))):
         raise ValueError(
-            "`v1_model` must be the name of a valid Kubernetes client model."
+            "`v1_model` must be the name of a valid Kubernetes client model, received "
+            f": {v1_model_name!r}"
         )
 
     if isinstance(manifest, (Path, str)):
         str_path = str(manifest)
-        if not (str_path.endswith(".yaml") or str_path.endswith(".yml")):
+        if not (str_path.endswith(".yaml", ".yml")):
             raise ValueError("Manifest must be a valid dict or path to a .yaml file.")
         manifest = KubernetesJob.job_from_file(manifest)
 
