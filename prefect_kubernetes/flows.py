@@ -15,7 +15,7 @@ async def run_namespaced_job(
         kubernetes_job: The job to run.
 
     Returns:
-        The Kubernetes `V1Job` client model and logs from each pod in the job.
+        The logs from each pod in the job.
 
     Raises:
         RuntimeError: If the job fails.
@@ -24,9 +24,13 @@ async def run_namespaced_job(
 
         ```python
         from prefect_kubernetes import KubernetesJob, run_namespaced_job
+        from prefect_kubernetes.credentials import KubernetesCredentials
 
         run_namespaced_job(
-            kubernetes_job=KubernetesJob(v1_job="job.yaml")
+            kubernetes_job=KubernetesJob.from_yaml_file(
+                credentials=KubernetesCredentials.load("k8s-creds"),
+                manifest_path="path/to/job.yaml",
+            )
         )
         ```
     """

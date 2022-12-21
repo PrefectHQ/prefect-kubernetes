@@ -385,12 +385,8 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
     async def fetch_result(self) -> Dict[str, Any]:
         """Fetch the results of the job.
 
-        Args:
-            kubernetes_credentials: The credentials to configure a client from.
-            v1_job: The job to fetch the results for.
-
         Returns:
-            The job and the logs from each of the pods in the job.
+            The logs from each of the pods in the job.
         """
         if self._kubernetes_job.delete_after_completion:
             with self._kubernetes_job.credentials.get_client(
