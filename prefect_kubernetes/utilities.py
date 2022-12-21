@@ -42,7 +42,7 @@ def convert_manifest_to_model(
 
     if isinstance(manifest, (Path, str)):
         str_path = str(manifest)
-        if not (str_path.endswith(".yaml", ".yml")):
+        if not str_path.endswith((".yaml", ".yml")):
             raise ValueError("Manifest must be a valid dict or path to a .yaml file.")
         manifest = KubernetesJob.job_from_file(manifest)
 
