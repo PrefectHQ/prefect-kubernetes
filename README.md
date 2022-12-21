@@ -21,7 +21,7 @@
 
 `prefect-kubernetes` is a collection of Prefect tasks, flows, and blocks enabling orchestration, observation and management of Kubernetes resources.
 
-[jump to examples](#write-and-run-a-flow)
+Jump to [examples](#example-usage)
 
 ## Getting Started
 
@@ -50,7 +50,7 @@ prefect block register -m prefect_kubernetes
 Note, to use the `load` method on Blocks, you must already have a block document [saved through code](https://orion-docs.prefect.io/concepts/blocks/#saving-blocks) or [saved through the UI](https://orion-docs.prefect.io/ui/blocks/).
 
 
-### Build on top of this collection
+### Example Usage
 
 #### Specify and run a Kubernetes Job from a yaml file
 
