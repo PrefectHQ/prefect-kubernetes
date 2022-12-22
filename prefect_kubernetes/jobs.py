@@ -1,6 +1,5 @@
 """Module to define tasks for interacting with Kubernetes jobs."""
 
-import logging
 from asyncio import sleep
 from pathlib import Path
 from typing import Any, Dict, Optional, Type, Union
@@ -10,7 +9,7 @@ from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
 from prefect import task
 from prefect.blocks.abstract import JobBlock, JobRun
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
-from pydantic import Field, validator
+from pydantic import Field
 from typing_extensions import Self
 
 from prefect_kubernetes.credentials import KubernetesCredentials
@@ -316,8 +315,23 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
     """A container representing a run of a Kubernetes job."""
 
     def __init__(self, kubernetes_job: "KubernetesJob"):
+        self._completed = False
         self._kubernetes_job = kubernetes_job
         self.pod_logs = None
+
+    async def _cleanup(self):
+        """Deletes the Kubernetes job resource."""
+        with self._kubernetes_job.credentials.get_client("batch") as batch_v1_client:
+            deleted_v1_job = await run_sync_in_worker_thread(
+                batch_v1_client.delete_namespaced_job,
+                namespace=self._kubernetes_job.namespace,
+                name=self._kubernetes_job.v1_job.metadata.name,
+                **self._kubernetes_job.api_kwargs,
+            )
+            self.logger.info(
+                f"Job {self._kubernetes_job.v1_job.metadata.name} deleted "
+                f"with {deleted_v1_job.status!r}."
+            )
 
     async def wait_for_completion(self):
         """Waits for the job to complete.
@@ -334,11 +348,10 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
         ) as batch_v1_client, self._kubernetes_job.credentials.get_client(
             "core"
         ) as core_v1_client:
-            completed = False
 
             elapsed_time = 0
 
-            while not completed:
+            while not self._completed:
                 job_expired = (
                     elapsed_time > self._kubernetes_job.timeout_seconds
                     if self._kubernetes_job.timeout_seconds
@@ -394,36 +407,30 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                         "Kubernetes pod logs for more information."
                     )
                 elif latest_v1_job.status.succeeded:
-                    completed = True
+                    self._completed = True
                     self.logger.info(
                         f"Job {latest_v1_job.metadata.name!r} has completed."
                     )
+
+        if self._kubernetes_job.delete_after_completion:
+            await self._cleanup()
 
     async def fetch_result(self) -> Dict[str, Any]:
         """Fetch the results of the job.
 
         Returns:
             The logs from each of the pods in the job.
-        """
-        if self._kubernetes_job.delete_after_completion:
-            with self._kubernetes_job.credentials.get_client(
-                "batch"
-            ) as batch_v1_client:
-                deleted_v1_job = await run_sync_in_worker_thread(
-                    batch_v1_client.delete_namespaced_job,
-                    namespace=self._kubernetes_job.namespace,
-                    name=self._kubernetes_job.v1_job.metadata.name,
-                    **self._kubernetes_job.api_kwargs,
-                )
-                self.logger.info(
-                    f"Job {self._kubernetes_job.v1_job.metadata.name} deleted "
-                    f"with {deleted_v1_job.status!r}."
-                )
 
-        if self.pod_logs is None:
+        Raises:
+            ValueError: If this method is called when the job has
+                a non-terminal state.
+        """
+
+        if not self._completed:
             raise ValueError(
-                "`KubernetesJobRun.wait_for_completion` was never called - "
-                "therefore no pod logs were collected and they cannot be returned."
+                "The Kubernetes Job run is not in a completed state - "
+                "be sure to call `wait_for_completion` before attempting "
+                "to fetch the result."
             )
         return self.pod_logs
 
@@ -454,11 +461,6 @@ class KubernetesJob(JobBlock):
         default=5,
         description="The number of seconds to wait between job status checks.",
     )
-    log_level: Optional[str] = Field(
-        default="info",
-        description="The log level to use when capturing logs from the job's pods.",
-        example="INFO",
-    )
     namespace: str = Field(
         default="default",
         description="The namespace to create and run the job in.",
@@ -471,33 +473,17 @@ class KubernetesJob(JobBlock):
     _block_type_name = "Kubernetes Job"
     _logo_url = "https://images.ctfassets.net/zscdif0zqppk/531JKlIwMeEXcBnoK0yeB8/e304dc11a9d25c831901e9cd668433fa/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
 
-    class Config:
-        """Add support for arbitrary types to support `V1Job` serialization."""
-
-        arbitrary_types_allowed = True
-        json_encoders = {V1Job: lambda job: job.to_dict()}
-
-    def dict(self, *args, **kwargs) -> Dict:
-        """
-        Convert to a dictionary to support serialization of the `V1Job` type.
-        """
-        d = super().dict(*args, **kwargs)
-        d["v1_job"] = d["v1_job"].to_dict()
-        return d
-
-    @validator("log_level")
-    def check_valid_log_level(cls, value):
-        if isinstance(value, str):
-            value = value.upper()
-        logging._checkLevel(value)
-        return value
-
-    def block_initialization(self):
-        self.v1_job = convert_manifest_to_model(self.v1_job, "V1Job")
-        super().block_initialization()
-
     async def trigger(self):
-        """Create a Kubernetes job and return a `KubernetesJobRun` object"""
+        """Create a Kubernetes job and return a `KubernetesJobRun` object.
+
+        While altering `self` here is not ideal, it avoids the
+        need to use JSON encoders for the UI, define a `dict` method,
+        and bypass the validation caused by using
+        `convert_manifest_to_model` in `block_initialization`.
+        """
+
+        self.v1_job = convert_manifest_to_model(self.v1_job, "V1Job")
+
         with self.credentials.get_client("batch") as batch_v1_client:
             await run_sync_in_worker_thread(
                 batch_v1_client.create_namespaced_job,

@@ -111,22 +111,13 @@ async def test_replace_namespaced_job(kubernetes_credentials, _mock_api_batch_cl
     assert _mock_api_batch_client.replace_namespaced_job.call_args[1]["a"] == "test"
 
 
-async def test_job_block_invalid_log_level_raises_error(kubernetes_credentials):
-    with pytest.raises(ValueError, match="Unknown level"):
-        KubernetesJob(
-            kubernetes_credentials=kubernetes_credentials,
-            v1_job={"metadata": {"name": "test-job"}},
-            log_level="invalid",
-        )
-
-
 async def test_job_block_from_job_yaml(kubernetes_credentials):
     job = KubernetesJob.from_yaml_file(
         credentials=kubernetes_credentials,
         manifest_path="tests/sample_k8s_resources/sample_job.yaml",
     )
     assert isinstance(job, KubernetesJob)
-    assert job.v1_job.metadata.name == "pi"
+    assert job.v1_job["metadata"]["name"] == "pi"
 
 
 async def test_job_block_wait_never_called_raises(
@@ -138,6 +129,6 @@ async def test_job_block_wait_never_called_raises(
     job_run = await valid_kubernetes_job_block.trigger()
 
     with pytest.raises(
-        ValueError, match="`KubernetesJobRun.wait_for_completion` was never called"
+        ValueError, match="The Kubernetes Job run is not in a completed state"
     ):
         await job_run.fetch_result()
