@@ -336,6 +336,10 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
     async def wait_for_completion(self):
         """Waits for the job to complete.
 
+        If the job has `delete_after_completion` set to `True`,
+        the job will be deleted if it is observed by this method
+        to enter a completed state.
+
         Raises:
             RuntimeError: If the Kubernetes job fails.
             KubernetesJobTimeoutError: If the Kubernetes job times out.
