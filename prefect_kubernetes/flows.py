@@ -7,24 +7,6 @@ from prefect import flow, task
 from prefect_kubernetes.jobs import KubernetesJob
 
 
-@task
-async def trigger(kubernetes_job):
-    """Task for triggering a Kubernetes job."""
-    return await kubernetes_job.trigger()
-
-
-@task
-async def wait_for_completion(kubernetes_job_run):
-    """Task for waiting for a Kubernetes job to complete."""
-    await kubernetes_job_run.wait_for_completion()
-
-
-@task
-async def fetch_result(kubernetes_job_run):
-    """Task for fetching the result of a Kubernetes job."""
-    return await kubernetes_job_run.fetch_result()
-
-
 @flow
 async def run_namespaced_job(
     kubernetes_job: KubernetesJob,
@@ -54,8 +36,8 @@ async def run_namespaced_job(
         )
         ```
     """
-    kubernetes_job_run = await trigger(kubernetes_job)
+    kubernetes_job_run = await task(kubernetes_job.trigger)()
 
-    await wait_for_completion(kubernetes_job_run)
+    await task(kubernetes_job_run.wait_for_completion)()
 
-    return await fetch_result(kubernetes_job_run)
+    return await task(kubernetes_job_run.fetch_result)()
