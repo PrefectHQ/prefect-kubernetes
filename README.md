@@ -21,7 +21,7 @@
 
 `prefect-kubernetes` is a collection of Prefect tasks, flows, and blocks enabling orchestration, observation and management of Kubernetes resources.
 
-Jump to [examples](#example-usage)
+Jump to [examples](#example-usage).
 
 ## Getting Started
 
