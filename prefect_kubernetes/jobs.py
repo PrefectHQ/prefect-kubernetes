@@ -314,10 +314,16 @@ async def replace_namespaced_job(
 class KubernetesJobRun(JobRun[Dict[str, Any]]):
     """A container representing a run of a Kubernetes job."""
 
-    def __init__(self, kubernetes_job: "KubernetesJob"):
+    def __init__(
+        self,
+        kubernetes_job: "KubernetesJob",
+        v1_job_model: V1Job,
+    ):
+        self.pod_logs = None
+
         self._completed = False
         self._kubernetes_job = kubernetes_job
-        self.pod_logs = None
+        self._v1_job_model = v1_job_model
 
     async def _cleanup(self):
         """Deletes the Kubernetes job resource."""
@@ -325,11 +331,11 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
             deleted_v1_job = await run_sync_in_worker_thread(
                 batch_v1_client.delete_namespaced_job,
                 namespace=self._kubernetes_job.namespace,
-                name=self._kubernetes_job.v1_job.metadata.name,
+                name=self._v1_job_model.metadata.name,
                 **self._kubernetes_job.api_kwargs,
             )
             self.logger.info(
-                f"Job {self._kubernetes_job.v1_job.metadata.name} deleted "
+                f"Job {self._v1_job_model.metadata.name} deleted "
                 f"with {deleted_v1_job.status!r}."
             )
 
@@ -368,7 +374,7 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
 
                 latest_v1_job = await run_sync_in_worker_thread(
                     batch_v1_client.read_namespaced_job_status,
-                    name=self._kubernetes_job.v1_job.metadata.name,
+                    name=self._v1_job_model.metadata.name,
                     namespace=self._kubernetes_job.namespace,
                     **self._kubernetes_job.api_kwargs,
                 )
@@ -478,15 +484,9 @@ class KubernetesJob(JobBlock):
     _logo_url = "https://images.ctfassets.net/zscdif0zqppk/531JKlIwMeEXcBnoK0yeB8/e304dc11a9d25c831901e9cd668433fa/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
 
     async def trigger(self):
-        """Create a Kubernetes job and return a `KubernetesJobRun` object.
+        """Create a Kubernetes job and return a `KubernetesJobRun` object."""
 
-        While altering `self` here is not ideal, it avoids the
-        need to use JSON encoders for the UI, define a `dict` method,
-        and bypass the validation caused by using
-        `convert_manifest_to_model` in `block_initialization`.
-        """
-
-        self.v1_job = convert_manifest_to_model(self.v1_job, "V1Job")
+        v1_job_model = convert_manifest_to_model(self.v1_job, "V1Job")
 
         with self.credentials.get_client("batch") as batch_v1_client:
             await run_sync_in_worker_thread(
@@ -496,7 +496,7 @@ class KubernetesJob(JobBlock):
                 **self.api_kwargs,
             )
 
-        return KubernetesJobRun(kubernetes_job=self)
+        return KubernetesJobRun(kubernetes_job=self, v1_job_model=v1_job_model)
 
     @classmethod
     def from_yaml_file(
