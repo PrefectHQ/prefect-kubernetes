@@ -27,47 +27,12 @@ class KubernetesCredentials(Block):
         cluster_config: A `KubernetesClusterConfig` block holding a JSON kube
             config for a specific kubernetes context.
 
-    Examples:
+    Example:
         Load stored Kubernetes credentials:
         ```python
         from prefect_kubernetes.credentials import KubernetesCredentials
 
-        kubernetes_credentials = KubernetesCredentials.load("my-k8s-credentials")
-        ```
-
-        Create resource-specific API clients from KubernetesCredentials:
-        ```python
-        from kubernetes.client.models import AppsV1Api, BatchV1Api, CoreV1Api
-        from prefect_kubernetes import KubernetesCredentials
-
-        kubernetes_credentials = KubernetesCredentials.load("my-k8s-credentials")
-
-        with kubernetes_credentials.get_client("apps") as v1_apps_client:
-            assert isinstance(v1_apps_client, AppsV1Api)
-
-        with kubernetes_credentials.get_client("batch") as v1_batch_client:
-            assert isinstance(v1_batch_client, BatchV1Api)
-
-        with kubernetes_credentials.get_client("core") as v1_core_client:
-            assert isinstance(v1_core_client, CoreV1Api)
-        ```
-
-        Create a namespaced job:
-        ```python
-        from prefect import flow
-        from prefect_kubernetes import KubernetesCredentials
-        from prefect_kubernetes.job import create_namespaced_job
-
-        from kubernetes.client.models import V1Job
-
-        kubernetes_credentials = KubernetesCredentials.load("my-k8s-credentials")
-
-        @flow
-        def kubernetes_orchestrator():
-            create_namespaced_job(
-                kubernetes_credentials=kubernetes_credentials,
-                body=V1Job(**{"metadata": {"name": "my-job"}}),
-            )
+        kubernetes_credentials = KubernetesCredentials.load("BLOCK_NAME")
         ```
     """
 
