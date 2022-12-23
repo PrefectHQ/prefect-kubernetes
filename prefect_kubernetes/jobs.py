@@ -491,7 +491,7 @@ class KubernetesJob(JobBlock):
         with self.credentials.get_client("batch") as batch_v1_client:
             await run_sync_in_worker_thread(
                 batch_v1_client.create_namespaced_job,
-                body=self.v1_job,
+                body=v1_job_model,
                 namespace=self.namespace,
                 **self.api_kwargs,
             )
