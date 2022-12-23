@@ -4,11 +4,12 @@ from unittest.mock import MagicMock
 
 import pytest
 import yaml
-from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api
+from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, models
 from kubernetes.client.exceptions import ApiException
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 
 from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.jobs import KubernetesJob
 
 BASEDIR = Path("tests")
 GOOD_CONFIG_FILE_PATH = BASEDIR / "kube_config.yaml"
@@ -86,6 +87,50 @@ def _mock_api_core_client(monkeypatch):
 
 
 @pytest.fixture
+def mock_create_namespaced_job(monkeypatch):
+    mock_v1_job = MagicMock(
+        return_value=models.V1Job(metadata=models.V1ObjectMeta(name="test"))
+    )
+    monkeypatch.setattr(
+        "kubernetes.client.BatchV1Api.create_namespaced_job", mock_v1_job
+    )
+    return mock_v1_job
+
+
+@pytest.fixture
+def mock_read_namespaced_job_status(monkeypatch):
+    mock_v1_job_status = MagicMock(
+        return_value=models.V1Job(
+            metadata=models.V1ObjectMeta(
+                name="test", labels={"controller-uid": "test"}
+            ),
+            spec=models.V1JobSpec(
+                template=models.V1PodTemplateSpec(
+                    spec=models.V1PodSpec(containers=[models.V1Container(name="test")])
+                )
+            ),
+            status=models.V1JobStatus(active=0, failed=0, succeeded=1),
+        )
+    )
+    monkeypatch.setattr(
+        "kubernetes.client.BatchV1Api.read_namespaced_job_status",
+        mock_v1_job_status,
+    )
+    return mock_v1_job_status
+
+
+@pytest.fixture
+def mock_delete_namespaced_job(monkeypatch):
+    mock_v1_job = MagicMock(
+        return_value=models.V1Job(metadata=models.V1ObjectMeta(name="test"))
+    )
+    monkeypatch.setattr(
+        "kubernetes.client.BatchV1Api.delete_namespaced_job", mock_v1_job
+    )
+    return mock_v1_job
+
+
+@pytest.fixture
 def mock_stream_timeout(monkeypatch):
 
     monkeypatch.setattr(
@@ -96,8 +141,45 @@ def mock_stream_timeout(monkeypatch):
 
 @pytest.fixture
 def mock_pod_log(monkeypatch):
-
     monkeypatch.setattr(
         "kubernetes.watch.Watch.stream",
         MagicMock(return_value=["test log"]),
+    )
+
+
+@pytest.fixture
+def mock_list_namespaced_pod(monkeypatch):
+    result = models.V1PodList(
+        items=[
+            models.V1Pod(
+                metadata=models.V1ObjectMeta(name="test-pod"),
+                status=models.V1PodStatus(phase="Completed"),
+            )
+        ]
+    )
+    mock_pod_list = MagicMock(return_value=result)
+
+    monkeypatch.setattr(
+        "kubernetes.client.CoreV1Api.list_namespaced_pod", mock_pod_list
+    )
+    return mock_pod_list
+
+
+@pytest.fixture
+def read_pod_logs(monkeypatch):
+
+    pod_log = MagicMock(return_value="test log")
+
+    monkeypatch.setattr("kubernetes.client.CoreV1Api.read_namespaced_pod_log", pod_log)
+    return pod_log
+
+
+@pytest.fixture
+def valid_kubernetes_job_block(kubernetes_credentials):
+    with open("tests/sample_k8s_resources/sample_job.yaml") as f:
+        job_dict = yaml.safe_load(f)
+
+    return KubernetesJob(
+        credentials=kubernetes_credentials,
+        v1_job=job_dict,
     )

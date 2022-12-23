@@ -1,12 +1,22 @@
 """Module to define tasks for interacting with Kubernetes jobs."""
 
-from typing import Any, Dict, Optional
+from asyncio import sleep
+from pathlib import Path
+from typing import Any, Dict, Optional, Type, Union
 
+import yaml
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
 from prefect import task
+from prefect.blocks.abstract import JobBlock, JobRun
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
+from pydantic import Field
+from typing_extensions import Self
 
 from prefect_kubernetes.credentials import KubernetesCredentials
+from prefect_kubernetes.exceptions import KubernetesJobTimeoutError
+from prefect_kubernetes.utilities import convert_manifest_to_model
+
+KubernetesManifest = Union[Dict, Path, str]
 
 
 @task
@@ -299,3 +309,211 @@ async def replace_namespaced_job(
             namespace=namespace,
             **kube_kwargs,
         )
+
+
+class KubernetesJobRun(JobRun[Dict[str, Any]]):
+    """A container representing a run of a Kubernetes job."""
+
+    def __init__(
+        self,
+        kubernetes_job: "KubernetesJob",
+        v1_job_model: V1Job,
+    ):
+        self.pod_logs = None
+
+        self._completed = False
+        self._kubernetes_job = kubernetes_job
+        self._v1_job_model = v1_job_model
+
+    async def _cleanup(self):
+        """Deletes the Kubernetes job resource."""
+        with self._kubernetes_job.credentials.get_client("batch") as batch_v1_client:
+            deleted_v1_job = await run_sync_in_worker_thread(
+                batch_v1_client.delete_namespaced_job,
+                namespace=self._kubernetes_job.namespace,
+                name=self._v1_job_model.metadata.name,
+                **self._kubernetes_job.api_kwargs,
+            )
+            self.logger.info(
+                f"Job {self._v1_job_model.metadata.name} deleted "
+                f"with {deleted_v1_job.status!r}."
+            )
+
+    async def wait_for_completion(self):
+        """Waits for the job to complete.
+
+        If the job has `delete_after_completion` set to `True`,
+        the job will be deleted if it is observed by this method
+        to enter a completed state.
+
+        Raises:
+            RuntimeError: If the Kubernetes job fails.
+            KubernetesJobTimeoutError: If the Kubernetes job times out.
+            ValueError: If `wait_for_completion` is never called.
+        """
+        self.pod_logs = {}
+
+        with self._kubernetes_job.credentials.get_client(
+            "batch"
+        ) as batch_v1_client, self._kubernetes_job.credentials.get_client(
+            "core"
+        ) as core_v1_client:
+
+            elapsed_time = 0
+
+            while not self._completed:
+                job_expired = (
+                    elapsed_time > self._kubernetes_job.timeout_seconds
+                    if self._kubernetes_job.timeout_seconds
+                    else False
+                )
+                if job_expired:
+                    raise KubernetesJobTimeoutError(
+                        f"Job timed out after {elapsed_time} seconds."
+                    )
+
+                latest_v1_job = await run_sync_in_worker_thread(
+                    batch_v1_client.read_namespaced_job_status,
+                    name=self._v1_job_model.metadata.name,
+                    namespace=self._kubernetes_job.namespace,
+                    **self._kubernetes_job.api_kwargs,
+                )
+                pod_selector = (
+                    "controller-uid="
+                    f"{latest_v1_job.metadata.labels['controller-uid']}"
+                )
+                v1_pod_list = await run_sync_in_worker_thread(
+                    core_v1_client.list_namespaced_pod,
+                    namespace=self._kubernetes_job.namespace,
+                    label_selector=pod_selector,
+                    **self._kubernetes_job.api_kwargs,
+                )
+                for pod in v1_pod_list.items:
+                    pod_name = pod.metadata.name
+
+                    if (
+                        pod.status.phase == "Pending"
+                        or pod_name in self.pod_logs.keys()
+                    ):
+                        continue
+
+                    self.logger.info(f"Capturing logs for pod {pod_name!r}.")
+
+                    self.pod_logs[pod_name] = await run_sync_in_worker_thread(
+                        core_v1_client.read_namespaced_pod_log,
+                        namespace=self._kubernetes_job.namespace,
+                        name=pod_name,
+                        container=latest_v1_job.spec.template.spec.containers[0].name,
+                        **self._kubernetes_job.api_kwargs,
+                    )
+
+                if latest_v1_job.status.active:
+                    await sleep(self._kubernetes_job.interval_seconds)
+                    if self._kubernetes_job.timeout_seconds:
+                        elapsed_time += self._kubernetes_job.interval_seconds
+                elif latest_v1_job.status.failed:
+                    raise RuntimeError(
+                        f"Job {latest_v1_job.metadata.name!r} failed, check the "
+                        "Kubernetes pod logs for more information."
+                    )
+                elif latest_v1_job.status.succeeded:
+                    self._completed = True
+                    self.logger.info(
+                        f"Job {latest_v1_job.metadata.name!r} has completed."
+                    )
+
+        if self._kubernetes_job.delete_after_completion:
+            await self._cleanup()
+
+    async def fetch_result(self) -> Dict[str, Any]:
+        """Fetch the results of the job.
+
+        Returns:
+            The logs from each of the pods in the job.
+
+        Raises:
+            ValueError: If this method is called when the job has
+                a non-terminal state.
+        """
+
+        if not self._completed:
+            raise ValueError(
+                "The Kubernetes Job run is not in a completed state - "
+                "be sure to call `wait_for_completion` before attempting "
+                "to fetch the result."
+            )
+        return self.pod_logs
+
+
+class KubernetesJob(JobBlock):
+    """A block representing a Kubernetes job configuration."""
+
+    v1_job: Dict[str, Any] = Field(
+        default=...,
+        title="Job Manifest",
+        description=(
+            "The Kubernetes job manifest to run. This dictionary can be produced "
+            "using `yaml.safe_load`."
+        ),
+    )
+    api_kwargs: Dict[str, Any] = Field(
+        default_factory=dict,
+        title="Additional API Arguments",
+        description="Additional arguments to include in Kubernetes API calls.",
+        example={"pretty": "true"},
+    )
+    credentials: KubernetesCredentials = Field(
+        default=..., description="The credentials to configure a client from."
+    )
+    delete_after_completion: bool = Field(
+        default=True,
+        description="Whether to delete the job after it has completed.",
+    )
+    interval_seconds: int = Field(
+        default=5,
+        description="The number of seconds to wait between job status checks.",
+    )
+    namespace: str = Field(
+        default="default",
+        description="The namespace to create and run the job in.",
+    )
+    timeout_seconds: Optional[int] = Field(
+        default=None,
+        description="The number of seconds to wait for the job run before timing out.",
+    )
+
+    _block_type_name = "Kubernetes Job"
+    _block_type_slug = "k8s-job"
+    _logo_url = "https://images.ctfassets.net/zscdif0zqppk/531JKlIwMeEXcBnoK0yeB8/e304dc11a9d25c831901e9cd668433fa/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
+
+    async def trigger(self):
+        """Create a Kubernetes job and return a `KubernetesJobRun` object."""
+
+        v1_job_model = convert_manifest_to_model(self.v1_job, "V1Job")
+
+        with self.credentials.get_client("batch") as batch_v1_client:
+            await run_sync_in_worker_thread(
+                batch_v1_client.create_namespaced_job,
+                body=v1_job_model,
+                namespace=self.namespace,
+                **self.api_kwargs,
+            )
+
+        return KubernetesJobRun(kubernetes_job=self, v1_job_model=v1_job_model)
+
+    @classmethod
+    def from_yaml_file(
+        cls: Type[Self], manifest_path: Union[Path, str], **kwargs
+    ) -> Self:
+        """Create a `KubernetesJob` from a YAML file.
+
+        Args:
+            manifest_path: The YAML file to create the `KubernetesJob` from.
+
+        Returns:
+            A KubernetesJob object.
+        """
+        with open(manifest_path, "r") as yaml_stream:
+            yaml_dict = yaml.safe_load(yaml_stream)
+
+        return cls(v1_job=yaml_dict, **kwargs)
