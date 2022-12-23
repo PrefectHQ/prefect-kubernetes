@@ -450,6 +450,7 @@ class KubernetesJob(JobBlock):
 
     v1_job: Dict[str, Any] = Field(
         default=...,
+        title="Job Manifest",
         description=(
             "The Kubernetes job manifest to run. This dictionary can be produced "
             "using `yaml.safe_load`."
@@ -457,7 +458,8 @@ class KubernetesJob(JobBlock):
     )
     api_kwargs: Dict[str, Any] = Field(
         default_factory=dict,
-        description="The kwargs to pass to all Kubernetes API calls.",
+        title="Additional API Arguments",
+        description="Additional arguments to include in Kubernetes API calls.",
         example={"pretty": "true"},
     )
     credentials: KubernetesCredentials = Field(
@@ -481,6 +483,7 @@ class KubernetesJob(JobBlock):
     )
 
     _block_type_name = "Kubernetes Job"
+    _block_type_slug = "k8s-job"
     _logo_url = "https://images.ctfassets.net/zscdif0zqppk/531JKlIwMeEXcBnoK0yeB8/e304dc11a9d25c831901e9cd668433fa/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
 
     async def trigger(self):

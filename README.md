@@ -66,6 +66,8 @@ job = KubernetesJob.from_yaml_file( # or create in the UI with a dict manifest
     manifest_path="path/to/job.yaml",
 )
 
+job.save("my-k8s-job", overwrite=True)
+
 if __name__ == "__main__":
     # run the flow
     run_namespaced_job(job)
@@ -115,7 +117,7 @@ from prefect_kubernetes.utilities import convert_manifest_to_model
 
 @flow
 def kubernetes_orchestrator():
-    
+
     v1_deployment_updates = convert_manifest_to_model(
         manifest="path/to/manifest.yaml",
         v1_model_name="V1Deployment",
