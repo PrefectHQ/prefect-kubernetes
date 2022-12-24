@@ -52,7 +52,7 @@ Note, to use the `load` method on Blocks, you must already have a block document
 
 ### Example Usage
 
-#### Use `with_options` to customize options on any existing task or flow:
+#### Use `with_options` to customize options on any existing task or flow
 
 ```python
 from prefect_kubernetes.flows import run_namespaced_job
