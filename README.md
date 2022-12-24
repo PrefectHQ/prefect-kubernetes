@@ -52,6 +52,21 @@ Note, to use the `load` method on Blocks, you must already have a block document
 
 ### Example Usage
 
+#### Use `with_options` to customize options on any existing task or flow
+
+```python
+from prefect_kubernetes.flows import run_namespaced_job
+
+customized_run_namespaced_job = run_namespaced_job.with_options(
+    name="My flow running a Kubernetes Job",
+    retries=2,
+    retry_delay_seconds=10,
+) # this is now a new flow object that can be called
+```
+
+For more tips on how to use tasks and flows in a Collection, check out [Using Collections](https://orion-docs.prefect.io/collections/usage/)!
+
+
 #### Specify and run a Kubernetes Job from a yaml file
 
 ```python

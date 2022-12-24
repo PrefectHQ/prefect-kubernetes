@@ -484,7 +484,7 @@ class KubernetesJob(JobBlock):
 
     _block_type_name = "Kubernetes Job"
     _block_type_slug = "k8s-job"
-    _logo_url = "https://images.ctfassets.net/zscdif0zqppk/531JKlIwMeEXcBnoK0yeB8/e304dc11a9d25c831901e9cd668433fa/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
+    _logo_url = "https://images.ctfassets.net/zscdif0zqppk/35vNcprr3MmIlkrKxxCiah/1d720b4b50dfa8876198cf21730cf123/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
 
     async def trigger(self):
         """Create a Kubernetes job and return a `KubernetesJobRun` object."""
