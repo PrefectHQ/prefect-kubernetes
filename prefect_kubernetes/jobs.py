@@ -8,7 +8,7 @@ import yaml
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
 from prefect import task
 from prefect.blocks.abstract import JobBlock, JobRun
-from prefect.utilities.asyncutils import run_sync_in_worker_thread
+from prefect.utilities.asyncutils import run_sync_in_worker_thread, sync_compatible
 from pydantic import Field
 from typing_extensions import Self
 
@@ -339,6 +339,7 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                 f"with {deleted_v1_job.status!r}."
             )
 
+    @sync_compatible
     async def wait_for_completion(self):
         """Waits for the job to complete.
 
@@ -425,6 +426,7 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
         if self._kubernetes_job.delete_after_completion:
             await self._cleanup()
 
+    @sync_compatible
     async def fetch_result(self) -> Dict[str, Any]:
         """Fetch the results of the job.
 
@@ -486,6 +488,7 @@ class KubernetesJob(JobBlock):
     _block_type_slug = "k8s-job"
     _logo_url = "https://images.ctfassets.net/zscdif0zqppk/35vNcprr3MmIlkrKxxCiah/1d720b4b50dfa8876198cf21730cf123/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
 
+    @sync_compatible
     async def trigger(self):
         """Create a Kubernetes job and return a `KubernetesJobRun` object."""
 
