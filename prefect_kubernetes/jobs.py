@@ -487,7 +487,7 @@ class KubernetesJob(JobBlock):
     _block_type_name = "Kubernetes Job"
     _block_type_slug = "k8s-job"
     _logo_url = "https://images.ctfassets.net/zscdif0zqppk/35vNcprr3MmIlkrKxxCiah/1d720b4b50dfa8876198cf21730cf123/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
-    _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/jobs/#prefect_kubernetes.jobs.KubernetesJob"
+    _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/jobs/#prefect_kubernetes.jobs.KubernetesJob"  # noqa
 
     @sync_compatible
     async def trigger(self):
