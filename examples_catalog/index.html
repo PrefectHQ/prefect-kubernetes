@@ -9,17 +9,13 @@
       
       
       
-        <link rel="prev" href="../deployments/">
-      
-      
-        <link rel="next" href="../flows/">
       
       <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.12">
     
     
       
-        <title>Exceptions - prefect-kubernetes</title>
+        <title>Examples Catalog - prefect-kubernetes</title>
       
     
     
@@ -85,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#prefect_kubernetes.exceptions" class="md-skip">
+        <a href="#examples-catalog" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Exceptions
+              Examples Catalog
             
           </span>
         </div>
@@ -299,86 +295,11 @@
 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Exceptions
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
         Exceptions
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions-classes" class="md-nav__link">
-    Classes
-  </a>
-  
-    <nav class="md-nav" aria-label="Classes">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions.KubernetesJobDefinitionError" class="md-nav__link">
-    KubernetesJobDefinitionError
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions.KubernetesJobFailedError" class="md-nav__link">
-    KubernetesJobFailedError
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions.KubernetesJobTimeoutError" class="md-nav__link">
-    KubernetesJobTimeoutError
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions.KubernetesResourceNotFoundError" class="md-nav__link">
-    KubernetesResourceNotFoundError
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -485,43 +406,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions-classes" class="md-nav__link">
-    Classes
+  <a href="#credentials-module" class="md-nav__link">
+    Credentials Module
   </a>
-  
-    <nav class="md-nav" aria-label="Classes">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions.KubernetesJobDefinitionError" class="md-nav__link">
-    KubernetesJobDefinitionError
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions.KubernetesJobFailedError" class="md-nav__link">
-    KubernetesJobFailedError
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions.KubernetesJobTimeoutError" class="md-nav__link">
-    KubernetesJobTimeoutError
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#prefect_kubernetes.exceptions.KubernetesResourceNotFoundError" class="md-nav__link">
-    KubernetesResourceNotFoundError
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -539,168 +426,17 @@
                 
                   
 
-  
-  
 
 
+<h1 id="examples-catalog">Examples Catalog</h1>
+<p>Below is a list of examples for <code>prefect-kubernetes</code>.</p>
+<h2 id="credentials-module"><a class="autorefs autorefs-internal" href="../credentials/#prefect_kubernetes.credentials">Credentials Module</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
 
-<div class="doc doc-object doc-module">
-
-
-
-<h1 id="prefect_kubernetes.exceptions" class="doc doc-heading">
-          <code>prefect_kubernetes.exceptions</code>
-
-
-</h1>
-
-  <div class="doc doc-contents first">
-  
-      <p>Module to define common exceptions within <code>prefect_kubernetes</code>.</p>
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-<h2 id="prefect_kubernetes.exceptions-classes">Classes</h2>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h3 id="prefect_kubernetes.exceptions.KubernetesJobDefinitionError" class="doc doc-heading">
-        <code>KubernetesJobDefinitionError</code>
-
-
-</h3>
-
-
-  <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><span title="kubernetes.client.exceptions.OpenApiException">OpenApiException</span></code></p>
-
-  
-      <p>An exception for when a Kubernetes job definition is invalid.</p>
-
-
-        <details class="quote">
-          <summary>Source code in <code>prefect_kubernetes/exceptions.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">6</span>
-<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesJobDefinitionError</span><span class="p">(</span><span class="n">OpenApiException</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An exception for when a Kubernetes job definition is invalid.&quot;&quot;&quot;</span>
-</code></pre></div></td></tr></table></div>
-        </details>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h3 id="prefect_kubernetes.exceptions.KubernetesJobFailedError" class="doc doc-heading">
-        <code>KubernetesJobFailedError</code>
-
-
-</h3>
-
-
-  <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><span title="kubernetes.client.exceptions.OpenApiException">OpenApiException</span></code></p>
-
-  
-      <p>An exception for when a Kubernetes job fails.</p>
-
-
-        <details class="quote">
-          <summary>Source code in <code>prefect_kubernetes/exceptions.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">10</span>
-<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesJobFailedError</span><span class="p">(</span><span class="n">OpenApiException</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An exception for when a Kubernetes job fails.&quot;&quot;&quot;</span>
-</code></pre></div></td></tr></table></div>
-        </details>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h3 id="prefect_kubernetes.exceptions.KubernetesJobTimeoutError" class="doc doc-heading">
-        <code>KubernetesJobTimeoutError</code>
-
-
-</h3>
-
-
-  <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><span title="kubernetes.client.exceptions.OpenApiException">OpenApiException</span></code></p>
-
-  
-      <p>An exception for when a Kubernetes job times out.</p>
-
-
-        <details class="quote">
-          <summary>Source code in <code>prefect_kubernetes/exceptions.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">18</span>
-<span class="normal">19</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesJobTimeoutError</span><span class="p">(</span><span class="n">OpenApiException</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An exception for when a Kubernetes job times out.&quot;&quot;&quot;</span>
-</code></pre></div></td></tr></table></div>
-        </details>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h3 id="prefect_kubernetes.exceptions.KubernetesResourceNotFoundError" class="doc doc-heading">
-        <code>KubernetesResourceNotFoundError</code>
-
-
-</h3>
-
-
-  <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><span title="kubernetes.client.exceptions.ApiException">ApiException</span></code></p>
-
-  
-      <p>An exception for when a Kubernetes resource cannot be found by a client.</p>
-
-
-        <details class="quote">
-          <summary>Source code in <code>prefect_kubernetes/exceptions.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">14</span>
-<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesResourceNotFoundError</span><span class="p">(</span><span class="n">ApiException</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An exception for when a Kubernetes resource cannot be found by a client.&quot;&quot;&quot;</span>
-</code></pre></div></td></tr></table></div>
-        </details>
-
-  </div>
-
-</div>
-
-
-
-
-  </div>
-
-  </div>
-
-</div>
+<span class="k">with</span> <span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">get_client</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">core_v1_client</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">pod</span> <span class="ow">in</span> <span class="n">core_v1_client</span><span class="o">.</span><span class="n">list_namespaced_pod</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">pod</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</code></pre></div>
 
 
   
