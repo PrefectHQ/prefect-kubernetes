@@ -3,8 +3,24 @@ repo_url: https://github.com/PrefectHQ/prefect-kubernetes
 theme:
   name: material
   palette:
-    primary: blue
-    accent: blue
+    - media: "(prefers-color-scheme)"
+      toggle:
+          icon: material/brightness-auto
+          name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      accent: blue
+      primary: blue
+      scheme: default
+      toggle:
+          icon: material/weather-sunny
+          name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      accent: blue
+      primary: blue
+      scheme: slate
+      toggle:
+          icon: material/weather-night
+          name: Switch to light mode
 markdown_extensions:
     - admonition
     - attr_list
@@ -15,11 +31,16 @@ markdown_extensions:
         use_pygments: true
     - pymdownx.superfences
     - pymdownx.tabbed
+    - pymdownx.inlinehilite
+    - pymdownx.snippets
+
 plugins:
   - search
   - gen-files:
       scripts:
-        - docs/gen_ref_pages.py
+        - docs/gen_home_page.py
+        - docs/gen_examples_catalog.py
+        - docs/gen_blocks_catalog.py
   - mkdocstrings:
       handlers:
         python:
@@ -44,3 +65,26 @@ nav:
     - Pods: pods.md
     - Services: services.md
     - Utilities: utilities.md
+extra:
+    social:
+        - icon: fontawesome/brands/slack
+          link: https://www.prefect.io/slack/
+        - icon: fontawesome/brands/discourse
+          link: https://discourse.prefect.io/
+        - icon: fontawesome/brands/youtube
+          link: https://www.youtube.com/c/PrefectIO/videos
+        - icon: fontawesome/regular/newspaper
+          link: https://prefect.io/guide/
+        - icon: fontawesome/brands/twitter
+          link: https://twitter.com/PrefectIO
+        - icon: fontawesome/brands/linkedin
+          link: https://www.linkedin.com/company/prefect/
+        - icon: fontawesome/brands/github
+          link: https://github.com/PrefectHQ/prefect
+        - icon: fontawesome/brands/docker
+          link: https://hub.docker.com/r/prefecthq/prefect/
+        - icon: fontawesome/brands/python
+          link: https://pypi.org/project/prefect/
+    analytics:
+        provider: google
+        property: G-8CSMBCQDKN
