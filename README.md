@@ -41,14 +41,6 @@ We recommend using a Python virtual environment manager such as pipenv, conda or
 
 These tasks are designed to work with Prefect 2.0. For more information about how to use Prefect, please refer to the [Prefect documentation](https://orion-docs.prefect.io/).
 
-### Installation
-
-Install `prefect-kubernetes` with `pip`:
-
-```bash
-pip install prefect-kubernetes
-```
-
 Then, to register [blocks](https://orion-docs.prefect.io/ui/blocks/) on Prefect Cloud:
 
 ```bash
