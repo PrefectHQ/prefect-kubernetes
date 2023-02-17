@@ -23,23 +23,21 @@
 
 Jump to [examples](#example-usage).
 
-## Getting Started
+## Resources
 
-### Python setup
+For more tips on how to use tasks and flows in a Collection, check out [Using Collections](https://orion-docs.prefect.io/collections/usage/)!
+
+### Installation
+Install `prefect-kubernetes` with `pip`:
+```bash
+ pip install prefect-kubernetes
+ ```
 
 Requires an installation of Python 3.7+.
 
 We recommend using a Python virtual environment manager such as pipenv, conda or virtualenv.
 
-These tasks are designed to work with Prefect 2.0. For more information about how to use Prefect, please refer to the [Prefect documentation](https://orion-docs.prefect.io/).
-
-### Installation
-
-Install `prefect-kubernetes` with `pip`:
-
-```bash
-pip install prefect-kubernetes
-```
+These tasks are designed to work with Prefect 2. For more information about how to use Prefect, please refer to the [Prefect documentation](https://orion-docs.prefect.io/).
 
 Then, to register [blocks](https://orion-docs.prefect.io/ui/blocks/) on Prefect Cloud:
 
@@ -146,25 +144,31 @@ def kubernetes_orchestrator():
     )
 ```
 
-## Resources
+## Feedback
 
 If you encounter any bugs while using `prefect-kubernetes`, feel free to open an issue in the [prefect-kubernetes](https://github.com/PrefectHQ/prefect-kubernetes) repository.
 
 If you have any questions or issues while using `prefect-kubernetes`, you can find help in either the [Prefect Discourse forum](https://discourse.prefect.io/) or the [Prefect Slack community](https://prefect.io/slack).
 
-Feel free to ⭐️ or watch [`prefect-kubernetes`](https://github.com/PrefectHQ/prefect-kubernetes) for updates too!
+Feel free to star or watch [`prefect-kubernetes`](https://github.com/PrefectHQ/prefect-kubernetes) for updates too!
 
-## Development
+## Contributing
 
-If you'd like to install a version of `prefect-kubernetes` for development, clone the repository and perform an editable install with `pip`:
-
-```bash
-git clone https://github.com/PrefectHQ/prefect-kubernetes.git
-
-cd prefect-kubernetes/
-
-pip install -e ".[dev]"
-
-# Install linting pre-commit hooks
-pre-commit install
+If you'd like to help contribute to fix an issue or add a feature to `prefect-kubernetes`, please [propose changes through a pull request from a fork of the repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
+ 
+Here are the steps:
+ 
+1. [Fork the repository](https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository)
+2. [Clone the forked repository](https://docs.github.com/en/get-started/quickstart/fork-a-repo#cloning-your-forked-repository)
+3. Install the repository and its dependencies:
 ```
+ pip install -e ".[dev]"
+```
+4. Make desired changes
+5. Add tests
+6. Insert an entry to [CHANGELOG.md](https://github.com/PrefectHQ/prefect-kubernetes/blob/main/CHANGELOG.md)
+7. Install `pre-commit` to perform quality checks prior to commit:
+```
+ pre-commit install
+ ```
+8. `git commit`, `git push`, and create a pull request
