@@ -2,7 +2,7 @@
 
 <p align="center">
     <!--- Insert a cover image here -->
-    <!--- <br> -->
+    <img src="https://user-images.githubusercontent.com/15331990/219783351-bfdadb04-407b-4542-aaae-a99cb87d8413.png">
     <a href="https://pypi.python.org/pypi/prefect-kubernetes/" alt="PyPI version">
         <img alt="PyPI" src="https://img.shields.io/pypi/v/prefect-kubernetes?color=0052FF&labelColor=090422"></a>
     <a href="https://github.com/PrefectHQ/prefect-kubernetes/" alt="Stars">
