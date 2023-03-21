@@ -6,7 +6,7 @@ import math
 import os
 import time
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Dict, Generator, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional
 
 import anyio.abc
 from prefect.blocks.kubernetes import KubernetesClusterConfig
@@ -22,6 +22,7 @@ from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 from prefect.utilities.importtools import lazy_import
 from pydantic import Field
+from typing_extensions import Literal
 
 from prefect_kubernetes.utilities import (
     _slugify_label_key,
