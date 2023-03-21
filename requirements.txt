@@ -1,3 +1,2 @@
-# TODO: Update to prefect>=2.8.7 once prefect 2.8.7 is released
-git+https://github.com/prfecthq/prefect@main#egg=prefect
+prefect>=2.0.0
 kubernetes >= 24.2.0
