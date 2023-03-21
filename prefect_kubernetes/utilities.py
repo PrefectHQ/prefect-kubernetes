@@ -76,6 +76,7 @@ def convert_manifest_to_model(
 
     return v1_model(**converted_manifest)
 
+
 def _slugify_name(name: str) -> Optional[str]:
     """
     Slugify text for use as a name.
@@ -103,6 +104,7 @@ def _slugify_name(name: str) -> Optional[str]:
 
     return slug if slug else None
 
+
 def _slugify_label_key(key: str) -> str:
     """
     Slugify text for use as a label key.
@@ -120,7 +122,7 @@ def _slugify_label_key(key: str) -> str:
 
     Returns:
         The slugified label key
-    """
+    """  # noqa
     if "/" in key:
         prefix, name = key.split("/", maxsplit=1)
     else:
@@ -138,11 +140,7 @@ def _slugify_label_key(key: str) -> str:
 
     if prefix:
         prefix_slug = (
-            slugify(
-                prefix,
-                max_length=253,
-                regex_pattern=r"[^a-zA-Z0-9-\.]+",
-            ).strip(
+            slugify(prefix, max_length=253, regex_pattern=r"[^a-zA-Z0-9-\.]+",).strip(
                 "_-."
             )  # Must start or end with alphanumeric characters
             or prefix
@@ -151,6 +149,7 @@ def _slugify_label_key(key: str) -> str:
         return f"{prefix_slug}/{name_slug}"
 
     return name_slug
+
 
 def _slugify_label_value(value: str) -> str:
     """
@@ -166,7 +165,7 @@ def _slugify_label_value(value: str) -> str:
 
     Returns:
         The slugified value
-    """
+    """  # noqa
     slug = (
         slugify(value, max_length=63, regex_pattern=r"[^a-zA-Z0-9-_\.]+").strip(
             "_-."  # Must start or end with alphanumeric characters
@@ -177,4 +176,3 @@ def _slugify_label_value(value: str) -> str:
     # Kubernetes to throw the validation error
 
     return slug
-

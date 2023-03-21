@@ -1,3 +1,6 @@
+"""
+Module containing the Kubernetes worker used for executing flow runs as Kubernetes jobs.
+"""
 import enum
 import math
 import os
@@ -39,6 +42,7 @@ else:
 
 
 def get_default_job_manifest_template() -> Dict[str, Any]:
+    """Returns the default job manifest template used by the Kubernetes worker."""
     return {
         "apiVersion": "batch/v1",
         "kind": "Job",
@@ -71,12 +75,22 @@ def get_default_job_manifest_template() -> Dict[str, Any]:
 
 
 class KubernetesImagePullPolicy(enum.Enum):
+    """Enum representing the image pull policy options for a Kubernetes job."""
+
     IF_NOT_PRESENT = "IfNotPresent"
     ALWAYS = "Always"
     NEVER = "Never"
 
 
 class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
+    """
+    Configuration class used by the Kubernetes worker.
+
+    An instance of this class is passed to the Kubernetes worker's `run` method
+    for each flow run. It contains all of the information necessary to execute
+    the flow run as a Kubernetes job.
+    """
+
     namespace: Optional[str] = Field(default="default")
     job_manifest: Dict[str, Any] = Field(template=get_default_job_manifest_template())
     cluster_config: Optional[KubernetesClusterConfig] = Field(default=None)
@@ -93,6 +107,12 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         deployment: Optional["DeploymentResponse"] = None,
         flow: Optional["Flow"] = None,
     ):
+        """
+        Prepares the job configuration for a flow run.
+
+        Ensures that necessary values are present in the job manifest and that the
+        job manifest is valid.
+        """
         super().prepare_for_flow_run(flow_run, deployment, flow)
         # Update configuration env and job manifest env
         self._update_prefect_api_url_if_local_server()
@@ -109,9 +129,10 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         self._ensure_generate_name_is_present()
 
     def _update_prefect_api_url_if_local_server(self):
-        # If the API URL has been set by the base environment rather than the by the
-        # user, update the value to ensure connectivity when using a bridge network by
-        # updating local connections to use the internal host
+        """If the API URL has been set by the base environment rather than the by the
+        user, update the value to ensure connectivity when using a bridge network by
+        updating local connections to use the internal host
+        """
         if self.env.get("PREFECT_API_URL") and self._api_dns_name:
             self.env["PREFECT_API_URL"] = (
                 self.env["PREFECT_API_URL"]
@@ -120,6 +141,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
             )
 
     def _slugify_labels(self):
+        """Slugifies the labels in the job manifest."""
         try:
             self.job_manifest["metadata"]["labels"] = {
                 _slugify_label_key(k): _slugify_label_value(v)
@@ -129,6 +151,8 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
             raise ValueError("Unable to update labels due to invalid job manifest.")
 
     def _ensure_image_is_present(self):
+        """Ensures that the image is present in the job manifest. Populates the image
+        with the default Prefect image if it is not present."""
         try:
             if (
                 "image"
@@ -143,6 +167,10 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
             )
 
     def _ensure_command_is_present(self):
+        """
+        Ensures that the command is present in the job manifest. Populates the command
+        with the `prefect -m prefect.engine` if a command is not present.
+        """
         try:
             command = self.job_manifest["spec"]["template"]["spec"]["containers"][
                 0
@@ -167,12 +195,14 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
             raise ValueError(
                 "Unable to verify command due to invalid job manifest template."
             )
-        
+
     def _ensure_metadata_is_present(self):
+        """Ensures that the metadata is present in the job manifest."""
         if "metadata" not in self.job_manifest:
             self.job_manifest["metadata"] = {}
 
     def _ensure_namespace_is_present(self):
+        """Ensures that the namespace is present in the job manifest."""
         try:
             if "namespace" not in self.job_manifest["metadata"]:
                 self.job_manifest["metadata"]["namespace"] = self.namespace
@@ -182,6 +212,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
             )
 
     def _ensure_generate_name_is_present(self):
+        """Ensures that the generateName is present in the job manifest."""
         try:
             generate_name = None
             if self.name:
@@ -197,6 +228,13 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
 
 
 class KubernetesWorkerVariables(BaseVariables):
+    """
+    Default variables for the Kubernetes worker.
+
+    The schema for this class is used to populate the `variables` section of the default
+    base job template.
+    """
+
     namespace: str = Field(
         default="default", description="The Kubernetes namespace to create jobs within."
     )
@@ -249,6 +287,8 @@ class KubernetesWorkerResult(BaseWorkerResult):
 
 
 class KubernetesWorker(BaseWorker):
+    """Prefect worker that executes flow runs within Kubernetes Jobs."""
+
     type = "kubernetes"
     job_configuration = KubernetesWorkerJobConfiguration
     job_configuration_variables = KubernetesWorkerVariables
@@ -259,6 +299,20 @@ class KubernetesWorker(BaseWorker):
         configuration: KubernetesWorkerJobConfiguration,
         task_status: Optional[anyio.abc.TaskStatus] = None,
     ) -> KubernetesWorkerResult:
+        """
+        Executes a flow run within a Kubernetes Job and waits for the flow run
+        to complete.
+
+        Args:
+            flow_run: The flow run to execute
+            configuration: The configuration to use when executing the flow run.
+            task_status: The task status object for the current flow run. If provided,
+                the task will be marked as started.
+
+        Returns:
+            KubernetesWorkerResult: A result object containing information about the
+                final state of the flow run
+        """
         with self._get_configured_kubernetes_client(configuration) as client:
             job = await run_sync_in_worker_thread(
                 self._create_job, configuration, client
@@ -317,6 +371,9 @@ class KubernetesWorker(BaseWorker):
     def _get_batch_client(
         self, client: "ApiClient"
     ) -> Generator["BatchV1Api", None, None]:
+        """
+        Context manager for retrieving a Kubernetes batch client.
+        """
         try:
             yield kubernetes.client.BatchV1Api(api_client=client)
         finally:
@@ -336,6 +393,9 @@ class KubernetesWorker(BaseWorker):
     def _get_core_client(
         self, client: "ApiClient"
     ) -> Generator["CoreV1Api", None, None]:
+        """
+        Context manager for retrieving a Kubernetes core client.
+        """
         try:
             yield kubernetes.client.CoreV1Api(api_client=client)
         finally:
@@ -480,6 +540,7 @@ class KubernetesWorker(BaseWorker):
         configuration: KubernetesWorkerJobConfiguration,
         client: "ApiClient",
     ) -> Optional["V1Job"]:
+        """Get a Kubernetes job by id."""
         with self._get_batch_client(client) as batch_client:
             try:
                 job = batch_client.read_namespaced_job(

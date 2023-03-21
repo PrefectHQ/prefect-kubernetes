@@ -1,18 +1,16 @@
 from contextlib import contextmanager
-from unittest.mock import MagicMock
-import prefect
-import pytest
-
 from time import monotonic
+from unittest.mock import MagicMock
 
 import kubernetes
+import prefect
+import pytest
 from kubernetes.config import ConfigException
-
-from prefect.settings import get_current_settings
 from prefect.client.schemas import FlowRun
+from prefect.docker import get_prefect_image_name
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
-from prefect.docker import get_prefect_image_name
+from prefect.settings import get_current_settings
 
 from prefect_kubernetes import KubernetesWorker
 from prefect_kubernetes.utilities import _slugify_label_value
@@ -670,6 +668,3 @@ class TestKubernetesWorkerJobConfiguration:
             result.dict()
             == expected_after_preparation(flow_run, deployment, flow).dict()
         )
-
-
-
