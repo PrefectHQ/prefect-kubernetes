@@ -129,7 +129,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         job_watch_timeout_seconds: The number of seconds to wait for the job to
             complete before timing out. If `None`, the worker will wait indefinitely.
         pod_watch_timeout_seconds: The number of seconds to wait for the pod to
-            complete before timing out. If `None`, the worker will wait indefinitely.
+            complete before timing out.
         stream_output: Whether or not to stream the job's output.
     """
 
@@ -137,11 +137,13 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
     job_manifest: Dict[str, Any] = Field(template=_get_default_job_manifest_template())
     cluster_config: Optional[KubernetesClusterConfig] = Field(default=None)
     job_watch_timeout_seconds: Optional[int] = Field(default=None)
-    pod_watch_timeout_seconds: int
-    stream_output: bool
+    pod_watch_timeout_seconds: int = Field(default=60)
+    stream_output: bool = Field(default=True)
 
     # internal-use only
-    _api_dns_name: Optional[str] = None  # Replaces 'localhost' in API URL
+    _api_dns_name: Optional[
+        str
+    ] = "host.docker.internal"  # Replaces 'localhost' in API URL
 
     @validator("job_manifest")
     def _ensure_metadata_is_present(cls, value: Dict[str, Any]):
@@ -563,6 +565,7 @@ class KubernetesWorker(BaseWorker):
                         remaining_time = (
                             deadline - time.monotonic() if deadline else None
                         )
+                        print(remaining_time)
                         if deadline and remaining_time <= 0:
                             break
 
