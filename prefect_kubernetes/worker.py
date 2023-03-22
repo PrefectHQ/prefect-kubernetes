@@ -6,7 +6,7 @@ import math
 import os
 import time
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 
 import anyio.abc
 from prefect.blocks.kubernetes import KubernetesClusterConfig
@@ -53,13 +53,13 @@ def get_default_job_manifest_template() -> Dict[str, Any]:
             "generateName": "{{ name }}-",
         },
         "spec": {
+            "ttlSecondsAfterFinished": "{{ finished_job_ttl }}",
             "template": {
                 "spec": {
                     "parallelism": 1,
                     "completions": 1,
                     "restartPolicy": "Never",
                     "serviceAccountName": "{{ service_account_name }}",
-                    "ttlSecondsAfterFinished": "{{ finished_job_ttl }}",
                     "containers": [
                         {
                             "name": "prefect-job",
@@ -70,7 +70,7 @@ def get_default_job_manifest_template() -> Dict[str, Any]:
                         }
                     ],
                 }
-            }
+            },
         },
     }
 
@@ -389,6 +389,17 @@ class KubernetesWorker(BaseWorker):
         cluster_uid = self._get_cluster_uid(client)
         pid = f"{cluster_uid}:{job.metadata.namespace}:{job.metadata.name}"
         return pid
+
+    def _parse_infrastructure_pid(
+        self, infrastructure_pid: str
+    ) -> Tuple[str, str, str]:
+        """
+        Parse a Kubernetes infrastructure PID into its component parts.
+
+        Returns a cluster UID, namespace, and job name.
+        """
+        cluster_uid, namespace, job_name = infrastructure_pid.split(":", 2)
+        return cluster_uid, namespace, job_name
 
     @contextmanager
     def _get_core_client(
