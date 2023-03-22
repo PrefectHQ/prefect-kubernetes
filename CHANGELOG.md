@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `KubernetesWorker` for executing flow runs within Kubernetes jobs - [#40](https://github.com/PrefectHQ/prefect-kubernetes/pull/40)
+
 ### Changed
 
 ### Deprecated
