@@ -141,9 +141,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
     stream_output: bool = Field(default=True)
 
     # internal-use only
-    _api_dns_name: Optional[
-        str
-    ] = "host.docker.internal"  # Replaces 'localhost' in API URL
+    _api_dns_name: Optional[str] = None  # Replaces 'localhost' in API URL
 
     @validator("job_manifest")
     def _ensure_metadata_is_present(cls, value: Dict[str, Any]):
@@ -565,7 +563,6 @@ class KubernetesWorker(BaseWorker):
                         remaining_time = (
                             deadline - time.monotonic() if deadline else None
                         )
-                        print(remaining_time)
                         if deadline and remaining_time <= 0:
                             break
 
