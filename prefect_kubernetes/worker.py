@@ -44,7 +44,7 @@ else:
     kubernetes = lazy_import("kubernetes")
 
 
-def get_default_job_manifest_template() -> Dict[str, Any]:
+def _get_default_job_manifest_template() -> Dict[str, Any]:
     """Returns the default job manifest template used by the Kubernetes worker."""
     return {
         "apiVersion": "batch/v1",
@@ -77,7 +77,8 @@ def get_default_job_manifest_template() -> Dict[str, Any]:
     }
 
 
-def get_base_job_manifest():
+def _get_base_job_manifest():
+    """Returns a base job manifest to use for manifest validation."""
     return {
         "apiVersion": "batch/v1",
         "kind": "Job",
@@ -114,10 +115,26 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
     An instance of this class is passed to the Kubernetes worker's `run` method
     for each flow run. It contains all of the information necessary to execute
     the flow run as a Kubernetes job.
+
+    Attributes:
+        name: The name to give to created Kubernetes job.
+        command: The command executed in created Kubernetes jobs to kick off
+            flow run execution.
+        env: The environment variables to set in created Kubernetes jobs.
+        labels: The labels to set on created Kubernetes jobs.
+        namespace: The Kubernetes namespace to create Kubernetes jobs in.
+        job_manifest: The Kubernetes job manifest to use to create Kubernetes jobs.
+        cluster_config: The Kubernetes cluster configuration to use for authentication
+            to a Kubernetes cluster.
+        job_watch_timeout_seconds: The number of seconds to wait for the job to
+            complete before timing out. If `None`, the worker will wait indefinitely.
+        pod_watch_timeout_seconds: The number of seconds to wait for the pod to
+            complete before timing out. If `None`, the worker will wait indefinitely.
+        stream_output: Whether or not to stream the job's output.
     """
 
     namespace: str = Field(default="default")
-    job_manifest: Dict[str, Any] = Field(template=get_default_job_manifest_template())
+    job_manifest: Dict[str, Any] = Field(template=_get_default_job_manifest_template())
     cluster_config: Optional[KubernetesClusterConfig] = Field(default=None)
     job_watch_timeout_seconds: Optional[int] = Field(default=None)
     pod_watch_timeout_seconds: int
@@ -152,7 +169,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         """
         Ensures that the job manifest includes all required components.
         """
-        patch = JsonPatch.from_diff(value, get_base_job_manifest())
+        patch = JsonPatch.from_diff(value, _get_base_job_manifest())
         missing_paths = sorted([op["path"] for op in patch if op["op"] == "add"])
         if missing_paths:
             raise ValueError(
@@ -163,7 +180,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
 
     @validator("job_manifest")
     def _ensure_job_has_compatible_values(cls, value: Dict[str, Any]):
-        patch = JsonPatch.from_diff(value, get_base_job_manifest())
+        patch = JsonPatch.from_diff(value, _get_base_job_manifest())
         incompatible = sorted(
             [
                 f"{op['path']} must have value {op['value']!r}"
@@ -189,6 +206,12 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
 
         Ensures that necessary values are present in the job manifest and that the
         job manifest is valid.
+
+        Args:
+            flow_run: The flow run to prepare the job configuration for
+            deployment: The deployment associated with the flow run used for
+                preparation.
+            flow: The flow associated with the flow run used for preparation.
         """
         super().prepare_for_flow_run(flow_run, deployment, flow)
         # Update configuration env and job manifest env
