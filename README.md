@@ -89,7 +89,7 @@ if __name__ == "__main__":
 #### Generate a resource-specific client from `KubernetesClusterConfig`
 
 ```python
-# with minikube / docker desktop & a valid ~/.kube/config this should ~just work~™️
+# with minikube / docker desktop & a valid ~/.kube/config this should ~just work~
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect_kubernetes.credentials import KubernetesCredentials
 
