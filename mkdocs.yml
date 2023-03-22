@@ -2,6 +2,7 @@ site_name: prefect-kubernetes
 repo_url: https://github.com/PrefectHQ/prefect-kubernetes
 theme:
   name: material
+  custom_dir: docs/overrides
   palette:
     - media: "(prefers-color-scheme)"
       toggle:
@@ -86,5 +87,5 @@ extra:
         - icon: fontawesome/brands/python
           link: https://pypi.org/project/prefect/
     analytics:
-        provider: google
+        provider: custom
         property: G-8CSMBCQDKN
