@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from time import monotonic
+from time import monotonic, sleep
 from unittest import mock
 from unittest.mock import MagicMock, Mock
 
@@ -21,6 +21,7 @@ from prefect.settings import (
     get_current_settings,
     temporary_settings,
 )
+from pydantic import ValidationError
 
 from prefect_kubernetes import KubernetesWorker
 from prefect_kubernetes.utilities import _slugify_label_value
@@ -142,7 +143,11 @@ from_template_and_values_cases = [
             job_manifest={
                 "apiVersion": "batch/v1",
                 "kind": "Job",
-                "metadata": {"namespace": "default", "generateName": "{{ name }}-"},
+                "metadata": {
+                    "namespace": "default",
+                    "generateName": "{{ name }}-",
+                    "labels": {},
+                },
                 "spec": {
                     "template": {
                         "spec": {
@@ -698,6 +703,190 @@ class TestKubernetesWorkerJobConfiguration:
             == expected_after_preparation(flow_run, deployment, flow).dict()
         )
 
+    async def test_validates_against_an_empty_job(self):
+        """We should give a human-friendly error when the user provides an empty custom
+        Job manifest"""
+
+        template = KubernetesWorker.get_default_base_job_template()
+        template["job_configuration"]["job_manifest"] = {}
+        with pytest.raises(ValidationError) as excinfo:
+            await KubernetesWorkerJobConfiguration.from_template_and_values(
+                template, {}
+            )
+
+        assert excinfo.value.errors() == [
+            {
+                "loc": ("job_manifest",),
+                "msg": (
+                    "Job is missing required attributes at the following paths: "
+                    "/apiVersion, /kind, /spec"
+                ),
+                "type": "value_error",
+            }
+        ]
+
+    async def test_validates_for_a_job_missing_deeper_attributes(self):
+        """We should give a human-friendly error when the user provides an incomplete
+        custom Job manifest"""
+        template = KubernetesWorker.get_default_base_job_template()
+        template["job_configuration"]["job_manifest"] = {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {},
+            "spec": {"template": {"spec": {}}},
+        }
+
+        with pytest.raises(ValidationError) as excinfo:
+            await KubernetesWorkerJobConfiguration.from_template_and_values(
+                template, {}
+            )
+
+        assert excinfo.value.errors() == [
+            {
+                "loc": ("job_manifest",),
+                "msg": (
+                    "Job is missing required attributes at the following paths: "
+                    "/spec/template/spec/completions, /spec/template/spec/containers, "
+                    "/spec/template/spec/parallelism, /spec/template/spec/restartPolicy"
+                ),
+                "type": "value_error",
+            }
+        ]
+
+    async def test_validates_for_a_job_with_incompatible_values(self):
+        """We should give a human-friendly error when the user provides a custom Job
+        manifest that is attempting to change required values."""
+        template = KubernetesWorker.get_default_base_job_template()
+        template["job_configuration"]["job_manifest"] = {
+            "apiVersion": "v1",
+            "kind": "JobbledyJunk",
+            "metadata": {"labels": {}},
+            "spec": {
+                "template": {
+                    "spec": {
+                        "parallelism": 1,
+                        "completions": 1,
+                        "restartPolicy": "Never",
+                        "containers": [
+                            {
+                                "name": "prefect-job",
+                                "env": [],
+                            }
+                        ],
+                    }
+                }
+            },
+        }
+
+        with pytest.raises(ValidationError) as excinfo:
+            await KubernetesWorkerJobConfiguration.from_template_and_values(
+                template, {}
+            )
+
+        assert excinfo.value.errors() == [
+            {
+                "loc": ("job_manifest",),
+                "msg": (
+                    "Job has incompatible values for the following attributes: "
+                    "/apiVersion must have value 'batch/v1', "
+                    "/kind must have value 'Job'"
+                ),
+                "type": "value_error",
+            }
+        ]
+
+    async def test_user_supplied_base_job_with_labels(self, flow_run):
+        """The user can supply a custom base job with labels and they will be
+        included in the final manifest"""
+        template = KubernetesWorker.get_default_base_job_template()
+        template["job_configuration"]["job_manifest"] = {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {"labels": {"my-custom-label": "sweet"}},
+            "spec": {
+                "template": {
+                    "spec": {
+                        "parallelism": 1,
+                        "completions": 1,
+                        "restartPolicy": "Never",
+                        "containers": [
+                            {
+                                "name": "prefect-job",
+                                "env": [],
+                            }
+                        ],
+                    }
+                }
+            },
+        }
+
+        configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
+            template, {}
+        )
+        assert configuration.job_manifest["metadata"]["labels"] == {
+            # the labels provided in the user's job base
+            "my-custom-label": "sweet",
+        }
+        configuration.prepare_for_flow_run(flow_run)
+        assert (
+            configuration.job_manifest["metadata"]["labels"]["my-custom-label"]
+            == "sweet"
+        )
+
+    async def test_user_can_supply_a_sidecar_container_and_volume(self, flow_run):
+        """The user can supply a custom base job that includes more complex
+        modifications, like a sidecar container and volumes"""
+        template = KubernetesWorker.get_default_base_job_template()
+        template["job_configuration"]["job_manifest"] = {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {"labels": {}},
+            "spec": {
+                "template": {
+                    "spec": {
+                        "parallelism": 1,
+                        "completions": 1,
+                        "restartPolicy": "Never",
+                        "containers": [
+                            {
+                                "name": "prefect-job",
+                                "env": [],
+                            },
+                            {
+                                "name": "my-sidecar",
+                                "image": "cool-peeps/cool-code:latest",
+                                "volumeMounts": [
+                                    {"name": "data-volume", "mountPath": "/data/"}
+                                ],
+                            },
+                        ],
+                        "volumes": [
+                            {"name": "data-volume", "hostPath": "/all/the/data/"}
+                        ],
+                    }
+                }
+            },
+        }
+
+        configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
+            template, {}
+        )
+        configuration.prepare_for_flow_run(flow_run)
+
+        pod = configuration.job_manifest["spec"]["template"]["spec"]
+
+        assert pod["volumes"] == [{"name": "data-volume", "hostPath": "/all/the/data/"}]
+
+        # the prefect-job container is still populated
+        assert pod["containers"][0]["name"] == "prefect-job"
+        assert pod["containers"][0]["args"] == ["python", "-m", "prefect.engine"]
+
+        assert pod["containers"][1] == {
+            "name": "my-sidecar",
+            "image": "cool-peeps/cool-code:latest",
+            "volumeMounts": [{"name": "data-volume", "mountPath": "/data/"}],
+        }
+
 
 class TestKubernetesWorker:
     @pytest.fixture
@@ -859,7 +1048,6 @@ class TestKubernetesWorker:
             KubernetesWorker.get_default_base_job_template(), {"image": "foo"}
         )
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
-
             await k8s_worker.run(flow_run, configuration)
             mock_batch_client.create_namespaced_job.assert_called_once()
             image = mock_batch_client.create_namespaced_job.call_args[0][1]["spec"][
@@ -1298,6 +1486,347 @@ class TestKubernetesWorker:
                     namespace=mock.ANY,
                     field_selector=mock.ANY,
                     # Note: timeout_seconds is excluded here
+                ),
+            ]
+        )
+
+    async def test_watches_the_right_namespace(
+        self,
+        flow_run,
+        default_configuration,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+    ):
+        mock_watch.stream = mock.Mock(
+            side_effect=_mock_pods_stream_that_returns_running_pod
+        )
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+        default_configuration.namespace = "my-awesome-flows"
+        default_configuration.prepare_for_flow_run(flow_run)
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            await k8s_worker.run(flow_run, default_configuration)
+
+        mock_watch.stream.assert_has_calls(
+            [
+                mock.call(
+                    func=mock_core_client.list_namespaced_pod,
+                    namespace="my-awesome-flows",
+                    label_selector=mock.ANY,
+                    timeout_seconds=60,
+                ),
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    namespace="my-awesome-flows",
+                    field_selector=mock.ANY,
+                ),
+            ]
+        )
+
+    async def test_streaming_pod_logs_timeout_warns(
+        self,
+        flow_run,
+        default_configuration: KubernetesWorkerJobConfiguration,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+        caplog,
+    ):
+        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+
+        mock_logs = MagicMock()
+        mock_logs.stream = MagicMock(side_effect=RuntimeError("something went wrong"))
+
+        mock_core_client.read_namespaced_pod_log = MagicMock(return_value=mock_logs)
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            with caplog.at_level("WARNING"):
+                result = await k8s_worker.run(flow_run, default_configuration)
+
+        assert result.status_code == 1
+        assert "Error occurred while streaming logs - " in caplog.text
+
+    async def test_watch_timeout(
+        self,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+        flow_run,
+        default_configuration,
+    ):
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+
+        def mock_stream(*args, **kwargs):
+            if kwargs["func"] == mock_core_client.list_namespaced_pod:
+                job_pod = MagicMock(spec=kubernetes.client.V1Pod)
+                job_pod.status.phase = "Running"
+                yield {"object": job_pod}
+
+            if kwargs["func"] == mock_batch_client.list_namespaced_job:
+                job = MagicMock(spec=kubernetes.client.V1Job)
+                job.status.completion_time = None
+                yield {"object": job}
+                sleep(0.5)
+                yield {"object": job}
+
+        mock_watch.stream.side_effect = mock_stream
+
+        default_configuration.pod_watch_timeout_seconds = 42
+        default_configuration.job_watch_timeout_seconds = 0
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            result = await k8s_worker.run(flow_run, default_configuration)
+        assert result.status_code == -1
+
+    async def test_watch_deadline_is_computed_before_log_streams(
+        self,
+        flow_run,
+        default_configuration,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+        mock_anyio_sleep_monotonic,
+    ):
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+
+        def mock_stream(*args, **kwargs):
+            if kwargs["func"] == mock_core_client.list_namespaced_pod:
+                job_pod = MagicMock(spec=kubernetes.client.V1Pod)
+                job_pod.status.phase = "Running"
+                yield {"object": job_pod}
+
+            if kwargs["func"] == mock_batch_client.list_namespaced_job:
+                job = MagicMock(spec=kubernetes.client.V1Job)
+
+                # Yield the completed job
+                job.status.completion_time = True
+                yield {"object": job}
+
+        def mock_log_stream(*args, **kwargs):
+            anyio.sleep(500)
+            return MagicMock()
+
+        mock_core_client.read_namespaced_pod_log.side_effect = mock_log_stream
+        mock_watch.stream.side_effect = mock_stream
+
+        default_configuration.job_watch_timeout_seconds = 1000
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            result = await k8s_worker.run(flow_run, default_configuration)
+
+        assert result.status_code == 1
+
+        mock_watch.stream.assert_has_calls(
+            [
+                mock.call(
+                    func=mock_core_client.list_namespaced_pod,
+                    namespace=mock.ANY,
+                    label_selector=mock.ANY,
+                    timeout_seconds=mock.ANY,
+                ),
+                # Starts with the full timeout minus the amount we slept streaming logs
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    field_selector=mock.ANY,
+                    namespace=mock.ANY,
+                    timeout_seconds=pytest.approx(500, 1),
+                ),
+            ]
+        )
+
+    async def test_timeout_is_checked_during_log_streams(
+        self,
+        flow_run,
+        default_configuration,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+        capsys,
+    ):
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+
+        def mock_stream(*args, **kwargs):
+            if kwargs["func"] == mock_core_client.list_namespaced_pod:
+                job_pod = MagicMock(spec=kubernetes.client.V1Pod)
+                job_pod.status.phase = "Running"
+                yield {"object": job_pod}
+
+            if kwargs["func"] == mock_batch_client.list_namespaced_job:
+                job = MagicMock(spec=kubernetes.client.V1Job)
+
+                # Yield the job then return exiting the stream
+                # After restarting the watch a few times, we'll report completion
+                job.status.completion_time = (
+                    None if mock_watch.stream.call_count < 3 else True
+                )
+                yield {"object": job}
+
+        def mock_log_stream(*args, **kwargs):
+            for i in range(10):
+                sleep(0.25)
+                yield f"test {i}".encode()
+
+        mock_core_client.read_namespaced_pod_log.return_value.stream = mock_log_stream
+        mock_watch.stream.side_effect = mock_stream
+
+        default_configuration.job_watch_timeout_seconds = 1
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            result = await k8s_worker.run(flow_run, default_configuration)
+
+        # The job should timeout
+        assert result.status_code == -1
+
+        mock_watch.stream.assert_has_calls(
+            [
+                mock.call(
+                    func=mock_core_client.list_namespaced_pod,
+                    namespace=mock.ANY,
+                    label_selector=mock.ANY,
+                    timeout_seconds=mock.ANY,
+                ),
+                # No watch call is made because the deadline is exceeded beforehand
+            ]
+        )
+
+        # Check for logs
+        stdout, _ = capsys.readouterr()
+
+        # Before the deadline, logs should be displayed
+        for i in range(4):
+            assert f"test {i}" in stdout
+        for i in range(4, 10):
+            assert f"test {i}" not in stdout
+
+    async def test_timeout_during_log_stream_does_not_fail_completed_job(
+        self,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+        capsys,
+        flow_run,
+        default_configuration,
+    ):
+        # Pretend the job is completed immediately
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = True
+
+        def mock_stream(*args, **kwargs):
+            if kwargs["func"] == mock_core_client.list_namespaced_pod:
+                job_pod = MagicMock(spec=kubernetes.client.V1Pod)
+                job_pod.status.phase = "Running"
+                yield {"object": job_pod}
+
+        def mock_log_stream(*args, **kwargs):
+            for i in range(10):
+                sleep(0.25)
+                yield f"test {i}".encode()
+
+        mock_core_client.read_namespaced_pod_log.return_value.stream = mock_log_stream
+        mock_watch.stream.side_effect = mock_stream
+
+        default_configuration.job_watch_timeout_seconds = 1
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            result = await k8s_worker.run(flow_run, default_configuration)
+
+        # The job should not timeout
+        assert result.status_code == 1
+
+        mock_watch.stream.assert_has_calls(
+            [
+                mock.call(
+                    func=mock_core_client.list_namespaced_pod,
+                    namespace=mock.ANY,
+                    label_selector=mock.ANY,
+                    timeout_seconds=mock.ANY,
+                ),
+                # No watch call is made because the job is completed already
+            ]
+        )
+
+        # Check for logs
+        stdout, _ = capsys.readouterr()
+
+        # Before the deadline, logs should be displayed
+        for i in range(4):
+            assert f"test {i}" in stdout
+        for i in range(4, 10):
+            assert f"test {i}" not in stdout
+
+    @pytest.mark.flaky  # Rarely, the sleep times we check for do not fit within the tolerences
+    async def test_watch_timeout_is_restarted_until_job_is_complete(
+        self,
+        flow_run,
+        default_configuration,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+        mock_anyio_sleep_monotonic,
+    ):
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+
+        def mock_stream(*args, **kwargs):
+            if kwargs["func"] == mock_core_client.list_namespaced_pod:
+                job_pod = MagicMock(spec=kubernetes.client.V1Pod)
+                job_pod.status.phase = "Running"
+                yield {"object": job_pod}
+
+            if kwargs["func"] == mock_batch_client.list_namespaced_job:
+                job = MagicMock(spec=kubernetes.client.V1Job)
+
+                # Sleep a little
+                anyio.sleep(10)
+
+                # Yield the job then return exiting the stream
+                job.status.completion_time = None
+                yield {"object": job}
+
+        mock_watch.stream.side_effect = mock_stream
+        default_configuration.job_watch_timeout_seconds = 40
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            result = await k8s_worker.run(flow_run, default_configuration)
+
+        assert result.status_code == -1
+
+        mock_watch.stream.assert_has_calls(
+            [
+                mock.call(
+                    func=mock_core_client.list_namespaced_pod,
+                    namespace=mock.ANY,
+                    label_selector=mock.ANY,
+                    timeout_seconds=mock.ANY,
+                ),
+                # Starts with the full timeout
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    field_selector=mock.ANY,
+                    namespace=mock.ANY,
+                    timeout_seconds=pytest.approx(40, abs=1),
+                ),
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    field_selector=mock.ANY,
+                    namespace=mock.ANY,
+                    timeout_seconds=pytest.approx(30, abs=1),
+                ),
+                # Then, elapsed time removed on each call
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    field_selector=mock.ANY,
+                    namespace=mock.ANY,
+                    timeout_seconds=pytest.approx(20, abs=1),
+                ),
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    field_selector=mock.ANY,
+                    namespace=mock.ANY,
+                    timeout_seconds=pytest.approx(10, abs=1),
                 ),
             ]
         )

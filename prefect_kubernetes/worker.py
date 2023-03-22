@@ -21,7 +21,9 @@ from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 from prefect.utilities.importtools import lazy_import
-from pydantic import Field
+from prefect.utilities.pydantic import JsonPatch
+from prefect.utilities.templating import find_placeholders
+from pydantic import Field, validator
 from typing_extensions import Literal
 
 from prefect_kubernetes.utilities import (
@@ -75,6 +77,28 @@ def get_default_job_manifest_template() -> Dict[str, Any]:
     }
 
 
+def get_base_job_manifest():
+    return {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "metadata": {"labels": {}},
+        "spec": {
+            "template": {
+                "spec": {
+                    "parallelism": 1,
+                    "completions": 1,
+                    "restartPolicy": "Never",
+                    "containers": [
+                        {
+                            "name": "prefect-job",
+                        }
+                    ],
+                }
+            }
+        },
+    }
+
+
 class KubernetesImagePullPolicy(enum.Enum):
     """Enum representing the image pull policy options for a Kubernetes job."""
 
@@ -92,7 +116,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
     the flow run as a Kubernetes job.
     """
 
-    namespace: Optional[str] = Field(default="default")
+    namespace: str = Field(default="default")
     job_manifest: Dict[str, Any] = Field(template=get_default_job_manifest_template())
     cluster_config: Optional[KubernetesClusterConfig] = Field(default=None)
     job_watch_timeout_seconds: Optional[int] = Field(default=None)
@@ -101,6 +125,58 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
 
     # internal-use only
     _api_dns_name: Optional[str] = None  # Replaces 'localhost' in API URL
+
+    @validator("job_manifest")
+    def _ensure_metadata_is_present(cls, value: Dict[str, Any]):
+        """Ensures that the metadata is present in the job manifest."""
+        if "metadata" not in value:
+            value["metadata"] = {}
+        return value
+
+    @validator("job_manifest")
+    def _ensure_labels_is_present(cls, value: Dict[str, Any]):
+        """Ensures that the metadata is present in the job manifest."""
+        if "labels" not in value["metadata"]:
+            value["metadata"]["labels"] = {}
+        return value
+
+    @validator("job_manifest")
+    def _ensure_namespace_is_present(cls, value: Dict[str, Any], values):
+        """Ensures that the namespace is present in the job manifest."""
+        if "namespace" not in value["metadata"]:
+            value["metadata"]["namespace"] = values["namespace"]
+        return value
+
+    @validator("job_manifest")
+    def _ensure_job_includes_all_required_components(cls, value: Dict[str, Any]):
+        """
+        Ensures that the job manifest includes all required components.
+        """
+        patch = JsonPatch.from_diff(value, get_base_job_manifest())
+        missing_paths = sorted([op["path"] for op in patch if op["op"] == "add"])
+        if missing_paths:
+            raise ValueError(
+                "Job is missing required attributes at the following paths: "
+                f"{', '.join(missing_paths)}"
+            )
+        return value
+
+    @validator("job_manifest")
+    def _ensure_job_has_compatible_values(cls, value: Dict[str, Any]):
+        patch = JsonPatch.from_diff(value, get_base_job_manifest())
+        incompatible = sorted(
+            [
+                f"{op['path']} must have value {op['value']!r}"
+                for op in patch
+                if op["op"] == "replace"
+            ]
+        )
+        if incompatible:
+            raise ValueError(
+                "Job has incompatible values for the following attributes: "
+                f"{', '.join(incompatible)}"
+            )
+        return value
 
     def prepare_for_flow_run(
         self,
@@ -120,14 +196,12 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         self.job_manifest["spec"]["template"]["spec"]["containers"][0]["env"] = [
             {"name": k, "value": v} for k, v in self.env.items()
         ]
-        self._ensure_metadata_is_present()
         # Update labels in job manifest
         self._slugify_labels()
         # Add defaults to job manifest if necessary
-        self._ensure_image_is_present()
-        self._ensure_command_is_present()
-        self._ensure_namespace_is_present()
-        self._ensure_generate_name_is_present()
+        self._populate_image_if_not_present()
+        self._populate_command_if_not_present()
+        self._populate_generate_name_if_not_present()
 
     def _update_prefect_api_url_if_local_server(self):
         """If the API URL has been set by the base environment rather than the by the
@@ -143,15 +217,13 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
 
     def _slugify_labels(self):
         """Slugifies the labels in the job manifest."""
-        try:
-            self.job_manifest["metadata"]["labels"] = {
-                _slugify_label_key(k): _slugify_label_value(v)
-                for k, v in self.labels.items()
-            }
-        except KeyError:
-            raise ValueError("Unable to update labels due to invalid job manifest.")
+        all_labels = {**self.job_manifest["metadata"].get("labels", {}), **self.labels}
+        self.job_manifest["metadata"]["labels"] = {
+            _slugify_label_key(k): _slugify_label_value(v)
+            for k, v in all_labels.items()
+        }
 
-    def _ensure_image_is_present(self):
+    def _populate_image_if_not_present(self):
         """Ensures that the image is present in the job manifest. Populates the image
         with the default Prefect image if it is not present."""
         try:
@@ -167,7 +239,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
                 "Unable to verify image due to invalid job manifest template."
             )
 
-    def _ensure_command_is_present(self):
+    def _populate_command_if_not_present(self):
         """
         Ensures that the command is present in the job manifest. Populates the command
         with the `prefect -m prefect.engine` if a command is not present.
@@ -197,24 +269,11 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
                 "Unable to verify command due to invalid job manifest template."
             )
 
-    def _ensure_metadata_is_present(self):
-        """Ensures that the metadata is present in the job manifest."""
-        if "metadata" not in self.job_manifest:
-            self.job_manifest["metadata"] = {}
-
-    def _ensure_namespace_is_present(self):
-        """Ensures that the namespace is present in the job manifest."""
-        try:
-            if "namespace" not in self.job_manifest["metadata"]:
-                self.job_manifest["metadata"]["namespace"] = self.namespace
-        except KeyError:
-            raise ValueError(
-                "Unable to verify namespace due to invalid job manifest template."
-            )
-
-    def _ensure_generate_name_is_present(self):
+    def _populate_generate_name_if_not_present(self):
         """Ensures that the generateName is present in the job manifest."""
-        try:
+        manifest_generate_name = self.job_manifest["metadata"].get("generateName", "")
+        has_placeholder = len(find_placeholders(manifest_generate_name)) > 0
+        if not manifest_generate_name or has_placeholder:
             generate_name = None
             if self.name:
                 generate_name = _slugify_name(self.name)
@@ -222,10 +281,6 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
             if not generate_name:
                 generate_name = "prefect-job"
             self.job_manifest["metadata"]["generateName"] = f"{generate_name}-"
-        except KeyError:
-            raise ValueError(
-                "Unable to verify generateName due to invalid job manifest template."
-            )
 
 
 class KubernetesWorkerVariables(BaseVariables):

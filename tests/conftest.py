@@ -7,12 +7,33 @@ import yaml
 from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, models
 from kubernetes.client.exceptions import ApiException
 from prefect.blocks.kubernetes import KubernetesClusterConfig
+from prefect.testing.utilities import prefect_test_harness
 
 from prefect_kubernetes.credentials import KubernetesCredentials
 from prefect_kubernetes.jobs import KubernetesJob
 
 BASEDIR = Path("tests")
 GOOD_CONFIG_FILE_PATH = BASEDIR / "kube_config.yaml"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def prefect_db():
+    """
+    Sets up test harness for temporary DB during test runs.
+    """
+    with prefect_test_harness():
+        yield
+
+
+@pytest.fixture(autouse=True)
+def reset_object_registry():
+    """
+    Ensures each test has a clean object registry.
+    """
+    from prefect.context import PrefectObjectRegistry
+
+    with PrefectObjectRegistry():
+        yield
 
 
 @pytest.fixture
@@ -132,7 +153,6 @@ def mock_delete_namespaced_job(monkeypatch):
 
 @pytest.fixture
 def mock_stream_timeout(monkeypatch):
-
     monkeypatch.setattr(
         "kubernetes.watch.Watch.stream",
         MagicMock(side_effect=ApiException(status=408)),
@@ -167,7 +187,6 @@ def mock_list_namespaced_pod(monkeypatch):
 
 @pytest.fixture
 def read_pod_logs(monkeypatch):
-
     pod_log = MagicMock(return_value="test log")
 
     monkeypatch.setattr("kubernetes.client.CoreV1Api.read_namespaced_pod_log", pod_log)
