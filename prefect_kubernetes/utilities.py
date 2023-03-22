@@ -77,7 +77,7 @@ def convert_manifest_to_model(
     return v1_model(**converted_manifest)
 
 
-def _slugify_name(name: str) -> Optional[str]:
+def _slugify_name(name: str, max_length: int = 45) -> Optional[str]:
     """
     Slugify text for use as a name.
 
@@ -98,14 +98,14 @@ def _slugify_name(name: str) -> Optional[str]:
     """
     slug = slugify(
         name,
-        max_length=45,  # Leave enough space for generateName
+        max_length=max_length,  # Leave enough space for generateName
         regex_pattern=r"[^a-zA-Z0-9-]+",
     )
 
     return slug if slug else None
 
 
-def _slugify_label_key(key: str) -> str:
+def _slugify_label_key(key: str, max_length: int = 63, prefix_max_length=253) -> str:
     """
     Slugify text for use as a label key.
 
@@ -130,7 +130,7 @@ def _slugify_label_key(key: str) -> str:
         name = key
 
     name_slug = (
-        slugify(name, max_length=63, regex_pattern=r"[^a-zA-Z0-9-_.]+").strip(
+        slugify(name, max_length=max_length, regex_pattern=r"[^a-zA-Z0-9-_.]+").strip(
             "_-."  # Must start or end with alphanumeric characters
         )
         or name
@@ -140,7 +140,11 @@ def _slugify_label_key(key: str) -> str:
 
     if prefix:
         prefix_slug = (
-            slugify(prefix, max_length=253, regex_pattern=r"[^a-zA-Z0-9-\.]+",).strip(
+            slugify(
+                prefix,
+                max_length=prefix_max_length,
+                regex_pattern=r"[^a-zA-Z0-9-\.]+",
+            ).strip(
                 "_-."
             )  # Must start or end with alphanumeric characters
             or prefix
@@ -151,7 +155,7 @@ def _slugify_label_key(key: str) -> str:
     return name_slug
 
 
-def _slugify_label_value(value: str) -> str:
+def _slugify_label_value(value: str, max_length: int = 63) -> str:
     """
     Slugify text for use as a label value.
 
@@ -167,7 +171,7 @@ def _slugify_label_value(value: str) -> str:
         The slugified value
     """  # noqa
     slug = (
-        slugify(value, max_length=63, regex_pattern=r"[^a-zA-Z0-9-_\.]+").strip(
+        slugify(value, max_length=max_length, regex_pattern=r"[^a-zA-Z0-9-_\.]+").strip(
             "_-."  # Must start or end with alphanumeric characters
         )
         or value
