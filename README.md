@@ -5,7 +5,7 @@
         <img alt="PyPI" src="https://img.shields.io/pypi/v/prefect-kubernetes?color=0052FF&labelColor=090422"></a>
     <a href="https://github.com/PrefectHQ/prefect-kubernetes/" alt="Stars">
         <img src="https://img.shields.io/github/stars/PrefectHQ/prefect-kubernetes?color=0052FF&labelColor=090422" /></a>
-    <a href="https://pepy.tech/badge/prefect-kubernetes/" alt="Downloads">
+    <a href="https://pypistats.org/packages/prefect-kubernetes/" alt="Downloads">
         <img src="https://img.shields.io/pypi/dm/prefect-kubernetes?color=0052FF&labelColor=090422" /></a>
     <a href="https://github.com/PrefectHQ/prefect-kubernetes/pulse" alt="Activity">
         <img src="https://img.shields.io/github/commit-activity/m/PrefectHQ/prefect-kubernetes?color=0052FF&labelColor=090422" /></a>
@@ -25,7 +25,7 @@ Jump to [examples](#example-usage).
 
 ## Resources
 
-For more tips on how to use tasks and flows in a Collection, check out [Using Collections](https://orion-docs.prefect.io/collections/usage/)!
+For more tips on how to use tasks and flows in a Collection, check out [Using Collections](https://docs.prefect.io/collections/usage/)!
 
 ### Installation
 Install `prefect-kubernetes` with `pip`:
@@ -37,15 +37,15 @@ Requires an installation of Python 3.7+.
 
 We recommend using a Python virtual environment manager such as pipenv, conda or virtualenv.
 
-These tasks are designed to work with Prefect 2. For more information about how to use Prefect, please refer to the [Prefect documentation](https://orion-docs.prefect.io/).
+These tasks are designed to work with Prefect 2. For more information about how to use Prefect, please refer to the [Prefect documentation](https://docs.prefect.io/).
 
-Then, to register [blocks](https://orion-docs.prefect.io/ui/blocks/) on Prefect Cloud:
+Then, to register [blocks](https://docs.prefect.io/ui/blocks/) on Prefect Cloud:
 
 ```bash
 prefect block register -m prefect_kubernetes
 ```
 
-Note, to use the `load` method on Blocks, you must already have a block document [saved through code](https://orion-docs.prefect.io/concepts/blocks/#saving-blocks) or [saved through the UI](https://orion-docs.prefect.io/ui/blocks/).
+Note, to use the `load` method on Blocks, you must already have a block document [saved through code](https://docs.prefect.io/concepts/blocks/#saving-blocks) or [saved through the UI](https://docs.prefect.io/ui/blocks/).
 
 
 ### Example Usage
@@ -62,7 +62,7 @@ customized_run_namespaced_job = run_namespaced_job.with_options(
 ) # this is now a new flow object that can be called
 ```
 
-For more tips on how to use tasks and flows in a Collection, check out [Using Collections](https://orion-docs.prefect.io/collections/usage/)!
+For more tips on how to use tasks and flows in a Collection, check out [Using Collections](https://docs.prefect.io/collections/usage/)!
 
 
 #### Specify and run a Kubernetes Job from a yaml file
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 #### Generate a resource-specific client from `KubernetesClusterConfig`
 
 ```python
-# with minikube / docker desktop & a valid ~/.kube/config this should ~just work~™️
+# with minikube / docker desktop & a valid ~/.kube/config this should ~just work~
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect_kubernetes.credentials import KubernetesCredentials
 
