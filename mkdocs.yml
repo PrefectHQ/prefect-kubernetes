@@ -2,6 +2,8 @@ site_name: prefect-kubernetes
 repo_url: https://github.com/PrefectHQ/prefect-kubernetes
 theme:
   name: material
+  custom_dir: docs/overrides
+  favicon: img/favicon.ico
   palette:
     - media: "(prefers-color-scheme)"
       toggle:
@@ -21,6 +23,18 @@ theme:
       toggle:
           icon: material/weather-night
           name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+  logo:
+    img/prefect-logo-mark-solid-white-500.png
+  font:
+    text: Inter
+    code: Source Code Pro
+  features:
+    - content.code.copy
+    - content.code.annotate
+extra_css:
+    - stylesheets/extra.css
 markdown_extensions:
     - admonition
     - attr_list
@@ -86,5 +100,5 @@ extra:
         - icon: fontawesome/brands/python
           link: https://pypi.org/project/prefect/
     analytics:
-        provider: google
+        provider: custom
         property: G-8CSMBCQDKN
