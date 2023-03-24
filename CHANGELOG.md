@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## 0.2.2
+
+Released March 24, 2023.
+
+### Added
+
+- Experimental `KubernetesWorker` for executing flow runs within Kubernetes jobs - [#40](https://github.com/PrefectHQ/prefect-kubernetes/pull/40)
+
 ## 0.2.1
 
 Released February 17, 2023.
