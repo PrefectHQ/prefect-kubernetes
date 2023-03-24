@@ -1,5 +1,21 @@
 """
+<span class="badge-api experimental"/>
+
 Module containing the Kubernetes worker used for executing flow runs as Kubernetes jobs.
+
+Note this module is **experimental**. The interfaces within may change without notice.
+
+To start a Kubernetes worker, run the following command:
+
+```bash
+prefect worker start --pool 'my-work-pool' --type kubernetes
+```
+
+Replace `my-work-pool` with the name of the work pool you want the worker
+to poll for flow runs.
+
+For more information about work pools and workers,
+checkout out the [Prefect docs](https://docs.prefect.io/concepts/work-pools/).
 """
 import enum
 import math
