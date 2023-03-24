@@ -14,6 +14,7 @@ from typing_extensions import Self
 
 from prefect_kubernetes.credentials import KubernetesCredentials
 from prefect_kubernetes.exceptions import KubernetesJobTimeoutError
+from prefect_kubernetes.pods import list_namespaced_pod, read_namespaced_pod_log
 from prefect_kubernetes.utilities import convert_manifest_to_model
 
 KubernetesManifest = Union[Dict, Path, str]
@@ -56,7 +57,6 @@ async def create_namespaced_job(
         ```
     """
     with kubernetes_credentials.get_client("batch") as batch_v1_client:
-
         return await run_sync_in_worker_thread(
             batch_v1_client.create_namespaced_job,
             namespace=namespace,
@@ -107,7 +107,6 @@ async def delete_namespaced_job(
     """
 
     with kubernetes_credentials.get_client("batch") as batch_v1_client:
-
         return await run_sync_in_worker_thread(
             batch_v1_client.delete_namespaced_job,
             name=job_name,
@@ -151,7 +150,6 @@ async def list_namespaced_job(
         ```
     """
     with kubernetes_credentials.get_client("batch") as batch_v1_client:
-
         return await run_sync_in_worker_thread(
             batch_v1_client.list_namespaced_job,
             namespace=namespace,
@@ -204,7 +202,6 @@ async def patch_namespaced_job(
     """
 
     with kubernetes_credentials.get_client("batch") as batch_v1_client:
-
         return await run_sync_in_worker_thread(
             batch_v1_client.patch_namespaced_job,
             name=job_name,
@@ -253,7 +250,6 @@ async def read_namespaced_job(
         ```
     """
     with kubernetes_credentials.get_client("batch") as batch_v1_client:
-
         return await run_sync_in_worker_thread(
             batch_v1_client.read_namespaced_job,
             name=job_name,
@@ -301,11 +297,54 @@ async def replace_namespaced_job(
         ```
     """
     with kubernetes_credentials.get_client("batch") as batch_v1_client:
-
         return await run_sync_in_worker_thread(
             batch_v1_client.replace_namespaced_job,
             name=job_name,
             body=new_job,
+            namespace=namespace,
+            **kube_kwargs,
+        )
+
+
+@task
+async def read_namespaced_job_status(
+    kubernetes_credentials: KubernetesCredentials,
+    job_name: str,
+    namespace: Optional[str] = "default",
+    **kube_kwargs: Dict[str, Any],
+) -> V1Job:
+    """Task for fetching status of a namespaced Kubernetes job.
+
+    Args:
+        kubernetes_credentials: `KubernetesCredentials` block
+            holding authentication needed to generate the required API client.
+        job_name: The name of a job to fetch the status.
+        namespace: The Kubernetes namespace to fetch status of job in.
+        **kube_kwargs: Optional extra keyword arguments to pass to the
+            Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
+
+    Returns:
+        A Kubernetes `V1JobStatus` object.
+
+    Example:
+        Fetch status of a job in the default namespace:
+        ```python
+        from prefect import flow
+        from prefect_kubernetes.credentials import KubernetesCredentials
+        from prefect_kubernetes.jobs import read_namespaced_job_status
+
+        @flow
+        def kubernetes_orchestrator():
+            v1_job_status = read_namespaced_job_status(
+                kubernetes_credentials=KubernetesCredentials.load("k8s-creds"),
+                job_name="my-job",
+            )
+        ```
+    """
+    with kubernetes_credentials.get_client("batch") as batch_v1_client:
+        return await run_sync_in_worker_thread(
+            batch_v1_client.read_namespaced_job_status,
+            name=job_name,
             namespace=namespace,
             **kube_kwargs,
         )
@@ -327,17 +366,20 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
 
     async def _cleanup(self):
         """Deletes the Kubernetes job resource."""
-        with self._kubernetes_job.credentials.get_client("batch") as batch_v1_client:
-            deleted_v1_job = await run_sync_in_worker_thread(
-                batch_v1_client.delete_namespaced_job,
-                namespace=self._kubernetes_job.namespace,
-                name=self._v1_job_model.metadata.name,
-                **self._kubernetes_job.api_kwargs,
-            )
-            self.logger.info(
-                f"Job {self._v1_job_model.metadata.name} deleted "
-                f"with {deleted_v1_job.status!r}."
-            )
+
+        delete_options = V1DeleteOptions(propagation_policy="Foreground")
+
+        deleted_v1_job = await delete_namespaced_job.fn(
+            kubernetes_credentials=self._kubernetes_job.credentials,
+            job_name=self._v1_job_model.metadata.name,
+            delete_options=delete_options,
+            namespace=self._kubernetes_job.namespace,
+            **self._kubernetes_job.api_kwargs,
+        )
+        self.logger.info(
+            f"Job {self._v1_job_model.metadata.name} deleted "
+            f"with {deleted_v1_job.status!r}."
+        )
 
     @sync_compatible
     async def wait_for_completion(self):
@@ -354,74 +396,63 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
         """
         self.pod_logs = {}
 
-        with self._kubernetes_job.credentials.get_client(
-            "batch"
-        ) as batch_v1_client, self._kubernetes_job.credentials.get_client(
-            "core"
-        ) as core_v1_client:
+        elapsed_time = 0
 
-            elapsed_time = 0
-
-            while not self._completed:
-                job_expired = (
-                    elapsed_time > self._kubernetes_job.timeout_seconds
-                    if self._kubernetes_job.timeout_seconds
-                    else False
+        while not self._completed:
+            job_expired = (
+                elapsed_time > self._kubernetes_job.timeout_seconds
+                if self._kubernetes_job.timeout_seconds
+                else False
+            )
+            if job_expired:
+                raise KubernetesJobTimeoutError(
+                    f"Job timed out after {elapsed_time} seconds."
                 )
-                if job_expired:
-                    raise KubernetesJobTimeoutError(
-                        f"Job timed out after {elapsed_time} seconds."
-                    )
 
-                latest_v1_job = await run_sync_in_worker_thread(
-                    batch_v1_client.read_namespaced_job_status,
-                    name=self._v1_job_model.metadata.name,
+            v1_job_status = await read_namespaced_job_status.fn(
+                kubernetes_credentials=self._kubernetes_job.credentials,
+                job_name=self._v1_job_model.metadata.name,
+                namespace=self._kubernetes_job.namespace,
+                **self._kubernetes_job.api_kwargs,
+            )
+            pod_selector = (
+                "controller-uid=" f"{v1_job_status.metadata.labels['controller-uid']}"
+            )
+            v1_pod_list = await list_namespaced_pod.fn(
+                kubernetes_credentials=self._kubernetes_job.credentials,
+                namespace=self._kubernetes_job.namespace,
+                label_selector=pod_selector,
+                **self._kubernetes_job.api_kwargs,
+            )
+
+            for pod in v1_pod_list.items:
+                pod_name = pod.metadata.name
+
+                if pod.status.phase == "Pending" or pod_name in self.pod_logs.keys():
+                    continue
+
+                self.logger.info(f"Capturing logs for pod {pod_name!r}.")
+
+                self.pod_logs[pod_name] = await read_namespaced_pod_log.fn(
+                    kubernetes_credentials=self._kubernetes_job.credentials,
+                    pod_name=pod_name,
+                    container=v1_job_status.spec.template.spec.containers[0].name,
                     namespace=self._kubernetes_job.namespace,
                     **self._kubernetes_job.api_kwargs,
                 )
-                pod_selector = (
-                    "controller-uid="
-                    f"{latest_v1_job.metadata.labels['controller-uid']}"
+
+            if v1_job_status.status.active:
+                await sleep(self._kubernetes_job.interval_seconds)
+                if self._kubernetes_job.timeout_seconds:
+                    elapsed_time += self._kubernetes_job.interval_seconds
+            elif v1_job_status.status.failed:
+                raise RuntimeError(
+                    f"Job {v1_job_status.metadata.name!r} failed, check the "
+                    "Kubernetes pod logs for more information."
                 )
-                v1_pod_list = await run_sync_in_worker_thread(
-                    core_v1_client.list_namespaced_pod,
-                    namespace=self._kubernetes_job.namespace,
-                    label_selector=pod_selector,
-                    **self._kubernetes_job.api_kwargs,
-                )
-                for pod in v1_pod_list.items:
-                    pod_name = pod.metadata.name
-
-                    if (
-                        pod.status.phase == "Pending"
-                        or pod_name in self.pod_logs.keys()
-                    ):
-                        continue
-
-                    self.logger.info(f"Capturing logs for pod {pod_name!r}.")
-
-                    self.pod_logs[pod_name] = await run_sync_in_worker_thread(
-                        core_v1_client.read_namespaced_pod_log,
-                        namespace=self._kubernetes_job.namespace,
-                        name=pod_name,
-                        container=latest_v1_job.spec.template.spec.containers[0].name,
-                        **self._kubernetes_job.api_kwargs,
-                    )
-
-                if latest_v1_job.status.active:
-                    await sleep(self._kubernetes_job.interval_seconds)
-                    if self._kubernetes_job.timeout_seconds:
-                        elapsed_time += self._kubernetes_job.interval_seconds
-                elif latest_v1_job.status.failed:
-                    raise RuntimeError(
-                        f"Job {latest_v1_job.metadata.name!r} failed, check the "
-                        "Kubernetes pod logs for more information."
-                    )
-                elif latest_v1_job.status.succeeded:
-                    self._completed = True
-                    self.logger.info(
-                        f"Job {latest_v1_job.metadata.name!r} has completed."
-                    )
+            elif v1_job_status.status.succeeded:
+                self._completed = True
+                self.logger.info(f"Job {v1_job_status.metadata.name!r} has completed.")
 
         if self._kubernetes_job.delete_after_completion:
             await self._cleanup()
@@ -495,13 +526,12 @@ class KubernetesJob(JobBlock):
 
         v1_job_model = convert_manifest_to_model(self.v1_job, "V1Job")
 
-        with self.credentials.get_client("batch") as batch_v1_client:
-            await run_sync_in_worker_thread(
-                batch_v1_client.create_namespaced_job,
-                body=v1_job_model,
-                namespace=self.namespace,
-                **self.api_kwargs,
-            )
+        await create_namespaced_job.fn(
+            kubernetes_credentials=self.credentials,
+            new_job=v1_job_model,
+            namespace=self.namespace,
+            **self.api_kwargs,
+        )
 
         return KubernetesJobRun(kubernetes_job=self, v1_job_model=v1_job_model)
 
