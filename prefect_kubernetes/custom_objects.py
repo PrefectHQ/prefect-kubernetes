@@ -29,7 +29,8 @@ async def create_namespaced_custom_object(
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
-    Returns: object containing the custom resource created by this task.
+    Returns:
+        object containing the custom resource created by this task.
 
     Example:
         Create a custom object in the default namespace:
@@ -91,7 +92,8 @@ async def delete_namespaced_custom_object(
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
 
-    Returns: object containing the custom resource deleted by this task.
+    Returns:
+        object containing the custom resource deleted by this task.
 
     Example:
         Delete "my-custom-object" in the default namespace:
@@ -150,7 +152,8 @@ async def get_namespaced_custom_object(
     Raises:
         ValueError: if `name` is `None`.
 
-    Returns: object containing the custom resource specification.
+    Returns:
+        object containing the custom resource specification.
 
     Example:
         Read "my-custom-object" in the default namespace:
@@ -205,14 +208,17 @@ async def get_namespaced_custom_object_status(
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
-    Returns: object containing the custom-object specification with status.
+    Returns:
+        object containing the custom-object specification with status.
 
     Example:
         Fetch status of "my-custom-object" in the default namespace:
         ```python
         from prefect import flow
         from prefect_kubernetes.credentials import KubernetesCredentials
-        from prefect_kubernetes.custom_objects import get_namespaced_custom_object_status
+        from prefect_kubernetes.custom_objects import (
+            get_namespaced_custom_object_status,
+        )
 
         @flow
         def kubernetes_orchestrator():
@@ -258,7 +264,8 @@ async def list_namespaced_custom_object(
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
-    Returns: object containing a list of custom resources.
+    Returns:
+        object containing a list of custom resources.
 
     Example:
         List custom resources in "my-namespace":
@@ -314,16 +321,21 @@ async def patch_namespaced_custom_object(
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
-    Raises: ValueError: if `body` is `None`.
+    Raises:
+        ValueError: if `body` is `None`.
 
-    Returns: object containing the custom resource specification after the patch gets applied.
+    Returns:
+        object containing the custom resource specification
+        after the patch gets applied.
 
     Example:
         Patch "my-custom-object" in the default namespace:
         ```python
         from prefect import flow
         from prefect_kubernetes.credentials import KubernetesCredentials
-        from prefect_kubernetes.custom_objects import patch_namespaced_custom_object
+        from prefect_kubernetes.custom_objects import (
+            patch_namespaced_custom_object,
+        )
 
         @flow
         def kubernetes_orchestrator():
@@ -381,9 +393,11 @@ async def replace_namespaced_custom_object(
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
-    Raises: ValueError: if `body` is `None`.
+    Raises:
+        ValueError: if `body` is `None`.
 
-    Returns: object containing the custom resource specification after the replacement.
+    Returns:
+        object containing the custom resource specification after the replacement.
 
     Example:
         Replace "my-custom-object" in the default namespace:

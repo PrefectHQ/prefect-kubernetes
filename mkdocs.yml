@@ -72,6 +72,7 @@ watch:
 nav:
     - Home: index.md
     - Credentials: credentials.md
+    - Custom Objects: custom_objects.md
     - Deployments: deployments.md
     - Exceptions: exceptions.md
     - Flows: flows.md
