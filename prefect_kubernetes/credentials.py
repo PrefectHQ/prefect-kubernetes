@@ -4,7 +4,14 @@ from contextlib import contextmanager
 from typing import Generator, Optional, Union
 
 from kubernetes import config as kube_config
-from kubernetes.client import ApiClient, AppsV1Api, BatchV1Api, Configuration, CoreV1Api
+from kubernetes.client import (
+    ApiClient,
+    AppsV1Api,
+    BatchV1Api,
+    Configuration,
+    CoreV1Api,
+    CustomObjectsApi,
+)
 from kubernetes.config.config_exception import ConfigException
 from prefect.blocks.core import Block
 from prefect.blocks.kubernetes import KubernetesClusterConfig
@@ -17,6 +24,7 @@ K8S_CLIENT_TYPES = {
     "apps": AppsV1Api,
     "batch": BatchV1Api,
     "core": CoreV1Api,
+    "custom_objects": CustomObjectsApi,
 }
 
 
@@ -45,7 +53,7 @@ class KubernetesCredentials(Block):
     @contextmanager
     def get_client(
         self,
-        client_type: Literal["apps", "batch", "core"],
+        client_type: Literal["apps", "batch", "core", "custom_objects"],
         configuration: Optional[Configuration] = None,
     ) -> Generator[KubernetesClient, None, None]:
         """Convenience method for retrieving a Kubernetes API client for deployment resources.

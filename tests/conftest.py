@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import yaml
-from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, models
+from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, CustomObjectsApi, models
 from kubernetes.client.exceptions import ApiException
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 
@@ -87,6 +87,22 @@ def _mock_api_core_client(monkeypatch):
 
 
 @pytest.fixture
+def _mock_api_custom_objects_client(monkeypatch):
+    custom_objects_client = MagicMock(spec=CustomObjectsApi)
+
+    @contextmanager
+    def get_client(self, _):
+        yield custom_objects_client
+
+    monkeypatch.setattr(
+        "prefect_kubernetes.credentials.KubernetesCredentials.get_client",
+        get_client,
+    )
+
+    return custom_objects_client
+
+
+@pytest.fixture
 def mock_create_namespaced_job(monkeypatch):
     mock_v1_job = MagicMock(
         return_value=models.V1Job(metadata=models.V1ObjectMeta(name="test"))
@@ -132,7 +148,6 @@ def mock_delete_namespaced_job(monkeypatch):
 
 @pytest.fixture
 def mock_stream_timeout(monkeypatch):
-
     monkeypatch.setattr(
         "kubernetes.watch.Watch.stream",
         MagicMock(side_effect=ApiException(status=408)),
@@ -167,7 +182,6 @@ def mock_list_namespaced_pod(monkeypatch):
 
 @pytest.fixture
 def read_pod_logs(monkeypatch):
-
     pod_log = MagicMock(return_value="test log")
 
     monkeypatch.setattr("kubernetes.client.CoreV1Api.read_namespaced_pod_log", pod_log)
