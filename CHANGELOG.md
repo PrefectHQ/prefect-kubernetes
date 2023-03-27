@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## 0.2.3
+
+Released March 27, 2023
+
+### Updated
+- Refactor KubernetesJob and KubernetesJobRun to use existing task functions.
+
 ## 0.2.2
 
 Released March 24, 2023.
