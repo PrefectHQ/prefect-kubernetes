@@ -192,7 +192,7 @@ async def get_namespaced_custom_object_status(
     version: str,
     plural: str,
     name: str,
-    namespace: Optional[str] = "default",
+    namespace: str = "default",
     **kube_kwargs: Dict[str, Any],
 ) -> object:
     """Task for fetching status of a namespaced custom object.
