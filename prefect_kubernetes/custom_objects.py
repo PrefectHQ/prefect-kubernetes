@@ -387,9 +387,9 @@ async def replace_namespaced_custom_object(
         group: The custom resource object's group
         version: The custom resource object's version
         plural: The custom resource object's plural
-        name: The name of a custom object to patch.
+        name: The name of a custom object to replace.
         body: A Dict containing the custom resource object's specification.
-        namespace: The Kubernetes namespace to patch the custom resources.
+        namespace: The custom resource's Kubernetes namespace.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
