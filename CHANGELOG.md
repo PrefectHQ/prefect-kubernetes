@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- Custom objects crud tasks for kubernetes custom resource definitions. - [#45](https://github.com/PrefectHQ/prefect-kubernetes/pull/45)
 
 ### Changed
 
@@ -18,13 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
-
-## 0.2.4
-
-Released March 27, 2023.
-
-### Added
-- Custom objects crud tasks for kubernetes custom resource definitions. - [#45](https://github.com/PrefectHQ/prefect-kubernetes/pull/45)
 
 ## 0.2.1
 
