@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom objects crud tasks for kubernetes custom resource definitions. - [#45](https://github.com/PrefectHQ/prefect-kubernetes/pull/45)
 
 ### Changed
+- Refactor KubernetesJob and KubernetesJobRun to use existing task functions - [#43](https://github.com/PrefectHQ/prefect-kubernetes/pull/43)
 
 ### Deprecated
 

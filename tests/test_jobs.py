@@ -9,6 +9,7 @@ from prefect_kubernetes.jobs import (
     list_namespaced_job,
     patch_namespaced_job,
     read_namespaced_job,
+    read_namespaced_job_status,
     replace_namespaced_job,
 )
 
@@ -111,6 +112,26 @@ async def test_replace_namespaced_job(kubernetes_credentials, _mock_api_batch_cl
     assert _mock_api_batch_client.replace_namespaced_job.call_args[1]["a"] == "test"
 
 
+async def test_read_namespaced_job_status(
+    kubernetes_credentials, _mock_api_batch_client
+):
+    await read_namespaced_job_status.fn(
+        job_name="test-job",
+        namespace="ns",
+        a="test",
+        kubernetes_credentials=kubernetes_credentials,
+    )
+    assert (
+        _mock_api_batch_client.read_namespaced_job_status.call_args[1]["name"]
+        == "test-job"
+    )
+    assert (
+        _mock_api_batch_client.read_namespaced_job_status.call_args[1]["namespace"]
+        == "ns"
+    )
+    assert _mock_api_batch_client.read_namespaced_job_status.call_args[1]["a"] == "test"
+
+
 async def test_job_block_from_job_yaml(kubernetes_credentials):
     job = KubernetesJob.from_yaml_file(
         credentials=kubernetes_credentials,
@@ -125,7 +146,6 @@ async def test_job_block_wait_never_called_raises(
     mock_create_namespaced_job,
     mock_delete_namespaced_job,
 ):
-
     job_run = await valid_kubernetes_job_block.trigger()
 
     with pytest.raises(
