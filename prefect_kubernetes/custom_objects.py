@@ -25,7 +25,7 @@ async def create_namespaced_custom_object(
         version: The custom resource object's version
         plural: The custom resource object's plural
         body: A Dict containing the custom resource object's specification.
-        namespace: The Kubernetes namespace to create this custom object in.
+        namespace: The Kubernetes namespace to create the custom object in.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
