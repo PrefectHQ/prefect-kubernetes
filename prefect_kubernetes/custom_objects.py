@@ -145,7 +145,7 @@ async def get_namespaced_custom_object(
         version: The custom resource object's version
         plural: The custom resource object's plural
         name: The name of a custom object to read.
-        namespace: The Kubernetes namespace to read this custom resource is in.
+        namespace: The Kubernetes namespace the custom resource is in.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
