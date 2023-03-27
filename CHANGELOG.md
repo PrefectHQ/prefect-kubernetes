@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## 0.2.4
+
+Released March 27, 2023.
+
+### Added
+- Custom objects crud tasks for kubernetes custom resource definitions.
+
 ## 0.2.1
 
 Released February 17, 2023.
