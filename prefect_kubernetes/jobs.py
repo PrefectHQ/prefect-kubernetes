@@ -318,7 +318,7 @@ async def read_namespaced_job_status(
     Args:
         kubernetes_credentials: `KubernetesCredentials` block
             holding authentication needed to generate the required API client.
-        job_name: The name of a job to fetch the status.
+        job_name: The name of a job to fetch status for.
         namespace: The Kubernetes namespace to fetch status of job in.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
