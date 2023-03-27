@@ -249,7 +249,7 @@ async def list_namespaced_custom_object(
     group: str,
     version: str,
     plural: str,
-    namespace: Optional[str] = "default",
+    namespace: str = "default",
     **kube_kwargs: Dict[str, Any],
 ) -> object:
     """Task for listing namespaced custom objects.
