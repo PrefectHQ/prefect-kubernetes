@@ -304,7 +304,7 @@ async def patch_namespaced_custom_object(
     plural: str,
     name: str,
     body: Dict[str, Any],
-    namespace: Optional[str] = "default",
+    namespace: str = "default",
     **kube_kwargs: Dict[str, Any],
 ) -> object:
     """Task for patching a namespaced custom resource.
