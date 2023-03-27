@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
-- Refactor KubernetesJob and KubernetesJobRun to use existing task functions.
+- Refactor KubernetesJob and KubernetesJobRun to use existing task functions - [#43](https://github.com/PrefectHQ/prefect-kubernetes/pull/43)
 
 ### Deprecated
 
