@@ -260,7 +260,7 @@ async def list_namespaced_custom_object(
         group: The custom resource object's group
         version: The custom resource object's version
         plural: The custom resource object's plural
-        namespace: The Kubernetes namespace to list the custom resources.
+        namespace: The Kubernetes namespace to list custom resources for.
         **kube_kwargs: Optional extra keyword arguments to pass to the
             Kubernetes API (e.g. `{"pretty": "...", "dry_run": "..."}`).
 
