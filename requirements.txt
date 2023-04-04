@@ -1,2 +1,2 @@
-prefect>=2.8.7
+prefect>=2.9.0
 kubernetes >= 24.2.0
