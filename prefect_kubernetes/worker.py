@@ -25,14 +25,10 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 
 import anyio.abc
+import prefect
+from packaging import version
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect.docker import get_prefect_image_name
-from prefect.experimental.workers.base import (
-    BaseJobConfiguration,
-    BaseVariables,
-    BaseWorker,
-    BaseWorkerResult,
-)
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
@@ -41,6 +37,22 @@ from prefect.utilities.pydantic import JsonPatch
 from prefect.utilities.templating import find_placeholders
 from pydantic import Field, validator
 from typing_extensions import Literal
+
+# TODO: Remove this after next prefect release
+if version.parse(prefect.__version__) <= version.parse("2.9.0"):
+    from prefect.experimental.workers.base import (
+        BaseJobConfiguration,
+        BaseVariables,
+        BaseWorker,
+        BaseWorkerResult,
+    )
+else:
+    from prefect.workers.base import (
+        BaseJobConfiguration,
+        BaseWorker,
+        BaseWorkerResult,
+        BaseVariables,
+    )
 
 from prefect_kubernetes.utilities import (
     _slugify_label_key,
