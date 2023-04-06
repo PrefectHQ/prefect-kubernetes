@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## 0.2.4
+
+Released April 6th, 2023.
+
+### 
+
+- Temporary `prefect` version guard - [#48](https://github.com/PrefectHQ/prefect-kubernetes/pull/48)
+- Advanced configuration documentation - [#50](https://github.com/PrefectHQ/prefect-kubernetes/pull/50)
+
 ## 0.2.3
 
 Released April 1, 2023.
