@@ -1,9 +1,9 @@
 """
-<span class="badge-api experimental"/>
+<span class="badge-api beta"/>
 
 Module containing the Kubernetes worker used for executing flow runs as Kubernetes jobs.
 
-Note this module is **experimental**. The interfaces within may change without notice.
+Note this module is in **beta**. The interfaces within may change without notice.
 
 To start a Kubernetes worker, run the following command:
 
@@ -13,6 +13,76 @@ prefect worker start --pool 'my-work-pool' --type kubernetes
 
 Replace `my-work-pool` with the name of the work pool you want the worker
 to poll for flow runs.
+
+!!! example "Using a custom Kubernetes job manifest template"
+    The default template used for Kubernetes job manifests looks like this:
+    ```yaml
+    ---
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+    labels: "{{ labels }}"
+    namespace: "{{ namespace }}"
+    generateName: "{{ name }}-"
+    spec:
+    ttlSecondsAfterFinished: "{{ finished_job_ttl }}"
+    template:
+        spec:
+        parallelism: 1
+        completions: 1
+        restartPolicy: Never
+        serviceAccountName: "{{ service_account_name }}"
+        containers:
+        - name: prefect-job
+            env: "{{ env }}"
+            image: "{{ image }}"
+            imagePullPolicy: "{{ image_pull_policy }}"
+            args: "{{ command }}"
+    ```
+
+    Each values enclosed in `{{ }}` is a placeholder that will be replaced with
+    a value at runtime. The values that can be used a placeholders are defined
+    by the `variables` schema defined in the base job template.
+
+    The default job manifest and available variables can be customized on a work pool
+    by work pool basis. These customizations can be made via the Prefect UI when
+    creating or editing a work pool.
+
+    For example, if you wanted to allow custom memory requests for a Kubernetes work
+    pool you could update the job manifest template to look like this:
+
+    ```yaml
+    ---
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+    labels: "{{ labels }}"
+    namespace: "{{ namespace }}"
+    generateName: "{{ name }}-"
+    spec:
+    ttlSecondsAfterFinished: "{{ finished_job_ttl }}"
+    template:
+        spec:
+        parallelism: 1
+        completions: 1
+        restartPolicy: Never
+        serviceAccountName: "{{ service_account_name }}"
+        containers:
+        - name: prefect-job
+            env: "{{ env }}"
+            image: "{{ image }}"
+            imagePullPolicy: "{{ image_pull_policy }}"
+            args: "{{ command }}"
+            resources:
+                requests:
+                    memory: "{{ memory }}Mi"
+                limits:
+                    memory: 128Mi
+    ```
+
+    In this new template, the `memory` placeholder allows customization of the memory
+    allocated to Kubernetes jobs created by workers in this work pool, but the limit
+    is hard-coded and cannot be changed by deployments.
 
 For more information about work pools and workers,
 checkout out the [Prefect docs](https://docs.prefect.io/concepts/work-pools/).

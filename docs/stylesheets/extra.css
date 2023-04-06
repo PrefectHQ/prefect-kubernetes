@@ -44,9 +44,9 @@ to force column width */
     border-radius: 5px;
 }
 
-.experimental::before {
+.beta::before {
     background-color: #FCD14E;
-    content: "Experimental";
+    content: "Beta";
 }
 
 .cloud::before {
