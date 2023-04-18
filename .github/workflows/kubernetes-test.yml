@@ -60,3 +60,7 @@ jobs:
             --set=worker.image.repository=localhost/kubernetes-worker \
             --set=worker.image.prefectTag=latest \
             --wait
+
+      - name: Show status
+        run: |
+          kubectl get all
