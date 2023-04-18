@@ -49,5 +49,14 @@ jobs:
       - name: Load worker image into kind
         run: kind load docker-image localhost/kubernetes-worker
 
+      - name: Install server
+        run: helm install prefect-server prefect/prefect-server --wait
+
       - name: Install worker chart and override image
-        run: helm install prefect-worker prefect/prefect-worker --set=worker.image.repository=localhost/kubernetes-worker --set=worker.image.prefectTag=latest
+        run: |
+          helm install prefect-worker prefect/prefect-worker \
+            --set=worker.apiConfig=server \
+            --set=worker.serverApiConfig.apiUrl=http://prefect-worker.default.svc.cluster.local:4200 \
+            --set=worker.image.repository=localhost/kubernetes-worker \
+            --set=worker.image.prefectTag=latest \
+            --wait
