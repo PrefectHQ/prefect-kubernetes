@@ -55,15 +55,20 @@ jobs:
             --set=postgresql.enabled=false \
             --wait
 
+      - name: Get server logs
+        run: kubectl logs deployment/prefect-server
+
       - name: Install worker chart and override image
         run: |
           helm install prefect-worker prefect/prefect-worker \
             --set=worker.apiConfig=server \
-            --set=worker.serverApiConfig.apiUrl=http://prefect-worker.default.svc.cluster.local:4200 \
+            --set=worker.serverApiConfig.apiUrl=http://prefect-server.default.svc.cluster.local:4200 \
             --set=worker.image.repository=localhost/kubernetes-worker \
             --set=worker.image.prefectTag=latest \
             --wait
 
-      - name: Show status
-        run: |
-          kubectl get all
+      - name: Get worker logs
+        run: kubectl logs deployment/prefect-worker
+
+      - name: Show status of deployed objects
+        run: kubectl describe all
