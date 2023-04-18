@@ -1,0 +1,52 @@
+name: Integration Tests
+
+"on":
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch: {}
+
+jobs:
+  integration-test:
+    # name: "integration-test (${{ matrix.kubernetes }})"
+    runs-on: ubuntu-latest
+    # strategy:
+    #   matrix:
+    #     kubernetes:
+    #       - "1.25.8"
+    #       - "1.26.3"
+    #       - "1.27.0"
+    #   fail-fast: false
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3.5
+        with:
+          version: v3.11.2
+      
+      - name: Configure Helm chart
+        run: |
+          helm repo add prefect https://prefecthq.github.io/prefect-helm/
+          helm repo update
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.5.0
+        with:
+          version: v0.18.0
+          node_image: "kindest/node:v${{ matrix.kubernetes }}"
+
+      - name: Build worker image
+        run: docker build . -t localhost/kubernetes-worker
+
+      - name: Load worker image into kind
+        run: kind load docker-image localhost/kubernetes-worker
+
+      - name: Install worker chart and override image
+        run: helm install prefect-worker prefect/prefect-worker --set=worker.image.repository=localhost/kubernetes-worker --set=worker.image.prefectTag=latest
