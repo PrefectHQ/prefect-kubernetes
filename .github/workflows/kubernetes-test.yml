@@ -65,6 +65,7 @@ jobs:
             --set=worker.serverApiConfig.apiUrl=http://prefect-server.default.svc.cluster.local:4200 \
             --set=worker.image.repository=localhost/kubernetes-worker \
             --set=worker.image.prefectTag=latest \
+            --set=worker.config.workPool=practice \
             --wait
 
       - name: Get worker logs
