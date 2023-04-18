@@ -50,7 +50,10 @@ jobs:
         run: kind load docker-image localhost/kubernetes-worker
 
       - name: Install server
-        run: helm install prefect-server prefect/prefect-server --wait
+        run: |
+          helm install prefect-server prefect/prefect-server \
+            --set=postgresql.enabled=false \
+            --wait
 
       - name: Install worker chart and override image
         run: |
