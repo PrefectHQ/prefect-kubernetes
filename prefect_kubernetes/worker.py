@@ -95,34 +95,23 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 
 import anyio.abc
-import prefect
-from packaging import version
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect.docker import get_prefect_image_name
+from prefect.exceptions import InfrastructureNotAvailable, InfrastructureNotFound
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 from prefect.utilities.importtools import lazy_import
 from prefect.utilities.pydantic import JsonPatch
 from prefect.utilities.templating import find_placeholders
+from prefect.workers.base import (
+    BaseJobConfiguration,
+    BaseVariables,
+    BaseWorker,
+    BaseWorkerResult,
+)
 from pydantic import Field, validator
 from typing_extensions import Literal
-
-# TODO: Remove this after next prefect release
-if version.parse(prefect.__version__) <= version.parse("2.9.0"):
-    from prefect.experimental.workers.base import (
-        BaseJobConfiguration,
-        BaseVariables,
-        BaseWorker,
-        BaseWorkerResult,
-    )
-else:
-    from prefect.workers.base import (
-        BaseJobConfiguration,
-        BaseWorker,
-        BaseWorkerResult,
-        BaseVariables,
-    )
 
 from prefect_kubernetes.utilities import (
     _slugify_label_key,
@@ -506,6 +495,66 @@ class KubernetesWorker(BaseWorker):
                 self._watch_job, job.metadata.name, configuration, client
             )
             return KubernetesWorkerResult(identifier=pid, status_code=status_code)
+
+    async def kill_infrastructure(
+        self,
+        infrastructure_pid: str,
+        configuration: KubernetesWorkerJobConfiguration,
+        grace_seconds: int = 30,
+    ):
+        """
+        Stops a job for a cancelled flow run based on the provided infrastructure PID
+        and run configuration.
+        """
+        await run_sync_in_worker_thread(
+            self._stop_job, infrastructure_pid, configuration, grace_seconds
+        )
+
+    def _stop_job(
+        self,
+        infrastructure_pid: str,
+        configuration: KubernetesWorkerJobConfiguration,
+        grace_seconds: int = 30,
+    ):
+        client = self._get_configured_kubernetes_client(configuration)
+        job_cluster_uid, job_namespace, job_name = self._parse_infrastructure_pid(
+            infrastructure_pid
+        )
+
+        if job_namespace != configuration.namespace:
+            raise InfrastructureNotAvailable(
+                f"Unable to kill job {job_name!r}: The job is running in namespace "
+                f"{job_namespace!r} but this worker expected jobs to be running in "
+                f"namespace {configuration.namespace!r} based on the work pool and "
+                "deployment configuration."
+            )
+
+        current_cluster_uid = self._get_cluster_uid(client)
+        if job_cluster_uid != current_cluster_uid:
+            raise InfrastructureNotAvailable(
+                f"Unable to kill job {job_name!r}: The job is running on another "
+                "cluster than the one specified by the infrastructure PID."
+            )
+
+        with self._get_batch_client(client) as batch_client:
+            try:
+                batch_client.delete_namespaced_job(
+                    name=job_name,
+                    namespace=job_namespace,
+                    grace_period_seconds=grace_seconds,
+                    # Foreground propagation deletes dependent objects before deleting
+                    # owner objects. This ensures that the pods are cleaned up before
+                    # the job is marked as deleted.
+                    # See: https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion # noqa
+                    propagation_policy="Foreground",
+                )
+            except kubernetes.client.exceptions.ApiException as exc:
+                if exc.status == 404:
+                    raise InfrastructureNotFound(
+                        f"Unable to kill job {job_name!r}: The job was not found."
+                    ) from exc
+                else:
+                    raise
 
     def _get_configured_kubernetes_client(
         self, configuration: KubernetesWorkerJobConfiguration
