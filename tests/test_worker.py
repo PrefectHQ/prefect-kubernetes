@@ -13,6 +13,7 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config import ConfigException
 from prefect.client.schemas import FlowRun
 from prefect.docker import get_prefect_image_name
+from prefect.exceptions import InfrastructureNotAvailable, InfrastructureNotFound
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.settings import (
@@ -1842,3 +1843,144 @@ class TestKubernetesWorker:
                 ),
             ]
         )
+
+    class TestKillInfrastructure:
+        async def test_kill_infrastructure_calls_delete_namespaced_job(
+            self,
+            default_configuration,
+            mock_batch_client,
+            mock_core_client,
+            mock_watch,
+            monkeypatch,
+        ):
+            async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+                await k8s_worker.kill_infrastructure(
+                    infrastructure_pid=f"{MOCK_CLUSTER_UID}:default:mock-k8s-v1-job",
+                    grace_seconds=0,
+                    configuration=default_configuration,
+                )
+
+            assert len(mock_batch_client.mock_calls) == 1
+            mock_batch_client.delete_namespaced_job.assert_called_once_with(
+                name="mock-k8s-v1-job",
+                namespace="default",
+                grace_period_seconds=0,
+                propagation_policy="Foreground",
+            )
+
+        async def test_kill_infrastructure_uses_correct_grace_seconds(
+            self,
+            default_configuration,
+            mock_batch_client,
+            mock_core_client,
+            mock_watch,
+            monkeypatch,
+        ):
+            GRACE_SECONDS = 42
+            async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+                await k8s_worker.kill_infrastructure(
+                    infrastructure_pid=f"{MOCK_CLUSTER_UID}:default:mock-k8s-v1-job",
+                    grace_seconds=GRACE_SECONDS,
+                    configuration=default_configuration,
+                )
+
+            assert len(mock_batch_client.mock_calls) == 1
+            mock_batch_client.delete_namespaced_job.assert_called_once_with(
+                name="mock-k8s-v1-job",
+                namespace="default",
+                grace_period_seconds=GRACE_SECONDS,
+                propagation_policy="Foreground",
+            )
+
+        async def test_kill_infrastructure_raises_infra_not_available_on_mismatched_cluster_namespace(
+            self,
+            default_configuration,
+            mock_batch_client,
+            mock_core_client,
+            mock_watch,
+            monkeypatch,
+        ):
+            BAD_NAMESPACE = "dog"
+            with pytest.raises(
+                InfrastructureNotAvailable,
+                match=(
+                    "Unable to kill job 'mock-k8s-v1-job': The job is running in "
+                    f"namespace {BAD_NAMESPACE!r} but this worker expected jobs "
+                    "to be running in namespace 'default' based on the work pool and "
+                    "deployment configuration."
+                ),
+            ):
+                async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+                    await k8s_worker.kill_infrastructure(
+                        infrastructure_pid=f"{MOCK_CLUSTER_UID}:{BAD_NAMESPACE}:mock-k8s-v1-job",
+                        grace_seconds=0,
+                        configuration=default_configuration,
+                    )
+
+        async def test_kill_infrastructure_raises_infra_not_available_on_mismatched_cluster_uid(
+            self,
+            default_configuration,
+            mock_batch_client,
+            mock_core_client,
+            mock_watch,
+            monkeypatch,
+        ):
+            BAD_CLUSTER = "4321"
+
+            with pytest.raises(
+                InfrastructureNotAvailable,
+                match=(
+                    "Unable to kill job 'mock-k8s-v1-job': The job is running on another "
+                    "cluster."
+                ),
+            ):
+                async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+                    await k8s_worker.kill_infrastructure(
+                        infrastructure_pid=f"{BAD_CLUSTER}:default:mock-k8s-v1-job",
+                        grace_seconds=0,
+                        configuration=default_configuration,
+                    )
+
+        async def test_kill_infrastructure_raises_infrastructure_not_found_on_404(
+            self,
+            default_configuration,
+            mock_batch_client,
+            mock_core_client,
+            mock_watch,
+            monkeypatch,
+        ):
+            mock_batch_client.delete_namespaced_job.side_effect = [
+                ApiException(status=404)
+            ]
+
+            with pytest.raises(
+                InfrastructureNotFound,
+                match="Unable to kill job 'mock-k8s-v1-job': The job was not found.",
+            ):
+                async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+                    await k8s_worker.kill_infrastructure(
+                        infrastructure_pid=f"{MOCK_CLUSTER_UID}:default:mock-k8s-v1-job",
+                        grace_seconds=0,
+                        configuration=default_configuration,
+                    )
+
+        async def test_kill_infrastructure_passes_other_k8s_api_errors_through(
+            self,
+            default_configuration,
+            mock_batch_client,
+            mock_core_client,
+            mock_watch,
+            monkeypatch,
+        ):
+            mock_batch_client.delete_namespaced_job.side_effect = [
+                ApiException(status=400)
+            ]
+            with pytest.raises(
+                ApiException,
+            ):
+                async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+                    await k8s_worker.kill_infrastructure(
+                        infrastructure_pid=f"{MOCK_CLUSTER_UID}:default:dog",
+                        grace_seconds=0,
+                        configuration=default_configuration,
+                    )

@@ -502,6 +502,16 @@ class KubernetesWorker(BaseWorker):
         configuration: KubernetesWorkerJobConfiguration,
         grace_seconds: int = 30,
     ):
+        await run_sync_in_worker_thread(
+            self._stop_job, infrastructure_pid, configuration, grace_seconds
+        )
+
+    def _stop_job(
+        self,
+        infrastructure_pid: str,
+        configuration: KubernetesWorkerJobConfiguration,
+        grace_seconds: int = 30,
+    ):
         client = self._get_configured_kubernetes_client(configuration)
         job_cluster_uid, job_namespace, job_name = self._parse_infrastructure_pid(
             infrastructure_pid
