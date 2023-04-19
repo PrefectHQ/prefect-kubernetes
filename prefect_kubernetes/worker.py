@@ -502,6 +502,10 @@ class KubernetesWorker(BaseWorker):
         configuration: KubernetesWorkerJobConfiguration,
         grace_seconds: int = 30,
     ):
+        """
+        Stops a job for a cancelled flow run based on the provided infrastructure PID
+        and run configuration.
+        """
         await run_sync_in_worker_thread(
             self._stop_job, infrastructure_pid, configuration, grace_seconds
         )
