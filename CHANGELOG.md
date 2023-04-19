@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `kill_infrastructure` method on `KubernetesWorker` which stops jobs for cancelled flow runs  - [#52](https://github.com/PrefectHQ/prefect-kubernetes/pull/52)
 ### Changed
 
 ### Deprecated
