@@ -127,7 +127,10 @@ def _mock_pods_stream_that_returns_running_pod(*args, **kwargs):
     job = MagicMock(spec=kubernetes.client.V1Job)
     job.status.completion_time = pendulum.now("utc").timestamp()
 
-    return [{"object": job_pod}, {"object": job}]
+    return [
+        {"object": job_pod, "type": "MODIFIED"},
+        {"object": job, "type": "MODIFIED"},
+    ]
 
 
 from_template_and_values_cases = [

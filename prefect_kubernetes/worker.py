@@ -92,12 +92,14 @@ import math
 import os
 import time
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple
 
 import anyio.abc
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect.docker import get_prefect_image_name
 from prefect.exceptions import InfrastructureNotAvailable, InfrastructureNotFound
+from prefect.events import RelatedResource
+from prefect.events.related import object_as_related_resource, tags_as_related_resources
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
@@ -113,6 +115,7 @@ from prefect.workers.base import (
 from pydantic import Field, validator
 from typing_extensions import Literal
 
+from prefect_kubernetes.events import KubernetesEventsReplicator
 from prefect_kubernetes.utilities import (
     _slugify_label_key,
     _slugify_label_value,
@@ -124,9 +127,9 @@ if TYPE_CHECKING:
     import kubernetes.client
     import kubernetes.client.exceptions
     import kubernetes.config
+    import kubernetes.watch
     from kubernetes.client import ApiClient, BatchV1Api, CoreV1Api, V1Job, V1Pod
     from prefect.client.schemas import FlowRun
-
 else:
     kubernetes = lazy_import("kubernetes")
 
@@ -392,6 +395,19 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
                 generate_name = "prefect-job"
             self.job_manifest["metadata"]["generateName"] = f"{generate_name}-"
 
+    def _related_resources(self) -> List[RelatedResource]:
+        tags = set()
+        related = []
+
+        for kind, obj in self._related_objects.items():
+            if not obj:
+                continue
+            if hasattr(obj, "tags"):
+                tags.update(obj.tags)
+            related.append(object_as_related_resource(kind=kind, role=kind, object=obj))
+
+        return related + tags_as_related_resources(tags)
+
 
 class KubernetesWorkerVariables(BaseVariables):
     """
@@ -491,9 +507,21 @@ class KubernetesWorker(BaseWorker):
                 task_status.started(pid)
 
             # Monitor the job until completion
-            status_code = await run_sync_in_worker_thread(
-                self._watch_job, job.metadata.name, configuration, client
+
+            events_replicator = KubernetesEventsReplicator(
+                client=client,
+                job_name=job.metadata.name,
+                namespace=configuration.namespace,
+                worker_resource=self._event_resource(),
+                related_resources=self._event_related_resources(
+                    configuration=configuration
+                ),
             )
+
+            with events_replicator:
+                status_code = await run_sync_in_worker_thread(
+                    self._watch_job, job.metadata.name, configuration, client
+                )
             return KubernetesWorkerResult(identifier=pid, status_code=status_code)
 
     async def kill_infrastructure(
