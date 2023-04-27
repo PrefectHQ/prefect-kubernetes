@@ -1,12 +1,13 @@
-import time
 import copy
 import threading
-import pytest
+import time
 from unittest.mock import MagicMock, call, patch
 
-from kubernetes.client import ApiClient, CoreV1Api, V1Pod
-from prefect.events import Event, RelatedResource, emit_event
+import pytest
+from kubernetes.client import V1Pod
+from prefect.events import RelatedResource
 from prefect.utilities.importtools import lazy_import
+
 from prefect_kubernetes.events import EVICTED_REASONS, KubernetesEventsReplicator
 
 kubernetes = lazy_import("kubernetes")

@@ -1,5 +1,4 @@
 import atexit
-import sys
 import threading
 from typing import TYPE_CHECKING, Dict, List, Optional
 
@@ -27,6 +26,8 @@ EVICTED_REASONS = {
 
 
 class KubernetesEventsReplicator:
+    """Replicates Kubernetes pod events to Prefect events."""
+
     def __init__(
         self,
         client: "ApiClient",
@@ -55,19 +56,23 @@ class KubernetesEventsReplicator:
         atexit.register(self.stop)
 
     def __enter__(self):
+        """Start the replicator thread."""
         self._thread.start()
         self._state = "STARTED"
 
     def __exit__(self, *args, **kwargs):
+        """Stop the replicator thread."""
         self.stop()
 
     def stop(self):
+        """Stop watching for pod events and stop thread."""
         if self._thread.is_alive():
             self._watch.stop()
             self._thread.join()
             self._state = "STOPPED"
 
     def _pod_as_resource(self, pod: "V1Pod") -> Dict[str, str]:
+        """Convert a pod to a resource dictionary"""
         return {
             "prefect.resource.id": f"prefect.kubernetes.pod.{pod.metadata.uid}",
             "prefect.resource.name": pod.metadata.name,
@@ -75,6 +80,7 @@ class KubernetesEventsReplicator:
         }
 
     def _replicate_pod_events(self):
+        """Replicate Kubernetes pod events as Prefect Events."""
         seen_phases = set()
         last_event = None
 
@@ -98,6 +104,7 @@ class KubernetesEventsReplicator:
         pod_event: Dict,
         last_event: Optional[Event] = None,
     ) -> Event:
+        """Emit a Prefect event for a Kubernetes pod event."""
         pod_event_type = pod_event["type"]
         pod: "V1Pod" = pod_event["object"]
         pod_phase = pod.status.phase

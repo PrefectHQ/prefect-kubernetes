@@ -97,9 +97,9 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple
 import anyio.abc
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect.docker import get_prefect_image_name
-from prefect.exceptions import InfrastructureNotAvailable, InfrastructureNotFound
 from prefect.events import RelatedResource
 from prefect.events.related import object_as_related_resource, tags_as_related_resources
+from prefect.exceptions import InfrastructureNotAvailable, InfrastructureNotFound
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
