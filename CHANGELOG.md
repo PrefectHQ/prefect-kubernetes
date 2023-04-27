@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## 0.2.6
+
+Released April ??th, 2023.
+
+### Added
+
+- `KubernetesEventReplicator` which replicates kubernetes pod events to Prefect events.
+
 ## 0.2.5
 
 Released April 20th, 2023.

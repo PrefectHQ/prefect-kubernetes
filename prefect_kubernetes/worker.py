@@ -400,6 +400,8 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         related = []
 
         for kind, obj in self._related_objects.items():
+            # TODO: Remove this method once we've updated the Prefect core side
+            # to ignore objects that are None.
             if not obj:
                 continue
             if hasattr(obj, "tags"):
