@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## 0.2.7    
+
+Released May 4th, 2023.
+
+### Added
+
+- Fixed issue where `KubernetesEventReplicator` would not shutdown after a flow-run was completed resulting in new flow-runs not being picked up and the worker hanging on exit. - [#57](https://github.com/PrefectHQ/prefect-kubernetes/pull/57)
 ## 0.2.6
 
 Released April 28th, 2023.
