@@ -518,6 +518,7 @@ class KubernetesWorker(BaseWorker):
                 related_resources=self._event_related_resources(
                     configuration=configuration
                 ),
+                timeout_seconds=configuration.pod_watch_timeout_seconds,
             )
 
             with events_replicator:

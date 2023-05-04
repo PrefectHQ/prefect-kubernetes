@@ -35,10 +35,12 @@ class KubernetesEventsReplicator:
         namespace: str,
         worker_resource: Dict[str, str],
         related_resources: List[RelatedResource],
+        timeout_seconds: int,
     ):
         self._client = client
         self._job_name = job_name
         self._namespace = namespace
+        self._timeout_seconds = timeout_seconds
 
         # All events emitted by this replicator have the pod itself as the
         # resource. The `worker_resource` is what the worker uses when it's
@@ -90,6 +92,7 @@ class KubernetesEventsReplicator:
                 func=core_client.list_namespaced_pod,
                 namespace=self._namespace,
                 label_selector=f"job-name={self._job_name}",
+                timeout_seconds=self._timeout_seconds,
             ):
                 phase = event["object"].status.phase
 

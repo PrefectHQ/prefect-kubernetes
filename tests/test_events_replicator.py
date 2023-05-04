@@ -148,6 +148,7 @@ def replicator(client, worker_resource, related_resources):
         namespace="test-namespace",
         worker_resource=worker_resource,
         related_resources=related_resources,
+        timeout_seconds=60,
     )
 
 
