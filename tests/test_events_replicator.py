@@ -148,6 +148,7 @@ def replicator(client, worker_resource, related_resources):
         namespace="test-namespace",
         worker_resource=worker_resource,
         related_resources=related_resources,
+        timeout_seconds=60,
     )
 
 
@@ -256,6 +257,7 @@ def test_replicate_successful_pod_events(replicator, successful_pod_stream):
             ),
         ]
     )
+    mock_watch.stop.assert_called_once_with()
 
 
 def test_replicate_failed_pod_events(replicator, failed_pod_stream):
@@ -347,6 +349,7 @@ def test_replicate_failed_pod_events(replicator, failed_pod_stream):
             ),
         ]
     )
+    mock_watch.stop.assert_called_once_with()
 
 
 def test_replicate_evicted_pod_events(replicator, evicted_pod_stream):
@@ -439,3 +442,4 @@ def test_replicate_evicted_pod_events(replicator, evicted_pod_stream):
             ),
         ]
     )
+    mock_watch.stop.assert_called_once_with()
