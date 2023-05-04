@@ -24,6 +24,8 @@ EVICTED_REASONS = {
     "NodeOutOfDisk",
 }
 
+FINAL_PHASES = {"Succeeded", "Failed"}
+
 
 class KubernetesEventsReplicator:
     """Replicates Kubernetes pod events to Prefect events."""
@@ -99,6 +101,8 @@ class KubernetesEventsReplicator:
                 if phase not in seen_phases:
                     last_event = self._emit_pod_event(event, last_event=last_event)
                     seen_phases.add(phase)
+                    if phase in FINAL_PHASES:
+                        self._watch.stop()
         finally:
             self._client.rest_client.pool_manager.clear()
 

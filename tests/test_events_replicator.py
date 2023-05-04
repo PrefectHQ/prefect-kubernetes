@@ -257,6 +257,7 @@ def test_replicate_successful_pod_events(replicator, successful_pod_stream):
             ),
         ]
     )
+    mock_watch.stop.assert_called_once_with()
 
 
 def test_replicate_failed_pod_events(replicator, failed_pod_stream):
@@ -348,6 +349,7 @@ def test_replicate_failed_pod_events(replicator, failed_pod_stream):
             ),
         ]
     )
+    mock_watch.stop.assert_called_once_with()
 
 
 def test_replicate_evicted_pod_events(replicator, evicted_pod_stream):
@@ -440,3 +442,4 @@ def test_replicate_evicted_pod_events(replicator, evicted_pod_stream):
             ),
         ]
     )
+    mock_watch.stop.assert_called_once_with()
