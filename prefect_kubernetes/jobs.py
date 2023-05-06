@@ -425,21 +425,7 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                 **self._kubernetes_job.api_kwargs,
             )
 
-            for pod in v1_pod_list.items:
-                pod_name = pod.metadata.name
-
-                if pod.status.phase == "Pending" or pod_name in self.pod_logs.keys():
-                    continue
-
-                self.logger.info(f"Capturing logs for pod {pod_name!r}.")
-
-                self.pod_logs[pod_name] = await read_namespaced_pod_log.fn(
-                    kubernetes_credentials=self._kubernetes_job.credentials,
-                    pod_name=pod_name,
-                    container=v1_job_status.spec.template.spec.containers[0].name,
-                    namespace=self._kubernetes_job.namespace,
-                    **self._kubernetes_job.api_kwargs,
-                )
+            
 
             if v1_job_status.status.active:
                 await sleep(self._kubernetes_job.interval_seconds)
@@ -453,6 +439,21 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
             elif v1_job_status.status.succeeded:
                 self._completed = True
                 self.logger.info(f"Job {v1_job_status.metadata.name!r} has completed.")
+                for pod in v1_pod_list.items:
+                    pod_name = pod.metadata.name
+
+                    if pod_name in self.pod_logs.keys():
+                        continue
+
+                    self.logger.info(f"Capturing logs for pod {pod_name!r}.")
+
+                    self.pod_logs[pod_name] = await read_namespaced_pod_log.fn(
+                        kubernetes_credentials=self._kubernetes_job.credentials,
+                        pod_name=pod_name,
+                        container=v1_job_status.spec.template.spec.containers[0].name,
+                        namespace=self._kubernetes_job.namespace,
+                        **self._kubernetes_job.api_kwargs,
+                    )
 
         if self._kubernetes_job.delete_after_completion:
             await self._cleanup()
