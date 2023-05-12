@@ -391,7 +391,7 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
 
         Args:
             print_func: If provided, it will stream the pod logs by calling `print_func`
-                for every line and returning `None`.
+                for every line.
         Raises:
             RuntimeError: If the Kubernetes job fails.
             KubernetesJobTimeoutError: If the Kubernetes job times out.
