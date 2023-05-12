@@ -382,13 +382,16 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
         )
 
     @sync_compatible
-    async def wait_for_completion(self):
+    async def wait_for_completion(self, print_func: Optional[Callable] = None):
         """Waits for the job to complete.
 
         If the job has `delete_after_completion` set to `True`,
         the job will be deleted if it is observed by this method
         to enter a completed state.
 
+        Args:
+            print_func: If provided, it will stream the pod logs by calling `print_func`
+                for every line and returning `None`.
         Raises:
             RuntimeError: If the Kubernetes job fails.
             KubernetesJobTimeoutError: If the Kubernetes job times out.
@@ -438,6 +441,7 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                     pod_name=pod_name,
                     container=v1_job_status.spec.template.spec.containers[0].name,
                     namespace=self._kubernetes_job.namespace,
+                    print_func=print_func,
                     **self._kubernetes_job.api_kwargs,
                 )
 
