@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed issue where `wait_for_completion` method on `KubernetesJobRun` was grabbing pod logs too early.
+
 ### Security
 
 ## 0.2.7    
