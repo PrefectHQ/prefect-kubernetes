@@ -432,10 +432,15 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                 if self._kubernetes_job.timeout_seconds:
                     elapsed_time += self._kubernetes_job.interval_seconds
             elif v1_job_status.status.failed:
-                raise RuntimeError(
+                  self._completed = True
+                  self.logger.info(
                     f"Job {v1_job_status.metadata.name!r} failed, check the "
                     "Kubernetes pod logs for more information."
-                )
+                  )
+#                 raise RuntimeError(
+#                     f"Job {v1_job_status.metadata.name!r} failed, check the "
+#                     "Kubernetes pod logs for more information."
+#                 )
             elif v1_job_status.status.succeeded:
                 self._completed = True
                 self.logger.info(f"Job {v1_job_status.metadata.name!r} has completed.")
