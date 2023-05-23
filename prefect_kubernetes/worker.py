@@ -459,6 +459,14 @@ class KubernetesWorker(BaseWorker):
     type = "kubernetes"
     job_configuration = KubernetesWorkerJobConfiguration
     job_configuration_variables = KubernetesWorkerVariables
+    _description = (
+        "Execute flow runs within jobs scheduled on a Kubernetes cluster. Requires a "
+        "Kubernetes cluster."
+    )
+    _display_name = "Kubernetes"
+    _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/worker/"
+    _is_beta = True
+    _logo_url = "https://images.ctfassets.net/gm98wzqotmnx/1zrSeY8DZ1MJZs2BAyyyGk/20445025358491b8b72600b8f996125b/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa
 
     async def run(
         self,
