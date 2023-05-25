@@ -25,7 +25,7 @@ Released May 25th, 2023.
 
 ### Changed
 
-- Improved failure message when creating the Kubernetes job fails - [#71](https://github.com/PrefectHQ/prefect-kubernetes/pull/71)
+- Improve failure message when creating a Kubernetes job fails - [#71](https://github.com/PrefectHQ/prefect-kubernetes/pull/71)
 - Stream Kubernetes Worker flow run logs to the API - [#72]([https://github.com/PrefectHQ/prefect-aws/pull/267](https://github.com/PrefectHQ/prefect-kubernetes/pull/72))
 
 ## 0.2.7    
