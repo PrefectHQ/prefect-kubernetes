@@ -1,5 +1,5 @@
-from contextlib import contextmanager
 import re
+from contextlib import contextmanager
 from time import monotonic, sleep
 from unittest import mock
 from unittest.mock import MagicMock, Mock
@@ -15,9 +15,9 @@ from kubernetes.config import ConfigException
 from prefect.client.schemas import FlowRun
 from prefect.docker import get_prefect_image_name
 from prefect.exceptions import (
+    InfrastructureError,
     InfrastructureNotAvailable,
     InfrastructureNotFound,
-    InfrastructureError,
 )
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
