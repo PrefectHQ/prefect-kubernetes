@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## 0.2.8
+
+Released May 25th, 2023.
+
+### Changed
+
+- Improved failure message when creating the Kubernetes job fails - [#71](https://github.com/PrefectHQ/prefect-kubernetes/pull/71)
+- Stream Kubernetes Worker flow run logs to the API - [#72]([https://github.com/PrefectHQ/prefect-aws/pull/267](https://github.com/PrefectHQ/prefect-kubernetes/pull/72))
+
 ## 0.2.7    
 
 Released May 4th, 2023.
