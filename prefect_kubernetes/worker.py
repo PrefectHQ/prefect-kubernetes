@@ -87,8 +87,8 @@ to poll for flow runs.
 For more information about work pools and workers,
 checkout out the [Prefect docs](https://docs.prefect.io/concepts/work-pools/).
 """
-import logging
 import enum
+import logging
 import math
 import os
 import time
