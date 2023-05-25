@@ -97,7 +97,11 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 import anyio.abc
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect.docker import get_prefect_image_name
-from prefect.exceptions import InfrastructureNotAvailable, InfrastructureNotFound
+from prefect.exceptions import (
+    InfrastructureError,
+    InfrastructureNotAvailable,
+    InfrastructureNotFound,
+)
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
@@ -609,10 +613,23 @@ class KubernetesWorker(BaseWorker):
         """
         Creates a Kubernetes job from a job manifest.
         """
-        with self._get_batch_client(client) as batch_client:
-            job = batch_client.create_namespaced_job(
-                configuration.namespace, configuration.job_manifest
-            )
+        try:
+            with self._get_batch_client(client) as batch_client:
+                job = batch_client.create_namespaced_job(
+                    configuration.namespace, configuration.job_manifest
+                )
+        except kubernetes.client.exceptions.ApiException as exc:
+            # Parse the reason and message from the response if feasible
+            message = ""
+            if exc.reason:
+                message += ": " + exc.reason
+            if exc.body and "message" in exc.body:
+                message += ": " + exc.body["message"]
+
+            raise InfrastructureError(
+                f"Unable to create Kubernetes job{message}"
+            ) from exc
+
         return job
 
     @contextmanager
