@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import re
 from time import monotonic, sleep
 from unittest import mock
 from unittest.mock import MagicMock, Mock
@@ -13,7 +14,11 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config import ConfigException
 from prefect.client.schemas import FlowRun
 from prefect.docker import get_prefect_image_name
-from prefect.exceptions import InfrastructureNotAvailable, InfrastructureNotFound
+from prefect.exceptions import (
+    InfrastructureNotAvailable,
+    InfrastructureNotFound,
+    InfrastructureError,
+)
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.settings import (
@@ -1070,6 +1075,146 @@ class TestKubernetesWorker:
                 "template"
             ]["spec"]["containers"][0]["image"]
             assert image == "foo"
+
+    async def test_create_job_failure(
+        self,
+        flow_run,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+    ):
+        response = MagicMock()
+        response.data = {
+            "kind": "Status",
+            "apiVersion": "v1",
+            "metadata": {},
+            "status": "Failure",
+            "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
+            "reason": "Forbidden",
+            "details": {"group": "batch", "kind": "jobs"},
+            "code": 403,
+        }
+        response.status = 403
+        response.reason = "Forbidden"
+
+        mock_batch_client.create_namespaced_job.side_effect = ApiException(
+            http_resp=response
+        )
+
+        configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
+            KubernetesWorker.get_default_base_job_template(), {"image": "foo"}
+        )
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            with pytest.raises(
+                InfrastructureError,
+                match=re.escape(
+                    "Unable to create Kubernetes job: Forbidden: jobs.batch is forbidden: User "
+                    '"system:serviceaccount:helm-test:prefect-worker-dev" cannot '
+                    'create resource "jobs" in API group "batch" in the namespace '
+                    '"prefect"'
+                ),
+            ):
+                await k8s_worker.run(flow_run, configuration)
+
+    async def test_create_job_failure_no_reason(
+        self,
+        flow_run,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+    ):
+        response = MagicMock()
+        response.data = {
+            "kind": "Status",
+            "apiVersion": "v1",
+            "metadata": {},
+            "status": "Failure",
+            "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
+            "reason": "Forbidden",
+            "details": {"group": "batch", "kind": "jobs"},
+            "code": 403,
+        }
+        response.status = 403
+        response.reason = None
+
+        mock_batch_client.create_namespaced_job.side_effect = ApiException(
+            http_resp=response
+        )
+
+        configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
+            KubernetesWorker.get_default_base_job_template(), {"image": "foo"}
+        )
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            with pytest.raises(
+                InfrastructureError,
+                match=re.escape(
+                    "Unable to create Kubernetes job: jobs.batch is forbidden: User "
+                    '"system:serviceaccount:helm-test:prefect-worker-dev" cannot '
+                    'create resource "jobs" in API group "batch" in the namespace '
+                    '"prefect"'
+                ),
+            ):
+                await k8s_worker.run(flow_run, configuration)
+
+    async def test_create_job_failure_no_message(
+        self,
+        flow_run,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+    ):
+        response = MagicMock()
+        response.data = {
+            "kind": "Status",
+            "apiVersion": "v1",
+            "metadata": {},
+            "status": "Failure",
+            "reason": "Forbidden",
+            "details": {"group": "batch", "kind": "jobs"},
+            "code": 403,
+        }
+        response.status = 403
+        response.reason = "Test"
+
+        mock_batch_client.create_namespaced_job.side_effect = ApiException(
+            http_resp=response
+        )
+
+        configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
+            KubernetesWorker.get_default_base_job_template(), {"image": "foo"}
+        )
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            with pytest.raises(
+                InfrastructureError,
+                match=re.escape("Unable to create Kubernetes job: Test"),
+            ):
+                await k8s_worker.run(flow_run, configuration)
+
+    async def test_create_job_failure_no_response_body(
+        self,
+        flow_run,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+    ):
+        response = MagicMock()
+        response.data = None
+        response.status = 403
+        response.reason = "Test"
+
+        mock_batch_client.create_namespaced_job.side_effect = ApiException(
+            http_resp=response
+        )
+
+        configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
+            KubernetesWorker.get_default_base_job_template(), {"image": "foo"}
+        )
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            with pytest.raises(
+                InfrastructureError,
+                match=re.escape("Unable to create Kubernetes job: Test"),
+            ):
+                await k8s_worker.run(flow_run, configuration)
 
     async def test_allows_image_setting_from_manifest(
         self,

@@ -619,13 +619,15 @@ class KubernetesWorker(BaseWorker):
                     configuration.namespace, configuration.job_manifest
                 )
         except kubernetes.client.exceptions.ApiException as exc:
-            # Parse the message from the response body if feasible
+            # Parse the reason and message from the response if feasible
             message = ""
+            if exc.reason:
+                message += ": " + exc.reason
             if exc.body and "message" in exc.body:
-                message = "; " + exc.body["message"]
+                message += ": " + exc.body["message"]
 
             raise InfrastructureError(
-                f"Unable to create Kubernetes job: {exc.reason}{message}"
+                f"Unable to create Kubernetes job{message}"
             ) from exc
 
         return job
