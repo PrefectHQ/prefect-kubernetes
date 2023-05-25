@@ -88,6 +88,7 @@ For more information about work pools and workers,
 checkout out the [Prefect docs](https://docs.prefect.io/concepts/work-pools/).
 """
 import enum
+import logging
 import math
 import os
 import time
@@ -492,7 +493,10 @@ class KubernetesWorker(BaseWorker):
             KubernetesWorkerResult: A result object containing information about the
                 final state of the flow run
         """
+        logger = self.get_flow_run_logger(flow_run)
+
         with self._get_configured_kubernetes_client(configuration) as client:
+            logger.info("Creating Kubernetes job...")
             job = await run_sync_in_worker_thread(
                 self._create_job, configuration, client
             )
@@ -518,7 +522,7 @@ class KubernetesWorker(BaseWorker):
 
             with events_replicator:
                 status_code = await run_sync_in_worker_thread(
-                    self._watch_job, job.metadata.name, configuration, client
+                    self._watch_job, logger, job.metadata.name, configuration, client
                 )
             return KubernetesWorkerResult(identifier=pid, status_code=status_code)
 
@@ -705,6 +709,7 @@ class KubernetesWorker(BaseWorker):
 
     def _watch_job(
         self,
+        logger: logging.Logger,
         job_name: str,
         configuration: KubernetesWorkerJobConfiguration,
         client: "ApiClient",
@@ -714,13 +719,13 @@ class KubernetesWorker(BaseWorker):
 
         Return the final status code of the first container.
         """
-        self._logger.debug(f"Job {job_name!r}: Monitoring job...")
+        logger.debug(f"Job {job_name!r}: Monitoring job...")
 
-        job = self._get_job(job_name, configuration, client)
+        job = self._get_job(logger, job_name, configuration, client)
         if not job:
             return -1
 
-        pod = self._get_job_pod(job_name, configuration, client)
+        pod = self._get_job_pod(logger, job_name, configuration, client)
         if not pod:
             return -1
 
@@ -753,7 +758,7 @@ class KubernetesWorker(BaseWorker):
                             break
 
                 except Exception:
-                    self._logger.warning(
+                    logger.warning(
                         (
                             "Error occurred while streaming logs - "
                             "Job will continue to run but logs will "
@@ -774,7 +779,7 @@ class KubernetesWorker(BaseWorker):
                     math.ceil(deadline - time.monotonic()) if deadline else None
                 )
                 if deadline and remaining_time <= 0:
-                    self._logger.error(
+                    logger.error(
                         f"Job {job_name!r}: Job did not complete within "
                         f"timeout of {configuration.job_watch_timeout_seconds}s."
                     )
@@ -797,7 +802,7 @@ class KubernetesWorker(BaseWorker):
                     if event["object"].status.completion_time:
                         if not event["object"].status.succeeded:
                             # Job failed, exit while loop and return pod exit code
-                            self._logger.error(f"Job {job_name!r}: Job failed.")
+                            logger.error(f"Job {job_name!r}: Job failed.")
                         completed = True
                         watch.stop()
                         break
@@ -812,6 +817,7 @@ class KubernetesWorker(BaseWorker):
 
     def _get_job(
         self,
+        logger: logging.Logger,
         job_id: str,
         configuration: KubernetesWorkerJobConfiguration,
         client: "ApiClient",
@@ -823,19 +829,20 @@ class KubernetesWorker(BaseWorker):
                     name=job_id, namespace=configuration.namespace
                 )
             except kubernetes.client.exceptions.ApiException:
-                self._logger.error(f"Job {job_id!r} was removed.", exc_info=True)
+                logger.error(f"Job {job_id!r} was removed.", exc_info=True)
                 return None
             return job
 
     def _get_job_pod(
         self,
+        logger: logging.Logger,
         job_name: str,
         configuration: KubernetesWorkerJobConfiguration,
         client: "ApiClient",
     ) -> Optional["V1Pod"]:
         """Get the first running pod for a job."""
         watch = kubernetes.watch.Watch()
-        self._logger.debug(f"Job {job_name!r}: Starting watch for pod start...")
+        logger.debug(f"Job {job_name!r}: Starting watch for pod start...")
         last_phase = None
         with self._get_core_client(client) as core_client:
             for event in watch.stream(
@@ -846,7 +853,7 @@ class KubernetesWorker(BaseWorker):
             ):
                 phase = event["object"].status.phase
                 if phase != last_phase:
-                    self._logger.info(f"Job {job_name!r}: Pod has status {phase!r}.")
+                    logger.info(f"Job {job_name!r}: Pod has status {phase!r}.")
 
                 if phase != "Pending":
                     watch.stop()
@@ -854,4 +861,4 @@ class KubernetesWorker(BaseWorker):
 
                 last_phase = phase
 
-        self._logger.error(f"Job {job_name!r}: Pod never started.")
+        logger.error(f"Job {job_name!r}: Pod never started.")
