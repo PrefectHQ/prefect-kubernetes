@@ -13,7 +13,7 @@
       
       
       <link rel="icon" href="../img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.9">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
     
     
       
@@ -842,12 +842,12 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 
         <details class="quote">
           <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span>
-<span class="normal">196</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">196</span>
 <span class="normal">197</span>
-<span class="normal">198</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesImagePullPolicy</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesImagePullPolicy</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum representing the image pull policy options for a Kubernetes job.&quot;&quot;&quot;</span>
 
     <span class="n">IF_NOT_PRESENT</span> <span class="o">=</span> <span class="s2">&quot;IfNotPresent&quot;</span>
@@ -897,7 +897,19 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 
         <details class="quote">
           <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">473</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span>
 <span class="normal">474</span>
 <span class="normal">475</span>
 <span class="normal">476</span>
@@ -1273,12 +1285,35 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 <span class="normal">846</span>
 <span class="normal">847</span>
 <span class="normal">848</span>
-<span class="normal">849</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorker</span><span class="p">(</span><span class="n">BaseWorker</span><span class="p">):</span>
+<span class="normal">849</span>
+<span class="normal">850</span>
+<span class="normal">851</span>
+<span class="normal">852</span>
+<span class="normal">853</span>
+<span class="normal">854</span>
+<span class="normal">855</span>
+<span class="normal">856</span>
+<span class="normal">857</span>
+<span class="normal">858</span>
+<span class="normal">859</span>
+<span class="normal">860</span>
+<span class="normal">861</span>
+<span class="normal">862</span>
+<span class="normal">863</span>
+<span class="normal">864</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorker</span><span class="p">(</span><span class="n">BaseWorker</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prefect worker that executes flow runs within Kubernetes Jobs.&quot;&quot;&quot;</span>
 
     <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;kubernetes&quot;</span>
     <span class="n">job_configuration</span> <span class="o">=</span> <span class="n">KubernetesWorkerJobConfiguration</span>
     <span class="n">job_configuration_variables</span> <span class="o">=</span> <span class="n">KubernetesWorkerVariables</span>
+    <span class="n">_description</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Execute flow runs within jobs scheduled on a Kubernetes cluster. Requires a &quot;</span>
+        <span class="s2">&quot;Kubernetes cluster.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">_display_name</span> <span class="o">=</span> <span class="s2">&quot;Kubernetes&quot;</span>
+    <span class="n">_documentation_url</span> <span class="o">=</span> <span class="s2">&quot;https://prefecthq.github.io/prefect-kubernetes/worker/&quot;</span>
+    <span class="n">_is_beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">_logo_url</span> <span class="o">=</span> <span class="s2">&quot;https://images.ctfassets.net/gm98wzqotmnx/1zrSeY8DZ1MJZs2BAyyyGk/20445025358491b8b72600b8f996125b/Kubernetes_logo_without_workmark.svg.png?h=250&quot;</span>  <span class="c1"># noqa</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1300,7 +1335,10 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 <span class="sd">            KubernetesWorkerResult: A result object containing information about the</span>
 <span class="sd">                final state of the flow run</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_flow_run_logger</span><span class="p">(</span><span class="n">flow_run</span><span class="p">)</span>
+
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_configured_kubernetes_client</span><span class="p">(</span><span class="n">configuration</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Creating Kubernetes job...&quot;</span><span class="p">)</span>
             <span class="n">job</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_sync_in_worker_thread</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_create_job</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span>
             <span class="p">)</span>
@@ -1326,7 +1364,7 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 
             <span class="k">with</span> <span class="n">events_replicator</span><span class="p">:</span>
                 <span class="n">status_code</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_sync_in_worker_thread</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_watch_job</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_watch_job</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span>
                 <span class="p">)</span>
             <span class="k">return</span> <span class="n">KubernetesWorkerResult</span><span class="p">(</span><span class="n">identifier</span><span class="o">=</span><span class="n">pid</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status_code</span><span class="p">)</span>
 
@@ -1421,10 +1459,23 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates a Kubernetes job from a job manifest.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_batch_client</span><span class="p">(</span><span class="n">client</span><span class="p">)</span> <span class="k">as</span> <span class="n">batch_client</span><span class="p">:</span>
-            <span class="n">job</span> <span class="o">=</span> <span class="n">batch_client</span><span class="o">.</span><span class="n">create_namespaced_job</span><span class="p">(</span>
-                <span class="n">configuration</span><span class="o">.</span><span class="n">namespace</span><span class="p">,</span> <span class="n">configuration</span><span class="o">.</span><span class="n">job_manifest</span>
-            <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_batch_client</span><span class="p">(</span><span class="n">client</span><span class="p">)</span> <span class="k">as</span> <span class="n">batch_client</span><span class="p">:</span>
+                <span class="n">job</span> <span class="o">=</span> <span class="n">batch_client</span><span class="o">.</span><span class="n">create_namespaced_job</span><span class="p">(</span>
+                    <span class="n">configuration</span><span class="o">.</span><span class="n">namespace</span><span class="p">,</span> <span class="n">configuration</span><span class="o">.</span><span class="n">job_manifest</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="n">kubernetes</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ApiException</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="c1"># Parse the reason and message from the response if feasible</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">reason</span><span class="p">:</span>
+                <span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot;: &quot;</span> <span class="o">+</span> <span class="n">exc</span><span class="o">.</span><span class="n">reason</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">body</span> <span class="ow">and</span> <span class="s2">&quot;message&quot;</span> <span class="ow">in</span> <span class="n">exc</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+                <span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot;: &quot;</span> <span class="o">+</span> <span class="n">exc</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">]</span>
+
+            <span class="k">raise</span> <span class="n">InfrastructureError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unable to create Kubernetes job</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+
         <span class="k">return</span> <span class="n">job</span>
 
     <span class="nd">@contextmanager</span>
@@ -1500,6 +1551,7 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 
     <span class="k">def</span> <span class="nf">_watch_job</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span>
         <span class="n">job_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">configuration</span><span class="p">:</span> <span class="n">KubernetesWorkerJobConfiguration</span><span class="p">,</span>
         <span class="n">client</span><span class="p">:</span> <span class="s2">&quot;ApiClient&quot;</span><span class="p">,</span>
@@ -1509,13 +1561,13 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 
 <span class="sd">        Return the final status code of the first container.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Monitoring job...&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Monitoring job...&quot;</span><span class="p">)</span>
 
-        <span class="n">job</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_job</span><span class="p">(</span><span class="n">job_name</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span><span class="p">)</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_job</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">job_name</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">job</span><span class="p">:</span>
             <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
 
-        <span class="n">pod</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_job_pod</span><span class="p">(</span><span class="n">job_name</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span><span class="p">)</span>
+        <span class="n">pod</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_job_pod</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">job_name</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">pod</span><span class="p">:</span>
             <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
 
@@ -1548,7 +1600,7 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
                             <span class="k">break</span>
 
                 <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                         <span class="p">(</span>
                             <span class="s2">&quot;Error occurred while streaming logs - &quot;</span>
                             <span class="s2">&quot;Job will continue to run but logs will &quot;</span>
@@ -1569,7 +1621,7 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
                     <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">deadline</span> <span class="o">-</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">())</span> <span class="k">if</span> <span class="n">deadline</span> <span class="k">else</span> <span class="kc">None</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="n">deadline</span> <span class="ow">and</span> <span class="n">remaining_time</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Job did not complete within &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;timeout of </span><span class="si">{</span><span class="n">configuration</span><span class="o">.</span><span class="n">job_watch_timeout_seconds</span><span class="si">}</span><span class="s2">s.&quot;</span>
                     <span class="p">)</span>
@@ -1592,7 +1644,7 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
                     <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;object&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">completion_time</span><span class="p">:</span>
                         <span class="k">if</span> <span class="ow">not</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;object&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">succeeded</span><span class="p">:</span>
                             <span class="c1"># Job failed, exit while loop and return pod exit code</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Job failed.&quot;</span><span class="p">)</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Job failed.&quot;</span><span class="p">)</span>
                         <span class="n">completed</span> <span class="o">=</span> <span class="kc">True</span>
                         <span class="n">watch</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
                         <span class="k">break</span>
@@ -1607,6 +1659,7 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 
     <span class="k">def</span> <span class="nf">_get_job</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span>
         <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">configuration</span><span class="p">:</span> <span class="n">KubernetesWorkerJobConfiguration</span><span class="p">,</span>
         <span class="n">client</span><span class="p">:</span> <span class="s2">&quot;ApiClient&quot;</span><span class="p">,</span>
@@ -1618,19 +1671,20 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
                     <span class="n">name</span><span class="o">=</span><span class="n">job_id</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="n">configuration</span><span class="o">.</span><span class="n">namespace</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="n">kubernetes</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ApiException</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_id</span><span class="si">!r}</span><span class="s2"> was removed.&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_id</span><span class="si">!r}</span><span class="s2"> was removed.&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="k">return</span> <span class="kc">None</span>
             <span class="k">return</span> <span class="n">job</span>
 
     <span class="k">def</span> <span class="nf">_get_job_pod</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span>
         <span class="n">job_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">configuration</span><span class="p">:</span> <span class="n">KubernetesWorkerJobConfiguration</span><span class="p">,</span>
         <span class="n">client</span><span class="p">:</span> <span class="s2">&quot;ApiClient&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;V1Pod&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the first running pod for a job.&quot;&quot;&quot;</span>
         <span class="n">watch</span> <span class="o">=</span> <span class="n">kubernetes</span><span class="o">.</span><span class="n">watch</span><span class="o">.</span><span class="n">Watch</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Starting watch for pod start...&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Starting watch for pod start...&quot;</span><span class="p">)</span>
         <span class="n">last_phase</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_core_client</span><span class="p">(</span><span class="n">client</span><span class="p">)</span> <span class="k">as</span> <span class="n">core_client</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">watch</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span>
@@ -1641,7 +1695,7 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
             <span class="p">):</span>
                 <span class="n">phase</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;object&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">phase</span>
                 <span class="k">if</span> <span class="n">phase</span> <span class="o">!=</span> <span class="n">last_phase</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Pod has status </span><span class="si">{</span><span class="n">phase</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Pod has status </span><span class="si">{</span><span class="n">phase</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">phase</span> <span class="o">!=</span> <span class="s2">&quot;Pending&quot;</span><span class="p">:</span>
                     <span class="n">watch</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
@@ -1649,7 +1703,7 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 
                 <span class="n">last_phase</span> <span class="o">=</span> <span class="n">phase</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Pod never started.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job </span><span class="si">{</span><span class="n">job_name</span><span class="si">!r}</span><span class="s2">: Pod never started.&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
         </details>
 
@@ -1686,7 +1740,8 @@ and run configuration.</p>
 
       <details class="quote">
         <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">530</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">529</span>
+<span class="normal">530</span>
 <span class="normal">531</span>
 <span class="normal">532</span>
 <span class="normal">533</span>
@@ -1697,8 +1752,7 @@ and run configuration.</p>
 <span class="normal">538</span>
 <span class="normal">539</span>
 <span class="normal">540</span>
-<span class="normal">541</span>
-<span class="normal">542</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">kill_infrastructure</span><span class="p">(</span>
+<span class="normal">541</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">kill_infrastructure</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">infrastructure_pid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">configuration</span><span class="p">:</span> <span class="n">KubernetesWorkerJobConfiguration</span><span class="p">,</span>
@@ -1770,7 +1824,7 @@ to complete.</p>
         <tr>
           <td><code>task_status</code></td>
           <td>
-                <code><span title="typing.Optional">Optional</span>[<span title="anyio.abc">anyio</span>.<span title="anyio.abc.abc">abc</span>.<span title="anyio.abc.TaskStatus">TaskStatus</span>]</code>
+                <code><span title="typing.Optional">Optional</span>[<span title="anyio.abc">anyio</span>.<span title="anyio.abc.abc">abc</span>.<span title="anyio.abc.abc.TaskStatus">TaskStatus</span>]</code>
           </td>
           <td><p>The task status object for the current flow run. If provided,
 the task will be marked as started.</p></td>
@@ -1802,7 +1856,11 @@ final state of the flow run</p></td>
 
       <details class="quote">
         <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">480</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
 <span class="normal">481</span>
 <span class="normal">482</span>
 <span class="normal">483</span>
@@ -1849,8 +1907,7 @@ final state of the flow run</p></td>
 <span class="normal">524</span>
 <span class="normal">525</span>
 <span class="normal">526</span>
-<span class="normal">527</span>
-<span class="normal">528</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+<span class="normal">527</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">flow_run</span><span class="p">:</span> <span class="s2">&quot;FlowRun&quot;</span><span class="p">,</span>
     <span class="n">configuration</span><span class="p">:</span> <span class="n">KubernetesWorkerJobConfiguration</span><span class="p">,</span>
@@ -1870,7 +1927,10 @@ final state of the flow run</p></td>
 <span class="sd">        KubernetesWorkerResult: A result object containing information about the</span>
 <span class="sd">            final state of the flow run</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_flow_run_logger</span><span class="p">(</span><span class="n">flow_run</span><span class="p">)</span>
+
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_configured_kubernetes_client</span><span class="p">(</span><span class="n">configuration</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Creating Kubernetes job...&quot;</span><span class="p">)</span>
         <span class="n">job</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_sync_in_worker_thread</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_create_job</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span>
         <span class="p">)</span>
@@ -1896,7 +1956,7 @@ final state of the flow run</p></td>
 
         <span class="k">with</span> <span class="n">events_replicator</span><span class="p">:</span>
             <span class="n">status_code</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_sync_in_worker_thread</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_watch_job</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_watch_job</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">configuration</span><span class="p">,</span> <span class="n">client</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">KubernetesWorkerResult</span><span class="p">(</span><span class="n">identifier</span><span class="o">=</span><span class="n">pid</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status_code</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -2020,10 +2080,7 @@ complete before timing out.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">201</span>
-<span class="normal">202</span>
-<span class="normal">203</span>
-<span class="normal">204</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">204</span>
 <span class="normal">205</span>
 <span class="normal">206</span>
 <span class="normal">207</span>
@@ -2218,19 +2275,7 @@ complete before timing out.</p></td>
 <span class="normal">396</span>
 <span class="normal">397</span>
 <span class="normal">398</span>
-<span class="normal">399</span>
-<span class="normal">400</span>
-<span class="normal">401</span>
-<span class="normal">402</span>
-<span class="normal">403</span>
-<span class="normal">404</span>
-<span class="normal">405</span>
-<span class="normal">406</span>
-<span class="normal">407</span>
-<span class="normal">408</span>
-<span class="normal">409</span>
-<span class="normal">410</span>
-<span class="normal">411</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerJobConfiguration</span><span class="p">(</span><span class="n">BaseJobConfiguration</span><span class="p">):</span>
+<span class="normal">399</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerJobConfiguration</span><span class="p">(</span><span class="n">BaseJobConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Configuration class used by the Kubernetes worker.</span>
 
@@ -2426,21 +2471,6 @@ complete before timing out.</p></td>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">generate_name</span><span class="p">:</span>
                 <span class="n">generate_name</span> <span class="o">=</span> <span class="s2">&quot;prefect-job&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">job_manifest</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">][</span><span class="s2">&quot;generateName&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">generate_name</span><span class="si">}</span><span class="s2">-&quot;</span>
-
-    <span class="k">def</span> <span class="nf">_related_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">RelatedResource</span><span class="p">]:</span>
-        <span class="n">tags</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="n">related</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_related_objects</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="c1"># TODO: Remove this method once we&#39;ve updated the Prefect core side</span>
-            <span class="c1"># to ignore objects that are None.</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;tags&quot;</span><span class="p">):</span>
-                <span class="n">tags</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
-            <span class="n">related</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">object_as_related_resource</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span> <span class="nb">object</span><span class="o">=</span><span class="n">obj</span><span class="p">))</span>
-
-        <span class="k">return</span> <span class="n">related</span> <span class="o">+</span> <span class="n">tags_as_related_resources</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
         </details>
 
@@ -2519,10 +2549,7 @@ preparation.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">288</span>
-<span class="normal">289</span>
-<span class="normal">290</span>
-<span class="normal">291</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">291</span>
 <span class="normal">292</span>
 <span class="normal">293</span>
 <span class="normal">294</span>
@@ -2548,7 +2575,10 @@ preparation.</p></td>
 <span class="normal">314</span>
 <span class="normal">315</span>
 <span class="normal">316</span>
-<span class="normal">317</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_for_flow_run</span><span class="p">(</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_for_flow_run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">flow_run</span><span class="p">:</span> <span class="s2">&quot;FlowRun&quot;</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;DeploymentResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2613,8 +2643,8 @@ preparation.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">469</span>
-<span class="normal">470</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerResult</span><span class="p">(</span><span class="n">BaseWorkerResult</span><span class="p">):</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">457</span>
+<span class="normal">458</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerResult</span><span class="p">(</span><span class="n">BaseWorkerResult</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Contains information about the final state of a completed process&quot;&quot;&quot;</span>
 </code></pre></div></td></tr></table></div>
         </details>
@@ -2646,7 +2676,19 @@ base job template.</p>
 
         <details class="quote">
           <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">414</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
 <span class="normal">415</span>
 <span class="normal">416</span>
 <span class="normal">417</span>
@@ -2686,19 +2728,7 @@ base job template.</p>
 <span class="normal">451</span>
 <span class="normal">452</span>
 <span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span>
-<span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerVariables</span><span class="p">(</span><span class="n">BaseVariables</span><span class="p">):</span>
+<span class="normal">454</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerVariables</span><span class="p">(</span><span class="n">BaseVariables</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Default variables for the Kubernetes worker.</span>
 
@@ -2927,7 +2957,7 @@ base job template.</p>
     <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.fac441b0.min.js"></script>
+      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
       
     
   </body>
