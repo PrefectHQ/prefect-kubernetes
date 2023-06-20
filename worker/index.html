@@ -13,7 +13,7 @@
       
       
       <link rel="icon" href="../img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.16">
     
     
       
@@ -21,10 +21,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.85bb2934.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.26e3688c.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.a6bdf11c.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ecc896b0.min.css">
       
       
 
@@ -897,16 +897,7 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 
         <details class="quote">
           <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span>
-<span class="normal">467</span>
-<span class="normal">468</span>
-<span class="normal">469</span>
-<span class="normal">470</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">470</span>
 <span class="normal">471</span>
 <span class="normal">472</span>
 <span class="normal">473</span>
@@ -1300,7 +1291,16 @@ checkout out the <a href="https://docs.prefect.io/concepts/work-pools/">Prefect 
 <span class="normal">861</span>
 <span class="normal">862</span>
 <span class="normal">863</span>
-<span class="normal">864</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorker</span><span class="p">(</span><span class="n">BaseWorker</span><span class="p">):</span>
+<span class="normal">864</span>
+<span class="normal">865</span>
+<span class="normal">866</span>
+<span class="normal">867</span>
+<span class="normal">868</span>
+<span class="normal">869</span>
+<span class="normal">870</span>
+<span class="normal">871</span>
+<span class="normal">872</span>
+<span class="normal">873</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorker</span><span class="p">(</span><span class="n">BaseWorker</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prefect worker that executes flow runs within Kubernetes Jobs.&quot;&quot;&quot;</span>
 
     <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;kubernetes&quot;</span>
@@ -1740,19 +1740,19 @@ and run configuration.</p>
 
       <details class="quote">
         <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">529</span>
-<span class="normal">530</span>
-<span class="normal">531</span>
-<span class="normal">532</span>
-<span class="normal">533</span>
-<span class="normal">534</span>
-<span class="normal">535</span>
-<span class="normal">536</span>
-<span class="normal">537</span>
-<span class="normal">538</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">538</span>
 <span class="normal">539</span>
 <span class="normal">540</span>
-<span class="normal">541</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">kill_infrastructure</span><span class="p">(</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">kill_infrastructure</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">infrastructure_pid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">configuration</span><span class="p">:</span> <span class="n">KubernetesWorkerJobConfiguration</span><span class="p">,</span>
@@ -1806,7 +1806,11 @@ to complete.</p>
           <td>
                 <code><span title="prefect.client.schemas.FlowRun">FlowRun</span></code>
           </td>
-          <td><p>The flow run to execute</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The flow run to execute</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -1816,7 +1820,11 @@ to complete.</p>
           <td>
                 <code><a class="autorefs autorefs-internal" title="prefect_kubernetes.worker.KubernetesWorkerJobConfiguration" href="#prefect_kubernetes.worker.KubernetesWorkerJobConfiguration">KubernetesWorkerJobConfiguration</a></code>
           </td>
-          <td><p>The configuration to use when executing the flow run.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The configuration to use when executing the flow run.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -1826,8 +1834,12 @@ to complete.</p>
           <td>
                 <code><span title="typing.Optional">Optional</span>[<span title="anyio.abc">anyio</span>.<span title="anyio.abc.abc">abc</span>.<span title="anyio.abc.abc.TaskStatus">TaskStatus</span>]</code>
           </td>
-          <td><p>The task status object for the current flow run. If provided,
-the task will be marked as started.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The task status object for the current flow run. If provided,
+the task will be marked as started.</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -1848,24 +1860,19 @@ the task will be marked as started.</p></td>
 <td><code>KubernetesWorkerResult</code></td>          <td>
                 <code><a class="autorefs autorefs-internal" title="prefect_kubernetes.worker.KubernetesWorkerResult" href="#prefect_kubernetes.worker.KubernetesWorkerResult">KubernetesWorkerResult</a></code>
           </td>
-          <td><p>A result object containing information about the
-final state of the flow run</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>A result object containing information about the
+final state of the flow run</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
       <details class="quote">
         <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">476</span>
-<span class="normal">477</span>
-<span class="normal">478</span>
-<span class="normal">479</span>
-<span class="normal">480</span>
-<span class="normal">481</span>
-<span class="normal">482</span>
-<span class="normal">483</span>
-<span class="normal">484</span>
-<span class="normal">485</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">485</span>
 <span class="normal">486</span>
 <span class="normal">487</span>
 <span class="normal">488</span>
@@ -1907,7 +1914,16 @@ final state of the flow run</p></td>
 <span class="normal">524</span>
 <span class="normal">525</span>
 <span class="normal">526</span>
-<span class="normal">527</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">flow_run</span><span class="p">:</span> <span class="s2">&quot;FlowRun&quot;</span><span class="p">,</span>
     <span class="n">configuration</span><span class="p">:</span> <span class="n">KubernetesWorkerJobConfiguration</span><span class="p">,</span>
@@ -2008,71 +2024,111 @@ the flow run as a Kubernetes job.</p>
           <td><code>name</code></td>
           <td>
           </td>
-          <td><p>The name to give to created Kubernetes job.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The name to give to created Kubernetes job.</p>
+            </div>
+          </td>
         </tr>
         <tr>
           <td><code>command</code></td>
           <td>
           </td>
-          <td><p>The command executed in created Kubernetes jobs to kick off
-flow run execution.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The command executed in created Kubernetes jobs to kick off
+flow run execution.</p>
+            </div>
+          </td>
         </tr>
         <tr>
           <td><code>env</code></td>
           <td>
           </td>
-          <td><p>The environment variables to set in created Kubernetes jobs.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The environment variables to set in created Kubernetes jobs.</p>
+            </div>
+          </td>
         </tr>
         <tr>
           <td><code>labels</code></td>
           <td>
           </td>
-          <td><p>The labels to set on created Kubernetes jobs.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The labels to set on created Kubernetes jobs.</p>
+            </div>
+          </td>
         </tr>
         <tr>
           <td><code>namespace</code></td>
           <td>
                 <code>str</code>
           </td>
-          <td><p>The Kubernetes namespace to create Kubernetes jobs in.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The Kubernetes namespace to create Kubernetes jobs in.</p>
+            </div>
+          </td>
         </tr>
         <tr>
           <td><code>job_manifest</code></td>
           <td>
                 <code><span title="typing.Dict">Dict</span>[str, <span title="typing.Any">Any</span>]</code>
           </td>
-          <td><p>The Kubernetes job manifest to use to create Kubernetes jobs.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The Kubernetes job manifest to use to create Kubernetes jobs.</p>
+            </div>
+          </td>
         </tr>
         <tr>
           <td><code>cluster_config</code></td>
           <td>
                 <code><span title="typing.Optional">Optional</span>[<span title="prefect.blocks.kubernetes.KubernetesClusterConfig">KubernetesClusterConfig</span>]</code>
           </td>
-          <td><p>The Kubernetes cluster configuration to use for authentication
-to a Kubernetes cluster.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The Kubernetes cluster configuration to use for authentication
+to a Kubernetes cluster.</p>
+            </div>
+          </td>
         </tr>
         <tr>
           <td><code>job_watch_timeout_seconds</code></td>
           <td>
                 <code><span title="typing.Optional">Optional</span>[int]</code>
           </td>
-          <td><p>The number of seconds to wait for the job to
-complete before timing out. If <code>None</code>, the worker will wait indefinitely.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The number of seconds to wait for the job to
+complete before timing out. If <code>None</code>, the worker will wait indefinitely.</p>
+            </div>
+          </td>
         </tr>
         <tr>
           <td><code>pod_watch_timeout_seconds</code></td>
           <td>
                 <code>int</code>
           </td>
-          <td><p>The number of seconds to wait for the pod to
-complete before timing out.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The number of seconds to wait for the pod to
+complete before timing out.</p>
+            </div>
+          </td>
         </tr>
         <tr>
           <td><code>stream_output</code></td>
           <td>
                 <code>bool</code>
           </td>
-          <td><p>Whether or not to stream the job's output.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>Whether or not to stream the job's output.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
@@ -2275,7 +2331,16 @@ complete before timing out.</p></td>
 <span class="normal">396</span>
 <span class="normal">397</span>
 <span class="normal">398</span>
-<span class="normal">399</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerJobConfiguration</span><span class="p">(</span><span class="n">BaseJobConfiguration</span><span class="p">):</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerJobConfiguration</span><span class="p">(</span><span class="n">BaseJobConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Configuration class used by the Kubernetes worker.</span>
 
@@ -2463,7 +2528,16 @@ complete before timing out.</p></td>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensures that the generateName is present in the job manifest.&quot;&quot;&quot;</span>
         <span class="n">manifest_generate_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_manifest</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;generateName&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
         <span class="n">has_placeholder</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">find_placeholders</span><span class="p">(</span><span class="n">manifest_generate_name</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">manifest_generate_name</span> <span class="ow">or</span> <span class="n">has_placeholder</span><span class="p">:</span>
+        <span class="c1"># if name wasn&#39;t present during template rendering, generateName will be</span>
+        <span class="c1"># just a hyphen</span>
+        <span class="n">manifest_generate_name_templated_with_empty_string</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">manifest_generate_name</span> <span class="o">==</span> <span class="s2">&quot;-&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">manifest_generate_name</span>
+            <span class="ow">or</span> <span class="n">has_placeholder</span>
+            <span class="ow">or</span> <span class="n">manifest_generate_name_templated_with_empty_string</span>
+        <span class="p">):</span>
             <span class="n">generate_name</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
                 <span class="n">generate_name</span> <span class="o">=</span> <span class="n">_slugify_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
@@ -2518,7 +2592,11 @@ job manifest is valid.</p>
           <td>
                 <code><span title="prefect.client.schemas.FlowRun">FlowRun</span></code>
           </td>
-          <td><p>The flow run to prepare the job configuration for</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The flow run to prepare the job configuration for</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -2528,8 +2606,12 @@ job manifest is valid.</p>
           <td>
                 <code><span title="typing.Optional">Optional</span>[<span title="prefect.server.schemas.responses.DeploymentResponse">DeploymentResponse</span>]</code>
           </td>
-          <td><p>The deployment associated with the flow run used for
-preparation.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The deployment associated with the flow run used for
+preparation.</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -2539,7 +2621,11 @@ preparation.</p></td>
           <td>
                 <code><span title="typing.Optional">Optional</span>[<span title="prefect.server.schemas.core.Flow">Flow</span>]</code>
           </td>
-          <td><p>The flow associated with the flow run used for preparation.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The flow associated with the flow run used for preparation.</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -2643,8 +2729,8 @@ preparation.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">457</span>
-<span class="normal">458</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerResult</span><span class="p">(</span><span class="n">BaseWorkerResult</span><span class="p">):</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">466</span>
+<span class="normal">467</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerResult</span><span class="p">(</span><span class="n">BaseWorkerResult</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Contains information about the final state of a completed process&quot;&quot;&quot;</span>
 </code></pre></div></td></tr></table></div>
         </details>
@@ -2676,16 +2762,7 @@ base job template.</p>
 
         <details class="quote">
           <summary>Source code in <code>prefect_kubernetes/worker.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">402</span>
-<span class="normal">403</span>
-<span class="normal">404</span>
-<span class="normal">405</span>
-<span class="normal">406</span>
-<span class="normal">407</span>
-<span class="normal">408</span>
-<span class="normal">409</span>
-<span class="normal">410</span>
-<span class="normal">411</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">411</span>
 <span class="normal">412</span>
 <span class="normal">413</span>
 <span class="normal">414</span>
@@ -2728,7 +2805,16 @@ base job template.</p>
 <span class="normal">451</span>
 <span class="normal">452</span>
 <span class="normal">453</span>
-<span class="normal">454</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerVariables</span><span class="p">(</span><span class="n">BaseVariables</span><span class="p">):</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesWorkerVariables</span><span class="p">(</span><span class="n">BaseVariables</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Default variables for the Kubernetes worker.</span>
 
@@ -2957,7 +3043,7 @@ base job template.</p>
     <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      <script src="../assets/javascripts/bundle.a51614de.min.js"></script>
       
     
   </body>
