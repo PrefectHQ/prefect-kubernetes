@@ -1,4 +1,5 @@
 import re
+import uuid
 from contextlib import contextmanager
 from time import monotonic, sleep
 from unittest import mock
@@ -685,7 +686,7 @@ from_template_and_values_cases = [
 class TestKubernetesWorkerJobConfiguration:
     @pytest.fixture
     def flow_run(self):
-        return FlowRun(name="my-flow-run-name")
+        return FlowRun(flow_id=uuid.uuid4(), name="my-flow-run-name")
 
     @pytest.fixture
     def deployment(self):
@@ -918,7 +919,7 @@ class TestKubernetesWorker:
 
     @pytest.fixture
     def flow_run(self):
-        return FlowRun(name="my-flow-run-name")
+        return FlowRun(flow_id=uuid.uuid4(), name="my-flow-run-name")
 
     async def test_creates_job_by_building_a_manifest(
         self,

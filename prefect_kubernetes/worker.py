@@ -389,7 +389,16 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         """Ensures that the generateName is present in the job manifest."""
         manifest_generate_name = self.job_manifest["metadata"].get("generateName", "")
         has_placeholder = len(find_placeholders(manifest_generate_name)) > 0
-        if not manifest_generate_name or has_placeholder:
+        # if name wasn't present during template rendering, generateName will be
+        # just a hyphen
+        manifest_generate_name_templated_with_empty_string = (
+            manifest_generate_name == "-"
+        )
+        if (
+            not manifest_generate_name
+            or has_placeholder
+            or manifest_generate_name_templated_with_empty_string
+        ):
             generate_name = None
             if self.name:
                 generate_name = _slugify_name(self.name)
