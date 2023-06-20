@@ -155,7 +155,7 @@ from_template_and_values_cases = [
                 "kind": "Job",
                 "metadata": {
                     "namespace": "default",
-                    "generateName": "{{ name }}-",
+                    "generateName": "-",
                     "labels": {},
                 },
                 "spec": {
