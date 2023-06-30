@@ -11,7 +11,7 @@
       
       
       <link rel="icon" href="../img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.16">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
     
     
       
@@ -522,18 +522,17 @@
         <span class="nb">print</span><span class="p">(</span><span class="n">pod</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="deployments-module"><a class="autorefs autorefs-internal" href="../deployments/#prefect_kubernetes.deployments">Deployments Module</a></h2>
-<p>Delete a deployment in the default namespace:
+<p>Create a deployment in the default namespace:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.deployments</span> <span class="kn">import</span> <span class="n">delete_namespaced_deployment</span>
-<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1DeleteOptions</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.deployments</span> <span class="kn">import</span> <span class="n">create_namespaced_deployment</span>
+<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1Deployment</span>
 
 <span class="nd">@flow</span>
 <span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">v1_deployment_metadata</span> <span class="o">=</span> <span class="n">delete_namespaced_deployment</span><span class="p">(</span>
+    <span class="n">v1_deployment_metadata</span> <span class="o">=</span> <span class="n">create_namespaced_deployment</span><span class="p">(</span>
         <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
-        <span class="n">deployment_name</span><span class="o">=</span><span class="s2">&quot;test-deployment&quot;</span><span class="p">,</span>
-        <span class="n">delete_options</span><span class="o">=</span><span class="n">V1DeleteOptions</span><span class="p">(</span><span class="n">grace_period_seconds</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">new_deployment</span><span class="o">=</span><span class="n">V1Deployment</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test-deployment&quot;</span><span class="p">}),</span>
     <span class="p">)</span>
 </code></pre></div>
 Patch a deployment in the default namespace:
@@ -550,15 +549,18 @@ Patch a deployment in the default namespace:
         <span class="n">deployment_updates</span><span class="o">=</span><span class="n">V1Deployment</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}}),</span>
     <span class="p">)</span>
 </code></pre></div>
-List all deployments in the default namespace:
+Replace a deployment in the default namespace:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.deployments</span> <span class="kn">import</span> <span class="n">list_namespaced_deployment</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.deployments</span> <span class="kn">import</span> <span class="n">replace_namespaced_deployment</span>
+<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1Deployment</span>
 
 <span class="nd">@flow</span>
 <span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">v1_deployment_list</span> <span class="o">=</span> <span class="n">list_namespaced_deployment</span><span class="p">(</span>
-        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">)</span>
+    <span class="n">v1_deployment_metadata</span> <span class="o">=</span> <span class="n">replace_namespaced_deployment</span><span class="p">(</span>
+        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
+        <span class="n">deployment_name</span><span class="o">=</span><span class="s2">&quot;test-deployment&quot;</span><span class="p">,</span>
+        <span class="n">new_deployment</span><span class="o">=</span><span class="n">V1Deployment</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}})</span>
     <span class="p">)</span>
 </code></pre></div>
 Read a deployment in the default namespace:
@@ -572,31 +574,29 @@ Read a deployment in the default namespace:
         <span class="n">deployment_name</span><span class="o">=</span><span class="s2">&quot;test-deployment&quot;</span>
     <span class="p">)</span>
 </code></pre></div>
-Create a deployment in the default namespace:
+List all deployments in the default namespace:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.deployments</span> <span class="kn">import</span> <span class="n">create_namespaced_deployment</span>
-<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1Deployment</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.deployments</span> <span class="kn">import</span> <span class="n">list_namespaced_deployment</span>
 
 <span class="nd">@flow</span>
 <span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">v1_deployment_metadata</span> <span class="o">=</span> <span class="n">create_namespaced_deployment</span><span class="p">(</span>
-        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
-        <span class="n">new_deployment</span><span class="o">=</span><span class="n">V1Deployment</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test-deployment&quot;</span><span class="p">}),</span>
+    <span class="n">v1_deployment_list</span> <span class="o">=</span> <span class="n">list_namespaced_deployment</span><span class="p">(</span>
+        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">)</span>
     <span class="p">)</span>
 </code></pre></div>
-Replace a deployment in the default namespace:
+Delete a deployment in the default namespace:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.deployments</span> <span class="kn">import</span> <span class="n">replace_namespaced_deployment</span>
-<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1Deployment</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.deployments</span> <span class="kn">import</span> <span class="n">delete_namespaced_deployment</span>
+<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1DeleteOptions</span>
 
 <span class="nd">@flow</span>
 <span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">v1_deployment_metadata</span> <span class="o">=</span> <span class="n">replace_namespaced_deployment</span><span class="p">(</span>
+    <span class="n">v1_deployment_metadata</span> <span class="o">=</span> <span class="n">delete_namespaced_deployment</span><span class="p">(</span>
         <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
         <span class="n">deployment_name</span><span class="o">=</span><span class="s2">&quot;test-deployment&quot;</span><span class="p">,</span>
-        <span class="n">new_deployment</span><span class="o">=</span><span class="n">V1Deployment</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}})</span>
+        <span class="n">delete_options</span><span class="o">=</span><span class="n">V1DeleteOptions</span><span class="p">(</span><span class="n">grace_period_seconds</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
     <span class="p">)</span>
 </code></pre></div></p>
 <h2 id="flows-module"><a class="autorefs autorefs-internal" href="../flows/#prefect_kubernetes.flows">Flows Module</a></h2>
@@ -611,7 +611,31 @@ Replace a deployment in the default namespace:
 <span class="p">)</span>
 </code></pre></div>
 <h2 id="jobs-module"><a class="autorefs autorefs-internal" href="../jobs/#prefect_kubernetes.jobs">Jobs Module</a></h2>
-<p>Create a job in the default namespace:
+<p>Read "my-job" in the default namespace:
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.jobs</span> <span class="kn">import</span> <span class="n">read_namespaced_job</span>
+
+<span class="nd">@flow</span>
+<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
+    <span class="n">v1_job_metadata</span> <span class="o">=</span> <span class="n">read_namespaced_job</span><span class="p">(</span>
+        <span class="n">job_name</span><span class="o">=</span><span class="s2">&quot;my-job&quot;</span><span class="p">,</span>
+        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+List jobs in "my-namespace":
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.jobs</span> <span class="kn">import</span> <span class="n">list_namespaced_job</span>
+
+<span class="nd">@flow</span>
+<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
+    <span class="n">namespaced_job_list</span> <span class="o">=</span> <span class="n">list_namespaced_job</span><span class="p">(</span>
+        <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;my-namespace&quot;</span><span class="p">,</span>
+        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+Create a job in the default namespace:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.jobs</span> <span class="kn">import</span> <span class="n">create_namespaced_job</span>
@@ -621,18 +645,6 @@ Replace a deployment in the default namespace:
 <span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
     <span class="n">v1_job_metadata</span> <span class="o">=</span> <span class="n">create_namespaced_job</span><span class="p">(</span>
         <span class="n">new_job</span><span class="o">=</span><span class="n">V1Job</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}}),</span>
-        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
-    <span class="p">)</span>
-</code></pre></div>
-Read "my-job" in the default namespace:
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.jobs</span> <span class="kn">import</span> <span class="n">read_namespaced_job</span>
-
-<span class="nd">@flow</span>
-<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">v1_job_metadata</span> <span class="o">=</span> <span class="n">read_namespaced_job</span><span class="p">(</span>
-        <span class="n">job_name</span><span class="o">=</span><span class="s2">&quot;my-job&quot;</span><span class="p">,</span>
         <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -650,18 +662,6 @@ Delete "my-job" in the default namespace:
         <span class="n">delete_options</span><span class="o">=</span><span class="n">V1DeleteOptions</span><span class="p">(</span><span class="n">propagation_policy</span><span class="o">=</span><span class="s2">&quot;Foreground&quot;</span><span class="p">),</span>
     <span class="p">)</span>
 </code></pre></div>
-Fetch status of a job in the default namespace:
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.jobs</span> <span class="kn">import</span> <span class="n">read_namespaced_job_status</span>
-
-<span class="nd">@flow</span>
-<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">v1_job_status</span> <span class="o">=</span> <span class="n">read_namespaced_job_status</span><span class="p">(</span>
-        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
-        <span class="n">job_name</span><span class="o">=</span><span class="s2">&quot;my-job&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-</code></pre></div>
 Replace "my-job" in the default namespace:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
@@ -675,16 +675,16 @@ Replace "my-job" in the default namespace:
         <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
     <span class="p">)</span>
 </code></pre></div>
-List jobs in "my-namespace":
+Fetch status of a job in the default namespace:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.jobs</span> <span class="kn">import</span> <span class="n">list_namespaced_job</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.jobs</span> <span class="kn">import</span> <span class="n">read_namespaced_job_status</span>
 
 <span class="nd">@flow</span>
 <span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">namespaced_job_list</span> <span class="o">=</span> <span class="n">list_namespaced_job</span><span class="p">(</span>
-        <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;my-namespace&quot;</span><span class="p">,</span>
+    <span class="n">v1_job_status</span> <span class="o">=</span> <span class="n">read_namespaced_job_status</span><span class="p">(</span>
         <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
+        <span class="n">job_name</span><span class="o">=</span><span class="s2">&quot;my-job&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div>
 Patch "my-job" in the default namespace:
@@ -717,36 +717,6 @@ Patch "my-job" in the default namespace:
         <span class="n">delete_options</span><span class="o">=</span><span class="n">V1DeleteOptions</span><span class="p">(</span><span class="n">grace_period_seconds</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
     <span class="p">)</span>
 </code></pre></div>
-Patch a pod in the default namespace:
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.pods</span> <span class="kn">import</span> <span class="n">patch_namespaced_pod</span>
-<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1Pod</span>
-
-<span class="nd">@flow</span>
-<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">v1_pod_metadata</span> <span class="o">=</span> <span class="n">patch_namespaced_pod</span><span class="p">(</span>
-        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
-        <span class="n">pod_name</span><span class="o">=</span><span class="s2">&quot;test-pod&quot;</span><span class="p">,</span>
-        <span class="n">pod_updates</span><span class="o">=</span><span class="n">V1Pod</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}}),</span>
-    <span class="p">)</span>
-</code></pre></div>
-Read logs from a pod in the default namespace:
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span><span class="p">,</span> <span class="n">get_run_logger</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.pods</span> <span class="kn">import</span> <span class="n">read_namespaced_pod_logs</span>
-
-<span class="nd">@flow</span>
-<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">logger</span> <span class="o">=</span> <span class="n">get_run_logger</span><span class="p">()</span>
-
-    <span class="n">pod_logs</span> <span class="o">=</span> <span class="n">read_namespaced_pod_logs</span><span class="p">(</span>
-        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
-        <span class="n">pod_name</span><span class="o">=</span><span class="s2">&quot;test-pod&quot;</span><span class="p">,</span>
-        <span class="n">container</span><span class="o">=</span><span class="s2">&quot;test-container&quot;</span><span class="p">,</span>
-        <span class="n">print_func</span><span class="o">=</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span>
-    <span class="p">)</span>
-</code></pre></div>
 Read a pod in the default namespace:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
@@ -772,6 +742,22 @@ Replace a pod in the default namespace:
         <span class="n">new_pod</span><span class="o">=</span><span class="n">V1Pod</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}})</span>
     <span class="p">)</span>
 </code></pre></div>
+Read logs from a pod in the default namespace:
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span><span class="p">,</span> <span class="n">get_run_logger</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.pods</span> <span class="kn">import</span> <span class="n">read_namespaced_pod_logs</span>
+
+<span class="nd">@flow</span>
+<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">get_run_logger</span><span class="p">()</span>
+
+    <span class="n">pod_logs</span> <span class="o">=</span> <span class="n">read_namespaced_pod_logs</span><span class="p">(</span>
+        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
+        <span class="n">pod_name</span><span class="o">=</span><span class="s2">&quot;test-pod&quot;</span><span class="p">,</span>
+        <span class="n">container</span><span class="o">=</span><span class="s2">&quot;test-container&quot;</span><span class="p">,</span>
+        <span class="n">print_func</span><span class="o">=</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span>
+    <span class="p">)</span>
+</code></pre></div>
 List all pods in the default namespace:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
@@ -781,6 +767,20 @@ List all pods in the default namespace:
 <span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
     <span class="n">v1_pod_list</span> <span class="o">=</span> <span class="n">list_namespaced_pod</span><span class="p">(</span>
         <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+</code></pre></div>
+Patch a pod in the default namespace:
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.pods</span> <span class="kn">import</span> <span class="n">patch_namespaced_pod</span>
+<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1Pod</span>
+
+<span class="nd">@flow</span>
+<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
+    <span class="n">v1_pod_metadata</span> <span class="o">=</span> <span class="n">patch_namespaced_pod</span><span class="p">(</span>
+        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
+        <span class="n">pod_name</span><span class="o">=</span><span class="s2">&quot;test-pod&quot;</span><span class="p">,</span>
+        <span class="n">pod_updates</span><span class="o">=</span><span class="n">V1Pod</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}}),</span>
     <span class="p">)</span>
 </code></pre></div>
 Create a pod in the default namespace:
@@ -799,6 +799,17 @@ Create a pod in the default namespace:
 <h2 id="services-module"><a class="autorefs autorefs-internal" href="../services/#prefect_kubernetes.services">Services Module</a></h2>
 <p><div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.services</span> <span class="kn">import</span> <span class="n">list_namespaced_service</span>
+
+<span class="nd">@flow</span>
+<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
+    <span class="n">list_namespaced_service</span><span class="p">(</span>
+        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
+        <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;my-namespace&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.services</span> <span class="kn">import</span> <span class="n">read_namespaced_service</span>
 
 <span class="nd">@flow</span>
@@ -806,6 +817,20 @@ Create a pod in the default namespace:
     <span class="n">read_namespaced_service</span><span class="p">(</span>
         <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
         <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;my-service&quot;</span><span class="p">,</span>
+        <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;my-namespace&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.services</span> <span class="kn">import</span> <span class="n">patch_namespaced_service</span>
+<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1Service</span>
+
+<span class="nd">@flow</span>
+<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
+    <span class="n">patch_namespaced_service</span><span class="p">(</span>
+        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
+        <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;my-service&quot;</span><span class="p">,</span>
+        <span class="n">new_service</span><span class="o">=</span><span class="n">V1Service</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span> <span class="n">spec</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">}),</span>
         <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;my-namespace&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -825,12 +850,13 @@ Create a pod in the default namespace:
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
 <span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.services</span> <span class="kn">import</span> <span class="n">list_namespaced_service</span>
+<span class="kn">from</span> <span class="nn">prefect_kubernetes.services</span> <span class="kn">import</span> <span class="n">delete_namespaced_service</span>
 
 <span class="nd">@flow</span>
 <span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">list_namespaced_service</span><span class="p">(</span>
+    <span class="n">delete_namespaced_service</span><span class="p">(</span>
         <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
+        <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;my-service&quot;</span><span class="p">,</span>
         <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;my-namespace&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -844,32 +870,6 @@ Create a pod in the default namespace:
     <span class="n">v1_service</span> <span class="o">=</span> <span class="n">create_namespaced_service</span><span class="p">(</span>
         <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
         <span class="n">new_service</span><span class="o">=</span><span class="n">V1Service</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span> <span class="n">spec</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">}),</span>
-    <span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.services</span> <span class="kn">import</span> <span class="n">patch_namespaced_service</span>
-<span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1Service</span>
-
-<span class="nd">@flow</span>
-<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">patch_namespaced_service</span><span class="p">(</span>
-        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
-        <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;my-service&quot;</span><span class="p">,</span>
-        <span class="n">new_service</span><span class="o">=</span><span class="n">V1Service</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span> <span class="n">spec</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">}),</span>
-        <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;my-namespace&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect</span> <span class="kn">import</span> <span class="n">flow</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.credentials</span> <span class="kn">import</span> <span class="n">KubernetesCredentials</span>
-<span class="kn">from</span> <span class="nn">prefect_kubernetes.services</span> <span class="kn">import</span> <span class="n">delete_namespaced_service</span>
-
-<span class="nd">@flow</span>
-<span class="k">def</span> <span class="nf">kubernetes_orchestrator</span><span class="p">():</span>
-    <span class="n">delete_namespaced_service</span><span class="p">(</span>
-        <span class="n">kubernetes_credentials</span><span class="o">=</span><span class="n">KubernetesCredentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;k8s-creds&quot;</span><span class="p">),</span>
-        <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;my-service&quot;</span><span class="p">,</span>
-        <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;my-namespace&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div></p>
 
@@ -1017,7 +1017,7 @@ Create a pod in the default namespace:
     <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.a51614de.min.js"></script>
+      <script src="../assets/javascripts/bundle.b425cdc4.min.js"></script>
       
     
   </body>
