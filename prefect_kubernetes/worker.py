@@ -148,6 +148,7 @@ def _get_default_job_manifest_template() -> Dict[str, Any]:
             "generateName": "{{ name }}-",
         },
         "spec": {
+            "backoffLimit": 0,
             "ttlSecondsAfterFinished": "{{ finished_job_ttl }}",
             "template": {
                 "spec": {
@@ -843,6 +844,7 @@ class KubernetesWorker(BaseWorker):
             pods = core_client.list_namespaced_pod(
                 namespace=configuration.namespace, label_selector=f"job-name={job_name}"
             )
+            # Get the status for only the most recently used pod
             pods.items.sort(
                 key=lambda pod: pod.metadata.creation_timestamp, reverse=True
             )
