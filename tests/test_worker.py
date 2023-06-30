@@ -935,7 +935,10 @@ class TestKubernetesWorker:
 
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             await k8s_worker.run(flow_run=flow_run, configuration=default_configuration)
-            mock_core_client.read_namespaced_pod_status.assert_called_once()
+            mock_core_client.list_namespaced_pod.assert_called_with(
+                namespace=default_configuration.namespace,
+                label_selector="job-name=mock-job",
+            )
 
             mock_batch_client.create_namespaced_job.assert_called_with(
                 "default",
@@ -1768,7 +1771,9 @@ class TestKubernetesWorker:
 
                 # Yield the completed job
                 job.status.completion_time = True
-                yield {"object": job}
+                job.status.failed = 0
+                job.spec.backoff_limit = 6
+                yield {"object": job, "type": "ADDED"}
 
         def mock_log_stream(*args, **kwargs):
             anyio.sleep(500)
@@ -1817,7 +1822,7 @@ class TestKubernetesWorker:
             if kwargs["func"] == mock_core_client.list_namespaced_pod:
                 job_pod = MagicMock(spec=kubernetes.client.V1Pod)
                 job_pod.status.phase = "Running"
-                yield {"object": job_pod}
+                yield {"object": job_pod, "type": "ADDED"}
 
             if kwargs["func"] == mock_batch_client.list_namespaced_job:
                 job = MagicMock(spec=kubernetes.client.V1Job)
@@ -1947,7 +1952,9 @@ class TestKubernetesWorker:
 
                 # Yield the job then return exiting the stream
                 job.status.completion_time = None
-                yield {"object": job}
+                job.status.failed = 0
+                job.spec.backoff_limit = 6
+                yield {"object": job, "type": "ADDED"}
 
         mock_watch.stream.side_effect = mock_stream
         default_configuration.job_watch_timeout_seconds = 40

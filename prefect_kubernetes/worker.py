@@ -808,19 +808,53 @@ class KubernetesWorker(BaseWorker):
                     namespace=configuration.namespace,
                     **timeout_seconds,
                 ):
-                    if event["object"].status.completion_time:
+                    if event["type"] == "DELETED":
+                        logger.error(f"Job {job_name!r}: Job has been deleted.")
+                        completed = True
+                    elif event["object"].status.completion_time:
                         if not event["object"].status.succeeded:
                             # Job failed, exit while loop and return pod exit code
                             logger.error(f"Job {job_name!r}: Job failed.")
                         completed = True
+                    # Check if the job has reached its backoff limit
+                    # and stop watching if it has
+                    elif (
+                        event["object"].spec.backoff_limit is not None
+                        and event["object"].status.failed is not None
+                        and event["object"].status.failed
+                        > event["object"].spec.backoff_limit
+                    ):
+                        logger.error(f"Job {job_name!r}: Job reached backoff limit.")
+                        completed = True
+                    # If the job has no backoff limit, check if it has failed
+                    # and stop watching if it has
+                    elif (
+                        not event["object"].spec.backoff_limit
+                        and event["object"].status.failed
+                    ):
+                        completed = True
+
+                    if completed:
                         watch.stop()
                         break
 
         with self._get_core_client(client) as core_client:
-            pod_status = core_client.read_namespaced_pod_status(
-                namespace=configuration.namespace, name=pod.metadata.name
+            # Get all pods for the job
+            pods = core_client.list_namespaced_pod(
+                namespace=configuration.namespace, label_selector=f"job-name={job_name}"
             )
-            first_container_status = pod_status.status.container_statuses[0]
+            pods.items.sort(
+                key=lambda pod: pod.metadata.creation_timestamp, reverse=True
+            )
+            most_recent_pod = pods.items[0] if pods.items else None
+            first_container_status = (
+                most_recent_pod.status.container_statuses[0]
+                if most_recent_pod
+                else None
+            )
+            if not first_container_status:
+                logger.error(f"Job {job_name!r}: No pods found for job.")
+                return -1
 
         return first_container_status.state.terminated.exit_code
 
