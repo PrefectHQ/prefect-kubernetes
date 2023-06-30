@@ -159,6 +159,7 @@ from_template_and_values_cases = [
                     "labels": {},
                 },
                 "spec": {
+                    "backoffLimit": 0,
                     "template": {
                         "spec": {
                             "parallelism": 1,
@@ -171,7 +172,7 @@ from_template_and_values_cases = [
                                 }
                             ],
                         }
-                    }
+                    },
                 },
             },
             cluster_config=None,
@@ -213,6 +214,7 @@ from_template_and_values_cases = [
                     },
                 },
                 "spec": {
+                    "backoffLimit": 0,
                     "template": {
                         "spec": {
                             "parallelism": 1,
@@ -241,7 +243,7 @@ from_template_and_values_cases = [
                                 }
                             ],
                         }
-                    }
+                    },
                 },
             },
             cluster_config=None,
@@ -290,6 +292,7 @@ from_template_and_values_cases = [
                     "generateName": "test-",
                 },
                 "spec": {
+                    "backoffLimit": 0,
                     "ttlSecondsAfterFinished": 60,
                     "template": {
                         "spec": {
@@ -354,6 +357,7 @@ from_template_and_values_cases = [
                     },
                 },
                 "spec": {
+                    "backoffLimit": 0,
                     "ttlSecondsAfterFinished": 60,
                     "template": {
                         "spec": {
