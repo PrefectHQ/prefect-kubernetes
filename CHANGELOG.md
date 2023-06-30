@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Handling for rescheduled Kubernetes job - [#78](https://github.com/PrefectHQ/prefect-kubernetes/pull/78)
+
 ### Changed
 
 ### Deprecated
