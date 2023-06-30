@@ -2038,6 +2038,41 @@ class TestKubernetesWorker:
 
         assert result.status_code == 137
 
+    async def test_watch_handles_no_pod(
+        self,
+        flow_run,
+        default_configuration,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+    ):
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+        mock_core_client.list_namespaced_pod.return_value.items = []
+
+        def mock_stream(*args, **kwargs):
+            if kwargs["func"] == mock_core_client.list_namespaced_pod:
+                job_pod = MagicMock(spec=kubernetes.client.V1Pod)
+                job_pod.status.phase = "Running"
+                yield {"object": job_pod}
+
+            if kwargs["func"] == mock_batch_client.list_namespaced_job:
+                job = MagicMock(spec=kubernetes.client.V1Job)
+
+                # Yield the job then return exiting the stream
+                job.status.completion_time = None
+                job.spec.backoff_limit = 6
+                for i in range(0, 8):
+                    job.status.failed = i
+                    yield {"object": job, "type": "ADDED"}
+
+        mock_watch.stream.side_effect = mock_stream
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            result = await k8s_worker.run(flow_run, default_configuration)
+
+        assert result.status_code == -1
+
     class TestKillInfrastructure:
         async def test_kill_infrastructure_calls_delete_namespaced_job(
             self,
