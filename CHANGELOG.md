@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Handling for rescheduled Kubernetes job - [#78](https://github.com/PrefectHQ/prefect-kubernetes/pull/78)
-
 ### Changed
 
 ### Deprecated
@@ -20,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## 0.2.10
+
+Released June 30th, 2023.
+
+### Added
+
+- Handling for rescheduled Kubernetes jobs - [#78](https://github.com/PrefectHQ/prefect-kubernetes/pull/78)
 
 ## 0.2.9
 
