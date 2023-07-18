@@ -1,9 +1,6 @@
 """
-<span class="badge-api beta"/>
 
 Module containing the Kubernetes worker used for executing flow runs as Kubernetes jobs.
-
-Note this module is in **beta**. The interfaces within may change without notice.
 
 To start a Kubernetes worker, run the following command:
 
@@ -480,7 +477,6 @@ class KubernetesWorker(BaseWorker):
     )
     _display_name = "Kubernetes"
     _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/worker/"
-    _is_beta = True
     _logo_url = "https://images.ctfassets.net/gm98wzqotmnx/1zrSeY8DZ1MJZs2BAyyyGk/20445025358491b8b72600b8f996125b/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa
 
     async def run(

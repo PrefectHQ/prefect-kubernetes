@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## 0.2.11
+
+Released July 20th, 2023.
+
+### Changed
+- Promoted workers to GA, removed beta disclaimers
+
 ## 0.2.10
 
 Released June 30th, 2023.
