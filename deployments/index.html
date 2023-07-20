@@ -15,7 +15,7 @@
         <link rel="next" href="../exceptions/">
       
       <link rel="icon" href="../img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -23,7 +23,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ecc896b0.min.css">
@@ -640,7 +640,7 @@
 
 
 <h1 id="prefect_kubernetes.deployments" class="doc doc-heading">
-          <code>prefect_kubernetes.deployments</code>
+            <code>prefect_kubernetes.deployments</code>
 
 
 </h1>
@@ -661,6 +661,7 @@
 <h2 id="prefect_kubernetes.deployments-classes">Classes</h2>
 <h2 id="prefect_kubernetes.deployments-functions">Functions</h2>
 
+
 <div class="doc doc-object doc-function">
 
 
@@ -678,6 +679,8 @@
   <div class="doc doc-contents ">
   
       <p>Create a Kubernetes deployment in a given namespace.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -750,6 +753,8 @@ authenticated Kubernetes API clients.</p>
     </tbody>
   </table>
 
+
+
   <p><strong>Returns:</strong></p>
   <table>
     <thead>
@@ -788,9 +793,9 @@ authenticated Kubernetes API clients.</p>
     <span class="p">)</span>
 </code></pre></div></p>
 </details>
-      <details class="quote">
-        <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">11</span>
+          <details class="quote">
+            <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">11</span>
 <span class="normal">12</span>
 <span class="normal">13</span>
 <span class="normal">14</span>
@@ -876,10 +881,11 @@ authenticated Kubernetes API clients.</p>
             <span class="o">**</span><span class="n">kube_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -898,6 +904,8 @@ authenticated Kubernetes API clients.</p>
   <div class="doc doc-contents ">
   
       <p>Delete a Kubernetes deployment in a given namespace.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -984,6 +992,8 @@ authenticated Kubernetes API clients.</p>
     </tbody>
   </table>
 
+
+
   <p><strong>Returns:</strong></p>
   <table>
     <thead>
@@ -1023,9 +1033,9 @@ authenticated Kubernetes API clients.</p>
     <span class="p">)</span>
 </code></pre></div></p>
 </details>
-      <details class="quote">
-        <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 56</span>
+          <details class="quote">
+            <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 56</span>
 <span class="normal"> 57</span>
 <span class="normal"> 58</span>
 <span class="normal"> 59</span>
@@ -1119,10 +1129,11 @@ authenticated Kubernetes API clients.</p>
             <span class="o">**</span><span class="n">kube_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -1141,6 +1152,8 @@ authenticated Kubernetes API clients.</p>
   <div class="doc doc-contents ">
   
       <p>List all deployments in a given namespace.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -1199,6 +1212,8 @@ authenticated Kubernetes API clients.</p>
     </tbody>
   </table>
 
+
+
   <p><strong>Returns:</strong></p>
   <table>
     <thead>
@@ -1235,9 +1250,9 @@ authenticated Kubernetes API clients.</p>
     <span class="p">)</span>
 </code></pre></div></p>
 </details>
-      <details class="quote">
-        <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">105</span>
+          <details class="quote">
+            <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">105</span>
 <span class="normal">106</span>
 <span class="normal">107</span>
 <span class="normal">108</span>
@@ -1313,10 +1328,11 @@ authenticated Kubernetes API clients.</p>
             <span class="o">**</span><span class="n">kube_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -1335,6 +1351,8 @@ authenticated Kubernetes API clients.</p>
   <div class="doc doc-contents ">
   
       <p>Patch a Kubernetes deployment in a given namespace.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -1421,6 +1439,8 @@ authenticated Kubernetes API clients.</p>
     </tbody>
   </table>
 
+
+
   <p><strong>Returns:</strong></p>
   <table>
     <thead>
@@ -1460,9 +1480,9 @@ authenticated Kubernetes API clients.</p>
     <span class="p">)</span>
 </code></pre></div></p>
 </details>
-      <details class="quote">
-        <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">145</span>
+          <details class="quote">
+            <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">145</span>
 <span class="normal">146</span>
 <span class="normal">147</span>
 <span class="normal">148</span>
@@ -1556,10 +1576,11 @@ authenticated Kubernetes API clients.</p>
             <span class="o">**</span><span class="n">kube_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -1578,6 +1599,8 @@ authenticated Kubernetes API clients.</p>
   <div class="doc doc-contents ">
   
       <p>Read information on a Kubernetes deployment in a given namespace.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -1650,6 +1673,8 @@ authenticated Kubernetes API clients.</p>
     </tbody>
   </table>
 
+
+
   <p><strong>Returns:</strong></p>
   <table>
     <thead>
@@ -1686,9 +1711,9 @@ authenticated Kubernetes API clients.</p>
     <span class="p">)</span>
 </code></pre></div></p>
 </details>
-      <details class="quote">
-        <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">194</span>
+          <details class="quote">
+            <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">194</span>
 <span class="normal">195</span>
 <span class="normal">196</span>
 <span class="normal">197</span>
@@ -1770,10 +1795,11 @@ authenticated Kubernetes API clients.</p>
             <span class="o">**</span><span class="n">kube_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -1792,6 +1818,8 @@ authenticated Kubernetes API clients.</p>
   <div class="doc doc-contents ">
   
       <p>Replace a Kubernetes deployment in a given namespace.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -1878,6 +1906,8 @@ authenticated Kubernetes API clients.</p>
     </tbody>
   </table>
 
+
+
   <p><strong>Returns:</strong></p>
   <table>
     <thead>
@@ -1917,9 +1947,9 @@ authenticated Kubernetes API clients.</p>
     <span class="p">)</span>
 </code></pre></div></p>
 </details>
-      <details class="quote">
-        <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">237</span>
+          <details class="quote">
+            <summary>Source code in <code>prefect_kubernetes/deployments.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">237</span>
 <span class="normal">238</span>
 <span class="normal">239</span>
 <span class="normal">240</span>
@@ -2013,7 +2043,7 @@ authenticated Kubernetes API clients.</p>
             <span class="o">**</span><span class="n">kube_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
@@ -2167,10 +2197,10 @@ authenticated Kubernetes API clients.</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.b425cdc4.min.js"></script>
+      <script src="../assets/javascripts/bundle.220ee61c.min.js"></script>
       
     
   </body>
