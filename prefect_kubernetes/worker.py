@@ -854,15 +854,18 @@ class KubernetesWorker(BaseWorker):
                 logger.error(f"Job {job_name!r}: No pods found for job.")
                 return -1
 
-            # In some cases, such as spot instance evictions, the pod will be forcibly terminated
-            # and not report a status correctly.
+            # In some cases, such as spot instance evictions, the pod will be forcibly
+            # terminated and not report a status correctly.
             elif (
                 first_container_status.state is None
                 or first_container_status.state.terminated is None
                 or first_container_status.state.terminated.exit_code is None
             ):
                 logger.error(
-                    f"Could not determine exit code for {job_name!r}. Exit code will be reported as -1. First container status info did not report an exit code: {first_container_status}."
+                    f"Could not determine exit code for {job_name!r}."
+                    "Exit code will be reported as -1."
+                    f"First container status info did not report an exit code."
+                    f"First container info: {first_container_status}."
                 )
                 return -1
 
