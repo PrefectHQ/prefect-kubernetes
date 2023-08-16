@@ -2077,6 +2077,51 @@ class TestKubernetesWorker:
 
         assert result.status_code == -1
 
+    async def test_watch_handles_pod_without_exit_code(
+        self,
+        flow_run,
+        default_configuration,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+    ):
+        """
+        This test case mimics the behavior of a pod that has been forcefully terminated
+        (i.e. AWS spot instance termination or another node failure).
+        """
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+        job_pod = MagicMock(spec=kubernetes.client.V1Pod)
+        job_pod.status.phase = "Running"
+        mock_container_status = MagicMock(spec=kubernetes.client.V1ContainerStatus)
+        # The container may exist but because it has been forcefully terminated
+        # it will not have an exit code.
+        mock_container_status.state.terminated = None
+        job_pod.status.container_statuses = [mock_container_status]
+        mock_core_client.list_namespaced_pod.return_value.items = [job_pod]
+
+        def mock_stream(*args, **kwargs):
+            if kwargs["func"] == mock_core_client.list_namespaced_pod:
+                job_pod = MagicMock(spec=kubernetes.client.V1Pod)
+                job_pod.status.phase = "Running"
+                yield {"object": job_pod}
+
+            if kwargs["func"] == mock_batch_client.list_namespaced_job:
+                job = MagicMock(spec=kubernetes.client.V1Job)
+
+                # Yield the job then return exiting the stream
+                job.status.completion_time = None
+                job.spec.backoff_limit = 6
+                for i in range(0, 8):
+                    job.status.failed = i
+                    yield {"object": job, "type": "ADDED"}
+
+        mock_watch.stream.side_effect = mock_stream
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            result = await k8s_worker.run(flow_run, default_configuration)
+
+        assert result.status_code == -1
+
     class TestKillInfrastructure:
         async def test_kill_infrastructure_calls_delete_namespaced_job(
             self,
