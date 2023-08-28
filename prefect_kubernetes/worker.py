@@ -1,9 +1,6 @@
 """
-<span class="badge-api beta"/>
 
 Module containing the Kubernetes worker used for executing flow runs as Kubernetes jobs.
-
-Note this module is in **beta**. The interfaces within may change without notice.
 
 To start a Kubernetes worker, run the following command:
 
@@ -480,7 +477,6 @@ class KubernetesWorker(BaseWorker):
     )
     _display_name = "Kubernetes"
     _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/worker/"
-    _is_beta = True
     _logo_url = "https://images.ctfassets.net/gm98wzqotmnx/1zrSeY8DZ1MJZs2BAyyyGk/20445025358491b8b72600b8f996125b/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa
 
     async def run(
@@ -856,6 +852,21 @@ class KubernetesWorker(BaseWorker):
             )
             if not first_container_status:
                 logger.error(f"Job {job_name!r}: No pods found for job.")
+                return -1
+
+            # In some cases, such as spot instance evictions, the pod will be forcibly
+            # terminated and not report a status correctly.
+            elif (
+                first_container_status.state is None
+                or first_container_status.state.terminated is None
+                or first_container_status.state.terminated.exit_code is None
+            ):
+                logger.error(
+                    f"Could not determine exit code for {job_name!r}."
+                    "Exit code will be reported as -1."
+                    f"First container status info did not report an exit code."
+                    f"First container info: {first_container_status}."
+                )
                 return -1
 
         return first_container_status.state.terminated.exit_code
