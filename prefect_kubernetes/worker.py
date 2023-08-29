@@ -917,4 +917,43 @@ class KubernetesWorker(BaseWorker):
 
                 last_phase = phase
 
+        # If we've gotten here, we never found the Pod that was created for the flow run
+        # Job, so let's inspect the situation and log what we can find.  It's possible
+        # that the Job ran into scheduling constraints it couldn't satisfy, like
+        # memory/CPU requests, or a volume that wasn't available, or a node with an
+        # available GPU.
         logger.error(f"Job {job_name!r}: Pod never started.")
+        self._log_recent_job_events(logger, job_name, configuration, client)
+
+    def _log_recent_job_events(
+        self,
+        logger: logging.Logger,
+        job_name: str,
+        configuration: KubernetesWorkerJobConfiguration,
+        client: "ApiClient",
+    ) -> None:
+        """Look for reasons why a Job may not have been able to schedule a Pod and log
+        them to the provided logger."""
+        from kubernetes.client.models import CoreV1Event, CoreV1EventList
+
+        with self._get_core_client(client) as core_client:
+            events: CoreV1EventList = core_client.list_namespaced_event(
+                configuration.namespace
+            )
+            event: CoreV1Event
+            for event in events.items:
+                if not (
+                    event.involved_object.api_version == "batch/v1"
+                    and event.involved_object.kind == "Job"
+                    and event.involved_object.namespace == configuration.namespace
+                    and event.involved_object.name == job_name
+                ):
+                    continue
+
+                logger.info(
+                    "Job event %r (%s times) as of %s: %s",
+                    event.reason,
+                    event.count,
+                    event.last_timestamp.isoformat(),
+                    event.message,
+                )
