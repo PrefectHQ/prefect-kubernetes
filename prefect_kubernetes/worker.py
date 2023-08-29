@@ -90,6 +90,7 @@ import math
 import os
 import time
 from contextlib import contextmanager
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 
 import anyio.abc
@@ -552,6 +553,7 @@ class KubernetesWorker(BaseWorker):
         configuration: KubernetesWorkerJobConfiguration,
         grace_seconds: int = 30,
     ):
+        """Removes the given Job from the Kubernetes cluster"""
         client = self._get_configured_kubernetes_client(configuration)
         job_cluster_uid, job_namespace, job_name = self._parse_infrastructure_pid(
             infrastructure_pid
@@ -897,9 +899,12 @@ class KubernetesWorker(BaseWorker):
         client: "ApiClient",
     ) -> Optional["V1Pod"]:
         """Get the first running pod for a job."""
+        from kubernetes.client.models import V1Pod
+
         watch = kubernetes.watch.Watch()
         logger.debug(f"Job {job_name!r}: Starting watch for pod start...")
         last_phase = None
+        last_pod_name: str | None = None
         with self._get_core_client(client) as core_client:
             for event in watch.stream(
                 func=core_client.list_namespaced_pod,
@@ -907,13 +912,16 @@ class KubernetesWorker(BaseWorker):
                 label_selector=f"job-name={job_name}",
                 timeout_seconds=configuration.pod_watch_timeout_seconds,
             ):
-                phase = event["object"].status.phase
+                pod: V1Pod = event["object"]
+                last_pod_name = pod.metadata.name
+
+                phase = pod.status.phase
                 if phase != last_phase:
                     logger.info(f"Job {job_name!r}: Pod has status {phase!r}.")
 
                 if phase != "Pending":
                     watch.stop()
-                    return event["object"]
+                    return pod
 
                 last_phase = phase
 
@@ -923,37 +931,63 @@ class KubernetesWorker(BaseWorker):
         # memory/CPU requests, or a volume that wasn't available, or a node with an
         # available GPU.
         logger.error(f"Job {job_name!r}: Pod never started.")
-        self._log_recent_job_events(logger, job_name, configuration, client)
+        self._log_recent_events(logger, job_name, last_pod_name, configuration, client)
 
-    def _log_recent_job_events(
+    def _log_recent_events(
         self,
         logger: logging.Logger,
         job_name: str,
+        pod_name: str | None,
         configuration: KubernetesWorkerJobConfiguration,
         client: "ApiClient",
     ) -> None:
-        """Look for reasons why a Job may not have been able to schedule a Pod and log
-        them to the provided logger."""
+        """Look for reasons why a Job may not have been able to schedule a Pod, or why
+        a Pod may not have been able to start and log them to the provided logger."""
         from kubernetes.client.models import CoreV1Event, CoreV1EventList
+
+        def best_event_time(event: CoreV1Event) -> datetime:
+            """Choose the best timestamp from a Kubernetes event"""
+            return event.event_time or event.last_timestamp
+
+        def log_event(event: CoreV1Event):
+            """Log an event in one of a few formats to the provided logger"""
+            if event.count and event.count > 1:
+                logger.info(
+                    "%s event %r (%s times) at %s: %s",
+                    event.involved_object.kind,
+                    event.reason,
+                    event.count,
+                    best_event_time(event),
+                    event.message,
+                )
+            else:
+                logger.info(
+                    "%s event %r at %s: %s",
+                    event.involved_object.kind,
+                    event.reason,
+                    best_event_time(event),
+                    event.message,
+                )
 
         with self._get_core_client(client) as core_client:
             events: CoreV1EventList = core_client.list_namespaced_event(
                 configuration.namespace
             )
             event: CoreV1Event
-            for event in events.items:
-                if not (
+            for event in sorted(events.items, key=best_event_time):
+                if (
                     event.involved_object.api_version == "batch/v1"
                     and event.involved_object.kind == "Job"
                     and event.involved_object.namespace == configuration.namespace
                     and event.involved_object.name == job_name
                 ):
-                    continue
+                    log_event(event)
 
-                logger.info(
-                    "Job event %r (%s times) as of %s: %s",
-                    event.reason,
-                    event.count,
-                    event.last_timestamp.isoformat(),
-                    event.message,
-                )
+                if (
+                    pod_name
+                    and event.involved_object.api_version == "v1"
+                    and event.involved_object.kind == "Pod"
+                    and event.involved_object.namespace == configuration.namespace
+                    and event.involved_object.name == pod_name
+                ):
+                    log_event(event)

@@ -2304,6 +2304,45 @@ class TestKubernetesWorker:
                 CoreV1Event(
                     metadata=V1ObjectMeta(),
                     involved_object=V1ObjectReference(
+                        api_version="v1",
+                        kind="Pod",
+                        namespace="default",
+                        name="my-pod",
+                    ),
+                    reason="ImageWhatImage",
+                    count=1,
+                    event_time=pendulum.parse("2022-01-02T03:04:05Z"),
+                    message="I don't see no image",
+                ),
+                CoreV1Event(
+                    metadata=V1ObjectMeta(),
+                    involved_object=V1ObjectReference(
+                        api_version="v1",
+                        kind="Pod",
+                        namespace="default",
+                        name="my-pod",
+                    ),
+                    reason="GoodLuck",
+                    count=1,
+                    last_timestamp=pendulum.parse("2022-01-02T03:04:05Z"),
+                    message="You ain't getting no more RAM",
+                ),
+                CoreV1Event(
+                    metadata=V1ObjectMeta(),
+                    involved_object=V1ObjectReference(
+                        api_version="v1",
+                        kind="Pod",
+                        namespace="default",
+                        name="somebody-else",  # not my pod
+                    ),
+                    reason="NotMeDude",
+                    count=1,
+                    last_timestamp=pendulum.parse("2022-01-02T03:04:05Z"),
+                    message="You ain't getting no more RAM",
+                ),
+                CoreV1Event(
+                    metadata=V1ObjectMeta(),
+                    involved_object=V1ObjectReference(
                         api_version="batch/v1",
                         kind="Job",
                         namespace="default",
@@ -2328,7 +2367,7 @@ class TestKubernetesWorker:
         caplog: pytest.LogCaptureFixture,
     ):
         """Regression test for #87, where workers were giving only very vague
-        information about the reason a pod never started."""
+        information about the reason a pod was never scheduled."""
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             await k8s_worker.run(
                 flow_run=flow_run,
@@ -2350,3 +2389,30 @@ class TestKubernetesWorker:
 
             # The event for another job shouldn't be included
             assert "NahChief" not in caplog.text
+
+    async def test_explains_what_might_have_gone_wrong_in_starting_the_pod(
+        self,
+        default_configuration: KubernetesWorkerJobConfiguration,
+        flow_run,
+        mock_core_client: mock.Mock,
+        mock_events,
+        caplog: pytest.LogCaptureFixture,
+    ):
+        """Regression test for #90, where workers were giving only very vague
+        information about the reason a pod never started.  This does not attempt to
+        run the flow, but rather just tests the logging method directly."""
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            logger = k8s_worker.get_flow_run_logger(flow_run)
+
+            mock_client = mock.Mock()
+            k8s_worker._log_recent_events(
+                logger, "mock-job", "my-pod", default_configuration, mock_client
+            )
+
+            # The events for the pod should be included
+            assert "ImageWhatImage" in caplog.text
+            assert "You ain't getting no more RAM" in caplog.text
+
+            # The event for another job or pod shouldn't be included
+            assert "NahChief" not in caplog.text
+            assert "NotMeDude" not in caplog.text
