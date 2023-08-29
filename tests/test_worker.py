@@ -12,6 +12,13 @@ import pendulum
 import prefect
 import pytest
 from kubernetes.client.exceptions import ApiException
+from kubernetes.client.models import (
+    CoreV1Event,
+    CoreV1EventList,
+    V1ListMeta,
+    V1ObjectMeta,
+    V1ObjectReference,
+)
 from kubernetes.config import ConfigException
 from prefect.client.schemas import FlowRun
 from prefect.docker import get_prefect_image_name
@@ -2262,3 +2269,84 @@ class TestKubernetesWorker:
                         grace_seconds=0,
                         configuration=default_configuration,
                     )
+
+    @pytest.fixture
+    def mock_events(self, mock_core_client):
+        mock_core_client.list_namespaced_event.return_value = CoreV1EventList(
+            metadata=V1ListMeta(resource_version="1"),
+            items=[
+                CoreV1Event(
+                    metadata=V1ObjectMeta(),
+                    involved_object=V1ObjectReference(
+                        api_version="batch/v1",
+                        kind="Job",
+                        namespace="default",
+                        name="mock-job",
+                    ),
+                    reason="StuffBlewUp",
+                    count=2,
+                    last_timestamp=pendulum.parse("2022-01-02T03:04:05Z"),
+                    message="Whew, that was baaaaad",
+                ),
+                CoreV1Event(
+                    metadata=V1ObjectMeta(),
+                    involved_object=V1ObjectReference(
+                        api_version="batch/v1",
+                        kind="Job",
+                        namespace="default",
+                        name="this-aint-me",  # not my flow run ID
+                    ),
+                    reason="NahChief",
+                    count=2,
+                    last_timestamp=pendulum.parse("2022-01-02T03:04:05Z"),
+                    message="You do not want to know about this one",
+                ),
+                CoreV1Event(
+                    metadata=V1ObjectMeta(),
+                    involved_object=V1ObjectReference(
+                        api_version="batch/v1",
+                        kind="Job",
+                        namespace="default",
+                        name="mock-job",
+                    ),
+                    reason="StuffBlewUp",
+                    count=2,
+                    last_timestamp=pendulum.parse("2022-01-02T03:04:05Z"),
+                    message="I mean really really bad",
+                ),
+            ],
+        )
+
+    async def test_explains_what_might_have_gone_wrong_in_scheduling_the_pod(
+        self,
+        default_configuration: KubernetesWorkerJobConfiguration,
+        flow_run,
+        mock_batch_client,
+        mock_core_client: mock.Mock,
+        mock_watch,
+        mock_events,
+        caplog: pytest.LogCaptureFixture,
+    ):
+        """Regression test for #87, where workers were giving only very vague
+        information about the reason a pod never started."""
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            await k8s_worker.run(
+                flow_run=flow_run,
+                configuration=default_configuration,
+                task_status=MagicMock(spec=anyio.abc.TaskStatus),
+            )
+
+            mock_core_client.list_namespaced_event.assert_called_once_with(
+                default_configuration.namespace
+            )
+
+            # The original error log should still be included
+            assert "Pod never started" in caplog.text
+
+            # The events for the job should be included
+            assert "StuffBlewUp" in caplog.text
+            assert "Whew, that was baaaaad" in caplog.text
+            assert "I mean really really bad" in caplog.text
+
+            # The event for another job shouldn't be included
+            assert "NahChief" not in caplog.text
