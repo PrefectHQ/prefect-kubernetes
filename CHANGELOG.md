@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Log more information when a Pod cannot be scheduled - [#87](https://github.com/PrefectHQ/prefect-kubernetes/issues/87)
 
+- Log more information when a Pod cannot start - [#90](https://github.com/PrefectHQ/prefect-kubernetes/issues/90)
+
+
 ### Added
 
 - Handling for spot instance eviction - [#85](https://github.com/PrefectHQ/prefect-kubernetes/pull/85)
