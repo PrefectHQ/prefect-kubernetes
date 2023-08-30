@@ -2,7 +2,7 @@
 
 from asyncio import sleep
 from pathlib import Path
-from typing import Any, Dict, Optional, Type, Union, Callable
+from typing import Any, Callable, Dict, Optional, Type, Union
 
 import yaml
 from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
