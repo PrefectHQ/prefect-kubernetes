@@ -1,6 +1,6 @@
 """A module to define flows interacting with Kubernetes resources."""
 
-from typing import Any, Dict, Optional, Callable
+from typing import Any, Callable, Dict, Optional
 
 from prefect import flow, task
 
