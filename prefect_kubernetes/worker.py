@@ -904,7 +904,7 @@ class KubernetesWorker(BaseWorker):
         watch = kubernetes.watch.Watch()
         logger.debug(f"Job {job_name!r}: Starting watch for pod start...")
         last_phase = None
-        last_pod_name: str | None = None
+        last_pod_name: Optional[str] = None
         with self._get_core_client(client) as core_client:
             for event in watch.stream(
                 func=core_client.list_namespaced_pod,
@@ -937,7 +937,7 @@ class KubernetesWorker(BaseWorker):
         self,
         logger: logging.Logger,
         job_name: str,
-        pod_name: str | None,
+        pod_name: Optional[str],
         configuration: KubernetesWorkerJobConfiguration,
         client: "ApiClient",
     ) -> None:
