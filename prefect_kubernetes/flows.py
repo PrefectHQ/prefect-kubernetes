@@ -9,8 +9,7 @@ from prefect_kubernetes.jobs import KubernetesJob
 
 @flow
 async def run_namespaced_job(
-    kubernetes_job: KubernetesJob,
-    print_func: Optional[Callable] = None
+    kubernetes_job: KubernetesJob, print_func: Optional[Callable] = None
 ) -> Dict[str, Any]:
     """Flow for running a namespaced Kubernetes job.
 
