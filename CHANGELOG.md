@@ -26,6 +26,8 @@ Released September 18th, 2023.
 ### Added
 
 - Handling for spot instance eviction - [#85](https://github.com/PrefectHQ/prefect-kubernetes/pull/85)
+- Logging recent job events when pod scheduling fails - [#88](https://github.com/PrefectHQ/prefect-kubernetes/pull/88)
+- Event logging for pod events - [#91](https://github.com/PrefectHQ/prefect-kubernetes/pull/91)
 
 
 ### Fixed
