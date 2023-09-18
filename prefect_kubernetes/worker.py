@@ -326,6 +326,8 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         This function also handles the case where the user has removed the `{{ env }}`
         placeholder and hard coded a value for `env`. In this case, we need to prepend
         our environment variables to the list to ensure Prefect setting propagation.
+        An example reason the a user would remove the `{{ env }}` placeholder to
+        hardcode Kuberentes secrets in the base job template.
         """
         transformed_env = [{"name": k, "value": v} for k, v in self.env.items()]
 
