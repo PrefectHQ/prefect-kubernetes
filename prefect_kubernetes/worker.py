@@ -95,7 +95,6 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 
 import anyio.abc
 from prefect.blocks.kubernetes import KubernetesClusterConfig
-from prefect.docker import get_prefect_image_name
 from prefect.exceptions import (
     InfrastructureError,
     InfrastructureNotAvailable,
@@ -104,6 +103,7 @@ from prefect.exceptions import (
 from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
+from prefect.utilities.dockerutils import get_prefect_image_name
 from prefect.utilities.importtools import lazy_import
 from prefect.utilities.pydantic import JsonPatch
 from prefect.utilities.templating import find_placeholders
@@ -308,15 +308,49 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         super().prepare_for_flow_run(flow_run, deployment, flow)
         # Update configuration env and job manifest env
         self._update_prefect_api_url_if_local_server()
-        self.job_manifest["spec"]["template"]["spec"]["containers"][0]["env"] = [
-            {"name": k, "value": v} for k, v in self.env.items()
-        ]
+        self._populate_env_in_manifest()
         # Update labels in job manifest
         self._slugify_labels()
         # Add defaults to job manifest if necessary
         self._populate_image_if_not_present()
         self._populate_command_if_not_present()
         self._populate_generate_name_if_not_present()
+
+    def _populate_env_in_manifest(self):
+        """
+        Populates environment variables in the job manifest.
+
+        When `env` is templated as a variable in the job manifest it comes in as a
+        dictionary. We need to convert it to a list of dictionaries to conform to the
+        Kubernetes job manifest schema.
+
+        This function also handles the case where the user has removed the `{{ env }}`
+        placeholder and hard coded a value for `env`. In this case, we need to prepend
+        our environment variables to the list to ensure Prefect setting propagation.
+        An example reason the a user would remove the `{{ env }}` placeholder to
+        hardcode Kuberentes secrets in the base job template.
+        """
+        transformed_env = [{"name": k, "value": v} for k, v in self.env.items()]
+
+        template_env = self.job_manifest["spec"]["template"]["spec"]["containers"][
+            0
+        ].get("env")
+
+        # If user has removed `{{ env }}` placeholder and hard coded a value for `env`,
+        # we need to prepend our environment variables to the list to ensure Prefect
+        # setting propagation.
+        if isinstance(template_env, list):
+            self.job_manifest["spec"]["template"]["spec"]["containers"][0]["env"] = [
+                *transformed_env,
+                *template_env,
+            ]
+        # Current templating adds `env` as a dict when the kubernetes manifest requires
+        # a list of dicts. Might be able to improve this in the future with a better
+        # default `env` value and better typing.
+        else:
+            self.job_manifest["spec"]["template"]["spec"]["containers"][0][
+                "env"
+            ] = transformed_env
 
     def _update_prefect_api_url_if_local_server(self):
         """If the API URL has been set by the base environment rather than the by the

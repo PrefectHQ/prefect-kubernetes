@@ -14,8 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Handling for spot instance eviction - [#85](https://github.com/PrefectHQ/prefect-kubernetes/pull/85)
-
 ### Changed
 
 ### Deprecated
@@ -25,6 +23,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## 0.2.12
+
+Released September 18th, 2023.
+
+### Added
+
+- Handling for spot instance eviction - [#85](https://github.com/PrefectHQ/prefect-kubernetes/pull/85)
+- Logging recent job events when pod scheduling fails - [#88](https://github.com/PrefectHQ/prefect-kubernetes/pull/88)
+- Event logging for pod events - [#91](https://github.com/PrefectHQ/prefect-kubernetes/pull/91)
+
+
+### Fixed
+
+- `env` handling to allow hard coding of environment variable in base job template - [#94](https://github.com/PrefectHQ/prefect-kubernetes/pull/94)
 
 ## 0.2.11
 
