@@ -316,6 +316,17 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         self._populate_generate_name_if_not_present()
 
     def _populate_env_in_manifest(self):
+        """
+        Populates environment variables in the job manifest.
+
+        When `env` is templated as a variable in the job manifest it comes in as a
+        dictionary. We need to convert it to a list of dictionaries to conform to the
+        Kubernetes job manifest schema.
+
+        This function also handles the case where the user has removed the `{{ env }}`
+        placeholder and hard coded a value for `env`. In this case, we need to prepend
+        our environment variables to the list to ensure Prefect setting propagation.
+        """
         transformed_env = [{"name": k, "value": v} for k, v in self.env.items()]
 
         template_env = self.job_manifest["spec"]["template"]["spec"]["containers"][
