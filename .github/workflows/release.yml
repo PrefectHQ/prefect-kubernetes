@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4.5.0
         with:
-          python-version: 3.7
+          python-version: "3.10"
 
       - name: Install packages
         run: |
@@ -73,7 +73,7 @@ jobs:
           mkdocs build
 
       - name: Publish docs
-        uses: JamesIves/github-pages-deploy-action@v4.4.2
+        uses: JamesIves/github-pages-deploy-action@v4.4.3
         with:
           branch: docs
           folder: site

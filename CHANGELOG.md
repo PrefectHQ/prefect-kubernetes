@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Log more information when a Pod cannot be scheduled - [#87](https://github.com/PrefectHQ/prefect-kubernetes/issues/87)
+
+- Log more information when a Pod cannot start - [#90](https://github.com/PrefectHQ/prefect-kubernetes/issues/90)
+
+
 ### Added
 
 ### Changed
@@ -66,7 +71,7 @@ Released May 25th, 2023.
 - Improve failure message when creating a Kubernetes job fails - [#71](https://github.com/PrefectHQ/prefect-kubernetes/pull/71)
 - Stream Kubernetes Worker flow run logs to the API - [#72](https://github.com/PrefectHQ/prefect-kubernetes/pull/72)
 
-## 0.2.7    
+## 0.2.7
 
 Released May 4th, 2023.
 
@@ -93,7 +98,7 @@ Released April 20th, 2023.
 
 Released April 6th, 2023.
 
-### 
+###
 
 - Temporary `prefect` version guard - [#48](https://github.com/PrefectHQ/prefect-kubernetes/pull/48)
 - Advanced configuration documentation - [#50](https://github.com/PrefectHQ/prefect-kubernetes/pull/50)
