@@ -35,7 +35,12 @@ from prefect.settings import (
     temporary_settings,
 )
 from prefect.utilities.dockerutils import get_prefect_image_name
-from pydantic import ValidationError
+from pydantic import VERSION as PYDANTIC_VERSION
+
+if PYDANTIC_VERSION.startswith("2."):
+    from pydantic.v1 import ValidationError
+else:
+    from pydantic import ValidationError
 
 from prefect_kubernetes import KubernetesWorker
 from prefect_kubernetes.utilities import _slugify_label_value
