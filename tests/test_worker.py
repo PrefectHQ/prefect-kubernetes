@@ -196,7 +196,7 @@ from_template_and_values_cases = [
             command="python -m prefect.engine",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
-                "PREFECT__FLOW_RUN_ID": flow_run.id.hex,
+                "PREFECT__FLOW_RUN_ID": str(flow_run.id),
             },
             labels={
                 "prefect.io/flow-run-id": str(flow_run.id),
@@ -247,7 +247,7 @@ from_template_and_values_cases = [
                                         ],
                                         {
                                             "name": "PREFECT__FLOW_RUN_ID",
-                                            "value": flow_run.id.hex,
+                                            "value": str(flow_run.id),
                                         },
                                     ],
                                     "image": get_prefect_image_name(),
@@ -473,7 +473,7 @@ from_template_and_values_cases = [
             command="python -m prefect.engine",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
-                "PREFECT__FLOW_RUN_ID": flow_run.id.hex,
+                "PREFECT__FLOW_RUN_ID": str(flow_run.id),
             },
             labels={
                 "prefect.io/flow-run-id": str(flow_run.id),
@@ -524,7 +524,7 @@ from_template_and_values_cases = [
                                         ],
                                         {
                                             "name": "PREFECT__FLOW_RUN_ID",
-                                            "value": flow_run.id.hex,
+                                            "value": str(flow_run.id),
                                         },
                                         {
                                             "name": "TEST_ENV",
@@ -622,7 +622,7 @@ from_template_and_values_cases = [
             command="echo hello",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
-                "PREFECT__FLOW_RUN_ID": flow_run.id.hex,
+                "PREFECT__FLOW_RUN_ID": str(flow_run.id),
                 "TEST_ENV": "test",
             },
             labels={
@@ -678,7 +678,7 @@ from_template_and_values_cases = [
                                         ],
                                         {
                                             "name": "PREFECT__FLOW_RUN_ID",
-                                            "value": flow_run.id.hex,
+                                            "value": str(flow_run.id),
                                         },
                                         {
                                             "name": "TEST_ENV",
@@ -900,7 +900,7 @@ from_template_and_values_cases = [
             command="echo hello",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
-                "PREFECT__FLOW_RUN_ID": flow_run.id.hex,
+                "PREFECT__FLOW_RUN_ID": str(flow_run.id),
                 "TEST_ENV": "test",
             },
             labels={
@@ -953,7 +953,7 @@ from_template_and_values_cases = [
                                         ],
                                         {
                                             "name": "PREFECT__FLOW_RUN_ID",
-                                            "value": flow_run.id.hex,
+                                            "value": str(flow_run.id),
                                         },
                                         {
                                             "name": "TEST_ENV",
