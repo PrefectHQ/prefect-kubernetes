@@ -515,7 +515,7 @@ class KubernetesWorker(BaseWorker):
     )
     _display_name = "Kubernetes"
     _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/worker/"
-    _logo_url = "https://images.ctfassets.net/gm98wzqotmnx/1zrSeY8DZ1MJZs2BAyyyGk/20445025358491b8b72600b8f996125b/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa
+    _logo_url = "https://cdn.sanity.io/images/3ugk85nk/production/2d0b896006ad463b49c28aaac14f31e00e32cfab-250x250.png"  # noqa
 
     async def run(
         self,
