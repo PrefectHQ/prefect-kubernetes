@@ -33,7 +33,7 @@ jobs:
         env:
           PREFECT_SERVER_DATABASE_CONNECTION_URL: "sqlite+aiosqlite:///./collection-tests.db"
         run: |
-          coverage run --branch -m pytest tests -vv
+          coverage run --branch -m pytest tests -n auto -vv
           coverage report
 
       - name: Run mkdocs build
