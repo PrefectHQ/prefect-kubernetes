@@ -88,6 +88,7 @@ import enum
 import logging
 import math
 import os
+import shlex
 import time
 from contextlib import contextmanager
 from datetime import datetime
@@ -406,15 +407,11 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
             if command is None:
                 self.job_manifest["spec"]["template"]["spec"]["containers"][0][
                     "args"
-                ] = [
-                    "python",
-                    "-m",
-                    "prefect.engine",
-                ]
+                ] = shlex.split(self._base_flow_run_command())
             elif isinstance(command, str):
                 self.job_manifest["spec"]["template"]["spec"]["containers"][0][
                     "args"
-                ] = command.split()
+                ] = shlex.split(command)
             elif not isinstance(command, list):
                 raise ValueError(
                     "Invalid job manifest template: 'command' must be a string or list."
