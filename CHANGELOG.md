@@ -7,11 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-- Log more information when a Pod cannot be scheduled - [#87](https://github.com/PrefectHQ/prefect-kubernetes/issues/87)
-
-- Log more information when a Pod cannot start - [#90](https://github.com/PrefectHQ/prefect-kubernetes/issues/90)
-
-
 ### Added
 
 ### Changed
@@ -23,6 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## 0.3.1
+
+Released October 11th, 2023.
+
+### Changed
+
+- Updated Kubernetes worker to respect default command from base worker configuration - [#97](https://github.com/PrefectHQ/prefect-kubernetes/pull/97)
+
+## 0.3.0
+
+Released October 5th, 2023.
+
+### Added
+
+- Conditional imports to support operating with pydantic>2 installed - [#95](https://github.com/PrefectHQ/prefect-kubernetes/pull/95)
 
 ## 0.2.12
 
