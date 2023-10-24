@@ -88,6 +88,7 @@ import enum
 import logging
 import math
 import os
+import shlex
 import time
 from contextlib import contextmanager
 from datetime import datetime
@@ -113,7 +114,13 @@ from prefect.workers.base import (
     BaseWorker,
     BaseWorkerResult,
 )
-from pydantic import Field, validator
+from pydantic import VERSION as PYDANTIC_VERSION
+
+if PYDANTIC_VERSION.startswith("2."):
+    from pydantic.v1 import Field, validator
+else:
+    from pydantic import Field, validator
+
 from typing_extensions import Literal
 
 from prefect_kubernetes.events import KubernetesEventsReplicator
@@ -400,15 +407,11 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
             if command is None:
                 self.job_manifest["spec"]["template"]["spec"]["containers"][0][
                     "args"
-                ] = [
-                    "python",
-                    "-m",
-                    "prefect.engine",
-                ]
+                ] = shlex.split(self._base_flow_run_command())
             elif isinstance(command, str):
                 self.job_manifest["spec"]["template"]["spec"]["containers"][0][
                     "args"
-                ] = command.split()
+                ] = shlex.split(command)
             elif not isinstance(command, list):
                 raise ValueError(
                     "Invalid job manifest template: 'command' must be a string or list."
@@ -512,7 +515,7 @@ class KubernetesWorker(BaseWorker):
     )
     _display_name = "Kubernetes"
     _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/worker/"
-    _logo_url = "https://images.ctfassets.net/gm98wzqotmnx/1zrSeY8DZ1MJZs2BAyyyGk/20445025358491b8b72600b8f996125b/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa
+    _logo_url = "https://cdn.sanity.io/images/3ugk85nk/production/2d0b896006ad463b49c28aaac14f31e00e32cfab-250x250.png"  # noqa
 
     async def run(
         self,

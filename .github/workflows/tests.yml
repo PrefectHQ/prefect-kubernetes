@@ -33,8 +33,7 @@ jobs:
         env:
           PREFECT_SERVER_DATABASE_CONNECTION_URL: "sqlite+aiosqlite:///./collection-tests.db"
         run: |
-          coverage run --branch -m pytest tests -vv
-          coverage report
+          pytest --cov=prefect_kubernetes --no-cov-on-fail --cov-report=term-missing --cov-branch tests -n auto -vv
 
       - name: Run mkdocs build
         run: |

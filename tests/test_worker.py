@@ -35,7 +35,12 @@ from prefect.settings import (
     temporary_settings,
 )
 from prefect.utilities.dockerutils import get_prefect_image_name
-from pydantic import ValidationError
+from pydantic import VERSION as PYDANTIC_VERSION
+
+if PYDANTIC_VERSION.startswith("2."):
+    from pydantic.v1 import ValidationError
+else:
+    from pydantic import ValidationError
 
 from prefect_kubernetes import KubernetesWorker
 from prefect_kubernetes.utilities import _slugify_label_value
@@ -191,7 +196,7 @@ from_template_and_values_cases = [
             command="python -m prefect.engine",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
-                "PREFECT__FLOW_RUN_ID": flow_run.id.hex,
+                "PREFECT__FLOW_RUN_ID": str(flow_run.id),
             },
             labels={
                 "prefect.io/flow-run-id": str(flow_run.id),
@@ -242,7 +247,7 @@ from_template_and_values_cases = [
                                         ],
                                         {
                                             "name": "PREFECT__FLOW_RUN_ID",
-                                            "value": flow_run.id.hex,
+                                            "value": str(flow_run.id),
                                         },
                                     ],
                                     "image": get_prefect_image_name(),
@@ -468,7 +473,7 @@ from_template_and_values_cases = [
             command="python -m prefect.engine",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
-                "PREFECT__FLOW_RUN_ID": flow_run.id.hex,
+                "PREFECT__FLOW_RUN_ID": str(flow_run.id),
             },
             labels={
                 "prefect.io/flow-run-id": str(flow_run.id),
@@ -519,7 +524,7 @@ from_template_and_values_cases = [
                                         ],
                                         {
                                             "name": "PREFECT__FLOW_RUN_ID",
-                                            "value": flow_run.id.hex,
+                                            "value": str(flow_run.id),
                                         },
                                         {
                                             "name": "TEST_ENV",
@@ -617,7 +622,7 @@ from_template_and_values_cases = [
             command="echo hello",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
-                "PREFECT__FLOW_RUN_ID": flow_run.id.hex,
+                "PREFECT__FLOW_RUN_ID": str(flow_run.id),
                 "TEST_ENV": "test",
             },
             labels={
@@ -673,7 +678,7 @@ from_template_and_values_cases = [
                                         ],
                                         {
                                             "name": "PREFECT__FLOW_RUN_ID",
-                                            "value": flow_run.id.hex,
+                                            "value": str(flow_run.id),
                                         },
                                         {
                                             "name": "TEST_ENV",
@@ -895,7 +900,7 @@ from_template_and_values_cases = [
             command="echo hello",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
-                "PREFECT__FLOW_RUN_ID": flow_run.id.hex,
+                "PREFECT__FLOW_RUN_ID": str(flow_run.id),
                 "TEST_ENV": "test",
             },
             labels={
@@ -948,7 +953,7 @@ from_template_and_values_cases = [
                                         ],
                                         {
                                             "name": "PREFECT__FLOW_RUN_ID",
-                                            "value": flow_run.id.hex,
+                                            "value": str(flow_run.id),
                                         },
                                         {
                                             "name": "TEST_ENV",

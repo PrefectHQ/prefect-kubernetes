@@ -9,7 +9,13 @@ from kubernetes.client.models import V1DeleteOptions, V1Job, V1JobList, V1Status
 from prefect import task
 from prefect.blocks.abstract import JobBlock, JobRun
 from prefect.utilities.asyncutils import run_sync_in_worker_thread, sync_compatible
-from pydantic import Field
+from pydantic import VERSION as PYDANTIC_VERSION
+
+if PYDANTIC_VERSION.startswith("2."):
+    from pydantic.v1 import Field
+else:
+    from pydantic import Field
+
 from typing_extensions import Self
 
 from prefect_kubernetes.credentials import KubernetesCredentials
@@ -517,7 +523,7 @@ class KubernetesJob(JobBlock):
 
     _block_type_name = "Kubernetes Job"
     _block_type_slug = "k8s-job"
-    _logo_url = "https://images.ctfassets.net/zscdif0zqppk/35vNcprr3MmIlkrKxxCiah/1d720b4b50dfa8876198cf21730cf123/Kubernetes_logo_without_workmark.svg.png?h=250"  # noqa: E501
+    _logo_url = "https://cdn.sanity.io/images/3ugk85nk/production/2d0b896006ad463b49c28aaac14f31e00e32cfab-250x250.png"  # noqa: E501
     _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/jobs/#prefect_kubernetes.jobs.KubernetesJob"  # noqa
 
     @sync_compatible

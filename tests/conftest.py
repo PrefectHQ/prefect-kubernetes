@@ -7,6 +7,7 @@ import yaml
 from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, CustomObjectsApi, models
 from kubernetes.client.exceptions import ApiException
 from prefect.blocks.kubernetes import KubernetesClusterConfig
+from prefect.settings import PREFECT_LOGGING_TO_API_ENABLED, temporary_settings
 from prefect.testing.utilities import prefect_test_harness
 
 from prefect_kubernetes.credentials import KubernetesCredentials
@@ -22,6 +23,15 @@ def prefect_db():
     Sets up test harness for temporary DB during test runs.
     """
     with prefect_test_harness():
+        yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def disable_api_logging():
+    """
+    Disables API logging for all tests.
+    """
+    with temporary_settings(updates={PREFECT_LOGGING_TO_API_ENABLED: False}):
         yield
 
 
