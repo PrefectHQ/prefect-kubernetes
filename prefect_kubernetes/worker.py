@@ -84,6 +84,8 @@ to poll for flow runs.
 For more information about work pools and workers,
 checkout out the [Prefect docs](https://docs.prefect.io/concepts/work-pools/).
 """
+import asyncio
+import base64
 import enum
 import logging
 import math
@@ -517,6 +519,10 @@ class KubernetesWorker(BaseWorker):
     _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/worker/"
     _logo_url = "https://cdn.sanity.io/images/3ugk85nk/production/2d0b896006ad463b49c28aaac14f31e00e32cfab-250x250.png"  # noqa
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._created_secrets = {}
+
     async def run(
         self,
         flow_run: "FlowRun",
@@ -583,6 +589,32 @@ class KubernetesWorker(BaseWorker):
         await run_sync_in_worker_thread(
             self._stop_job, infrastructure_pid, configuration, grace_seconds
         )
+
+    async def teardown(self, *exc_info):
+        await super().teardown(*exc_info)
+
+        await self._clean_up_created_secrets()
+
+    async def _clean_up_created_secrets(self):
+        """Deletes any secrets created during the worker's operation."""
+        coros = []
+        for key, configuration in self._created_secrets.items():
+            with self._get_configured_kubernetes_client(configuration) as client:
+                with self._get_core_client(client) as core_client:
+                    coros.append(
+                        run_sync_in_worker_thread(
+                            core_client.delete_namespaced_secret,
+                            name=key[0],
+                            namespace=key[1],
+                        )
+                    )
+
+        results = await asyncio.gather(*coros, return_exceptions=True)
+        for result in results:
+            if isinstance(result, Exception):
+                self._logger.warning(
+                    "Failed to delete created secret with exception: %s", result
+                )
 
     def _stop_job(
         self,
@@ -662,6 +694,43 @@ class KubernetesWorker(BaseWorker):
         """
         Creates a Kubernetes job from a job manifest.
         """
+        manifest_env = configuration.job_manifest["spec"]["template"]["spec"][
+            "containers"
+        ][0].get("env")
+        manifest_api_key_env = next(
+            (
+                env_entry
+                for env_entry in manifest_env
+                if env_entry.get("name") == "PREFECT_API_KEY"
+            ),
+            {},
+        )
+        api_key = manifest_api_key_env.get("value")
+        if api_key:
+            secret_name = f"{_slugify_name(self.name)}-api-key"
+            secret = self._upsert_secret(
+                name=secret_name,
+                value=api_key,
+                namespace=configuration.namespace,
+                client=client,
+            )
+            # Store configuration so that we can delete the secret when the worker shuts
+            # down
+            self._created_secrets[
+                (secret.metadata.name, secret.metadata.namespace)
+            ] = configuration
+            new_api_env_entry = {
+                "name": "PREFECT_API_KEY",
+                "valueFrom": {"secretKeyRef": {"name": secret_name, "key": "value"}},
+            }
+            manifest_env = [
+                entry if entry.get("name") != "PREFECT_API_KEY" else new_api_env_entry
+                for entry in manifest_env
+            ]
+            configuration.job_manifest["spec"]["template"]["spec"]["containers"][0][
+                "env"
+            ] = manifest_env
+
         try:
             with self._get_batch_client(client) as batch_client:
                 job = batch_client.create_namespaced_job(
@@ -680,6 +749,35 @@ class KubernetesWorker(BaseWorker):
             ) from exc
 
         return job
+
+    def _upsert_secret(
+        self, name: str, value: str, namespace: str, client: "ApiClient"
+    ):
+        encoded_value = base64.b64encode(value.encode("utf-8")).decode("utf-8")
+        with self._get_core_client(client) as core_client:
+            try:
+                # Get the current version of the Secret and update it with the
+                # new value
+                current_secret = core_client.read_namespaced_secret(
+                    name=name, namespace=namespace
+                )
+                current_secret.data = {"value": encoded_value}
+                secret = core_client.replace_namespaced_secret(
+                    name=name, namespace=namespace, body=current_secret
+                )
+            except client.rest.ApiException:
+                # Create the secret if it doesn't already exist
+                metadata = client.V1ObjectMeta(name=name, namespace=namespace)
+                secret = client.V1Secret(
+                    api_version="v1",
+                    kind="Secret",
+                    metadata=metadata,
+                    data={"value": encoded_value},
+                )
+                secret = core_client.create_namespaced_secret(
+                    namespace=namespace, body=secret
+                )
+            return secret
 
     @contextmanager
     def _get_batch_client(
