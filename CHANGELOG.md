@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## 0.3.2
+
+Released November 7th, 2023.
+
+### Added
+
+- Option to worker to pass Prefect API key to created jobs as a Kubernetes secret - [#99](https://github.com/PrefectHQ/prefect-kubernetes/pull/99)
+
 ## 0.3.1
 
 Released October 11th, 2023.
