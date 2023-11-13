@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Kubernetes Cluster Autoscaler evicting pods on scale down 
+
 ### Security
 
 ## 0.3.2
