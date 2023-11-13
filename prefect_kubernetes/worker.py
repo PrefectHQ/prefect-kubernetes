@@ -172,9 +172,15 @@ def _get_default_job_manifest_template() -> Dict[str, Any]:
             "generateName": "{{ name }}-",
         },
         "spec": {
-            "backoffLimit": 0,
+            "backoffLimit": "{{ backoff_limit }}",
             "ttlSecondsAfterFinished": "{{ finished_job_ttl }}",
             "template": {
+                "metadata": {
+                    "annotations": {
+                        "cluster-autoscaler.kubernetes.io/"
+                        "safe-to-evict": "{{ safe_to_evict }}"
+                    }
+                },
                 "spec": {
                     "parallelism": 1,
                     "completions": 1,
@@ -189,7 +195,7 @@ def _get_default_job_manifest_template() -> Dict[str, Any]:
                             "args": "{{ command }}",
                         }
                     ],
-                }
+                },
             },
         },
     }
@@ -515,6 +521,20 @@ class KubernetesWorkerVariables(BaseVariables):
     cluster_config: Optional[KubernetesClusterConfig] = Field(
         default=None,
         description="The Kubernetes cluster config to use for job creation.",
+    )
+    safe_to_evict: bool = Field(
+        default=False,
+        description="If set to True and using a Cluster Autoscaler, "
+        "the Pod for a job is allowing rescheduling on a different node. "
+        "Should only be used if your workloads are fault tolerant and you have "
+        "increased the backoff limit. Not doing so will cause the Flow to exhibit "
+        "a Crashed state",
+    )
+    backoff_limit: int = Field(
+        default=0,
+        description="If value is not 0, then the job may recreate the pod without "
+        "failing the kubernetes Job. This will cause a flow to restart from the "
+        "beginning. Should only be used if your workloads are fault tolerant.",
     )
 
 

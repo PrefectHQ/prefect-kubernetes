@@ -181,6 +181,11 @@ from_template_and_values_cases = [
                 "spec": {
                     "backoffLimit": 0,
                     "template": {
+                        "metadata": {
+                            "annotations": {
+                                "cluster-autoscaler.kubernetes.io/safe-to-evict": False
+                            }
+                        },
                         "spec": {
                             "parallelism": 1,
                             "completions": 1,
@@ -191,7 +196,7 @@ from_template_and_values_cases = [
                                     "imagePullPolicy": "IfNotPresent",
                                 }
                             ],
-                        }
+                        },
                     },
                 },
             },
@@ -236,6 +241,11 @@ from_template_and_values_cases = [
                 "spec": {
                     "backoffLimit": 0,
                     "template": {
+                        "metadata": {
+                            "annotations": {
+                                "cluster-autoscaler.kubernetes.io/safe-to-evict": False
+                            }
+                        },
                         "spec": {
                             "parallelism": 1,
                             "completions": 1,
@@ -262,7 +272,7 @@ from_template_and_values_cases = [
                                     "args": ["python", "-m", "prefect.engine"],
                                 }
                             ],
-                        }
+                        },
                     },
                 },
             },
@@ -578,6 +588,8 @@ from_template_and_values_cases = [
             "image": "test-image:latest",
             "finished_job_ttl": 60,
             "namespace": "test-namespace",
+            "safe_to_evict": True,
+            "backoff_limit": 6,
         },
         KubernetesWorkerJobConfiguration(
             command="echo hello",
@@ -598,9 +610,14 @@ from_template_and_values_cases = [
                     "generateName": "test-",
                 },
                 "spec": {
-                    "backoffLimit": 0,
+                    "backoffLimit": 6,
                     "ttlSecondsAfterFinished": 60,
                     "template": {
+                        "metadata": {
+                            "annotations": {
+                                "cluster-autoscaler.kubernetes.io/safe-to-evict": True
+                            }
+                        },
                         "spec": {
                             "parallelism": 1,
                             "completions": 1,
@@ -617,7 +634,7 @@ from_template_and_values_cases = [
                                     "args": "echo hello",
                                 }
                             ],
-                        }
+                        },
                     },
                 },
             },
@@ -663,9 +680,14 @@ from_template_and_values_cases = [
                     },
                 },
                 "spec": {
-                    "backoffLimit": 0,
+                    "backoffLimit": 6,
                     "ttlSecondsAfterFinished": 60,
                     "template": {
+                        "metadata": {
+                            "annotations": {
+                                "cluster-autoscaler.kubernetes.io/safe-to-evict": True
+                            }
+                        },
                         "spec": {
                             "parallelism": 1,
                             "completions": 1,
@@ -697,7 +719,7 @@ from_template_and_values_cases = [
                                     "args": ["echo", "hello"],
                                 }
                             ],
-                        }
+                        },
                     },
                 },
             },
