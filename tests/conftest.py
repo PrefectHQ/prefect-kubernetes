@@ -4,8 +4,14 @@ from unittest.mock import MagicMock
 
 import pytest
 import yaml
-from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, CustomObjectsApi, models
-from kubernetes.client.exceptions import ApiException
+from kubernetes.client import (
+    ApiException,
+    AppsV1Api,
+    BatchV1Api,
+    CoreV1Api,
+    CustomObjectsApi,
+    models,
+)
 from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect.settings import PREFECT_LOGGING_TO_API_ENABLED, temporary_settings
 from prefect.testing.utilities import prefect_test_harness
@@ -180,7 +186,7 @@ def mock_delete_namespaced_job(monkeypatch):
 @pytest.fixture
 def mock_stream_timeout(monkeypatch):
     monkeypatch.setattr(
-        "kubernetes.watch.Watch.stream",
+        "prefect_kubernetes.utilities.watch.Watch.stream",
         MagicMock(side_effect=ApiException(status=408)),
     )
 
