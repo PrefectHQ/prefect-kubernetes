@@ -1,7 +1,11 @@
 """ Utilities for working with the Python Kubernetes API. """
+import logging
 from pathlib import Path
-from typing import Optional, TypeVar, Union
+from typing import List, Optional, Type, TypeVar, Union
 
+import urllib3
+from cachetools import FIFOCache
+from kubernetes import watch
 from kubernetes.client import models as k8s_models
 from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
 from slugify import slugify
@@ -144,9 +148,7 @@ def _slugify_label_key(key: str, max_length: int = 63, prefix_max_length=253) ->
                 prefix,
                 max_length=prefix_max_length,
                 regex_pattern=r"[^a-zA-Z0-9-\.]+",
-            ).strip(
-                "_-."
-            )  # Must start or end with alphanumeric characters
+            ).strip("_-.")  # Must start or end with alphanumeric characters
             or prefix
         )
 
@@ -180,3 +182,71 @@ def _slugify_label_value(value: str, max_length: int = 63) -> str:
     # Kubernetes to throw the validation error
 
     return slug
+
+
+class ResilientStreamWatcher:
+    """
+    A wrapper class around kuberenetes.watch.Watch that will reconnect on
+    certain exceptions.
+    """
+
+    RECONNECT_EXCEPTIONS = (urllib3.exceptions.ProtocolError,)
+
+    def __init__(
+        self,
+        logger: Optional[logging.Logger] = None,
+        max_cache_size: int = 50000,
+        reconnect_exceptions: Optional[List[Type[Exception]]] = None,
+    ) -> None:
+        self.max_cache_size = max_cache_size
+        self.logger = logger
+        self.watch = watch.Watch()
+
+        reconnect_exceptions = reconnect_exceptions or self.RECONNECT_EXCEPTIONS
+        self.reconnect_exceptions = tuple(reconnect_exceptions)
+
+    def _stream(self, cache: Optional[FIFOCache], func, *args, **kwargs):
+        keep_streaming = True
+        while keep_streaming:
+            try:
+                for event in self.watch.stream(func, *args, **kwargs):
+                    # check that we want to and can track this object
+                    if (
+                        cache is not None
+                        and isinstance(event, dict)
+                        and "object" in event
+                    ):
+                        uid = event["object"].metadata.uid
+                        if uid not in cache:
+                            cache[uid] = None
+                            yield event
+                    else:
+                        yield event
+            except self.reconnect_exceptions:
+                if self.logger:
+                    self.logger.exception("Unable to connect, retrying...")
+            except Exception:
+                if self.logger:
+                    self.logger.exception("Unexpected error")
+                keep_streaming = False
+                raise
+            finally:
+                if self.logger:
+                    self.logger.debug("Completed stream.")
+                keep_streaming = False
+
+    def api_object_stream(self, func, *args, **kwargs):
+        """
+        Create a FIFOCache to maintain a record of API objects that have been
+        seen. This is useful because `_stream` will reconnect a stream on
+        `RECONNECT_EXCEPTIONS` and on reconnect it will restart streaming all
+        objects. This cache prevents the same object from being yielded twice.
+        """
+        cache = FIFOCache(maxsize=self.max_cache_size)
+        yield from self._stream(cache, func, *args, **kwargs)
+
+    def log_stream(self, func, *args, **kwargs):
+        yield from self._stream(None, func, *args, **kwargs)
+
+    def stop(self):
+        self.watch.stop()

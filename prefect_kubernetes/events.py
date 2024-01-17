@@ -1,9 +1,12 @@
 import atexit
+import logging
 import threading
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from prefect.events import Event, RelatedResource, emit_event
 from prefect.utilities.importtools import lazy_import
+
+from prefect_kubernetes.utilities import ResilientStreamWatcher
 
 if TYPE_CHECKING:
     import kubernetes
@@ -38,11 +41,13 @@ class KubernetesEventsReplicator:
         worker_resource: Dict[str, str],
         related_resources: List[RelatedResource],
         timeout_seconds: int,
+        logger: Optional[logging.Logger] = None,
     ):
         self._client = client
         self._job_name = job_name
         self._namespace = namespace
         self._timeout_seconds = timeout_seconds
+        self._logger = logger
 
         # All events emitted by this replicator have the pod itself as the
         # resource. The `worker_resource` is what the worker uses when it's
@@ -52,7 +57,7 @@ class KubernetesEventsReplicator:
         worker_related_resource = RelatedResource(__root__=worker_resource)
         self._related_resources = related_resources + [worker_related_resource]
 
-        self._watch = kubernetes.watch.Watch()
+        self._watch = ResilientStreamWatcher(logger=self._logger)
         self._thread = threading.Thread(target=self._replicate_pod_events)
 
         self._state = "READY"
@@ -90,7 +95,7 @@ class KubernetesEventsReplicator:
 
         try:
             core_client = kubernetes.client.CoreV1Api(api_client=self._client)
-            for event in self._watch.stream(
+            for event in self._watch.api_object_stream(
                 func=core_client.list_namespaced_pod,
                 namespace=self._namespace,
                 label_selector=f"job-name={self._job_name}",
