@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A `ResilientWatcher` utility class to reconnect Kubernetes client streams on `ProtocolErrors` - [#107](https://github.com/PrefectHQ/prefect-kubernetes/pull/107)
+
 ### Changed
 
 ### Deprecated

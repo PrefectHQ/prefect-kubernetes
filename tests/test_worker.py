@@ -67,7 +67,11 @@ def mock_watch(monkeypatch):
 
     mock = MagicMock()
 
-    monkeypatch.setattr("kubernetes.watch.Watch", MagicMock(return_value=mock))
+    monkeypatch.setattr(
+        "prefect_kubernetes.worker.ResilientStreamWatcher",
+        MagicMock(return_value=mock),
+        raising=True,
+    )
     return mock
 
 
@@ -201,7 +205,7 @@ from_template_and_values_cases = [
             stream_output=True,
         ),
         lambda flow_run, deployment, flow: KubernetesWorkerJobConfiguration(
-            command="python -m prefect.engine",
+            command="prefect flow-run execute",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
                 "PREFECT__FLOW_RUN_ID": str(flow_run.id),
@@ -259,7 +263,11 @@ from_template_and_values_cases = [
                                         },
                                     ],
                                     "image": get_prefect_image_name(),
-                                    "args": ["python", "-m", "prefect.engine"],
+                                    "args": [
+                                        "prefect",
+                                        "flow-run",
+                                        "execute",
+                                    ],
                                 }
                             ],
                         }
@@ -478,7 +486,7 @@ from_template_and_values_cases = [
             stream_output=True,
         ),
         lambda flow_run, deployment, flow: KubernetesWorkerJobConfiguration(
-            command="python -m prefect.engine",
+            command="prefect flow-run execute",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
                 "PREFECT__FLOW_RUN_ID": str(flow_run.id),
@@ -545,7 +553,11 @@ from_template_and_values_cases = [
                                         },
                                     ],
                                     "image": get_prefect_image_name(),
-                                    "args": ["python", "-m", "prefect.engine"],
+                                    "args": [
+                                        "prefect",
+                                        "flow-run",
+                                        "execute",
+                                    ],
                                 }
                             ],
                         }
@@ -1211,7 +1223,7 @@ class TestKubernetesWorkerJobConfiguration:
 
         # the prefect-job container is still populated
         assert pod["containers"][0]["name"] == "prefect-job"
-        assert pod["containers"][0]["args"] == ["python", "-m", "prefect.engine"]
+        assert pod["containers"][0]["args"] == ["prefect", "flow-run", "execute"]
 
         assert pod["containers"][1] == {
             "name": "my-sidecar",
@@ -1239,7 +1251,9 @@ class TestKubernetesWorker:
         mock_core_client,
         mock_watch,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream.return_value = (
+            _mock_pods_stream_that_returns_running_pod()
+        )
         default_configuration.prepare_for_flow_run(flow_run)
         expected_manifest = default_configuration.job_manifest
 
@@ -1359,7 +1373,7 @@ class TestKubernetesWorker:
         job_name,
         clean_name,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
         default_configuration.name = job_name
         default_configuration.prepare_for_flow_run(flow_run)
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
@@ -1377,7 +1391,7 @@ class TestKubernetesWorker:
         mock_watch,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
 
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
             KubernetesWorker.get_default_base_job_template(), {"image": "foo"}
@@ -1398,7 +1412,7 @@ class TestKubernetesWorker:
         mock_batch_client,
         enable_store_api_key_in_secret,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
         mock_core_client.read_namespaced_secret.side_effect = ApiException(status=404)
 
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
@@ -1452,7 +1466,7 @@ class TestKubernetesWorker:
         mock_batch_client,
         enable_store_api_key_in_secret,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
 
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
             KubernetesWorker.get_default_base_job_template(), {"image": "foo"}
@@ -1654,7 +1668,7 @@ class TestKubernetesWorker:
         mock_watch,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
 
         default_configuration.job_manifest["spec"]["template"]["spec"]["containers"][0][
             "image"
@@ -1676,7 +1690,7 @@ class TestKubernetesWorker:
         mock_watch,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
 
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
             KubernetesWorker.get_default_base_job_template(),
@@ -1793,7 +1807,7 @@ class TestKubernetesWorker:
         given,
         expected,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
             KubernetesWorker.get_default_base_job_template(),
             {"labels": {given: "foo"}},
@@ -1841,7 +1855,7 @@ class TestKubernetesWorker:
         given,
         expected,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
 
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
             KubernetesWorker.get_default_base_job_template(),
@@ -1864,7 +1878,7 @@ class TestKubernetesWorker:
         mock_watch,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
             KubernetesWorker.get_default_base_job_template(),
             {"namespace": "foo"},
@@ -1886,7 +1900,7 @@ class TestKubernetesWorker:
         mock_watch,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
 
         default_configuration.job_manifest["metadata"]["namespace"] = "test"
         default_configuration.prepare_for_flow_run(flow_run)
@@ -1906,7 +1920,7 @@ class TestKubernetesWorker:
         mock_watch,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
             KubernetesWorker.get_default_base_job_template(),
             {"service_account_name": "foo"},
@@ -1927,7 +1941,7 @@ class TestKubernetesWorker:
         mock_watch,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
             KubernetesWorker.get_default_base_job_template(),
             {"finished_job_ttl": 123},
@@ -1948,7 +1962,7 @@ class TestKubernetesWorker:
         mock_watch,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
         configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
             KubernetesWorker.get_default_base_job_template(),
             {"image_pull_policy": "IfNotPresent"},
@@ -1970,7 +1984,7 @@ class TestKubernetesWorker:
         mock_cluster_config,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
 
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             await k8s_worker.run(flow_run, default_configuration)
@@ -1987,7 +2001,7 @@ class TestKubernetesWorker:
         mock_cluster_config,
         mock_batch_client,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
         mock_cluster_config.load_incluster_config.side_effect = ConfigException()
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             await k8s_worker.run(flow_run, default_configuration)
@@ -2004,7 +2018,9 @@ class TestKubernetesWorker:
         default_configuration: KubernetesWorkerJobConfiguration,
         flow_run,
     ):
-        mock_watch.stream = Mock(side_effect=_mock_pods_stream_that_returns_running_pod)
+        mock_watch.api_object_stream = Mock(
+            side_effect=_mock_pods_stream_that_returns_running_pod
+        )
 
         # The job should not be completed to start
         mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
@@ -2031,7 +2047,7 @@ class TestKubernetesWorker:
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             await k8s_worker.run(flow_run, default_configuration)
 
-        mock_watch.stream.assert_has_calls(
+        mock_watch.api_object_stream.assert_has_calls(
             [
                 mock.call(
                     func=mock_core_client.list_namespaced_pod,
@@ -2053,7 +2069,7 @@ class TestKubernetesWorker:
         mock_batch_client,
         job_timeout,
     ):
-        mock_watch.stream = mock.Mock(
+        mock_watch.api_object_stream = mock.Mock(
             side_effect=_mock_pods_stream_that_returns_running_pod
         )
         # The job should not be completed to start
@@ -2064,7 +2080,7 @@ class TestKubernetesWorker:
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             await k8s_worker.run(flow_run, default_configuration)
 
-        mock_watch.stream.assert_has_calls(
+        mock_watch.api_object_stream.assert_has_calls(
             [
                 mock.call(
                     func=mock_core_client.list_namespaced_pod,
@@ -2089,7 +2105,7 @@ class TestKubernetesWorker:
         mock_watch,
         mock_batch_client,
     ):
-        mock_watch.stream = mock.Mock(
+        mock_watch.api_object_stream = mock.Mock(
             side_effect=_mock_pods_stream_that_returns_running_pod
         )
         # The job should not be completed to start
@@ -2100,7 +2116,7 @@ class TestKubernetesWorker:
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             await k8s_worker.run(flow_run, default_configuration)
 
-        mock_watch.stream.assert_has_calls(
+        mock_watch.api_object_stream.assert_has_calls(
             [
                 mock.call(
                     func=mock_core_client.list_namespaced_pod,
@@ -2125,14 +2141,11 @@ class TestKubernetesWorker:
         mock_batch_client,
         caplog,
     ):
-        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+        mock_watch.api_object_stream = _mock_pods_stream_that_returns_running_pod
         # The job should not be completed to start
         mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
 
-        mock_logs = MagicMock()
-        mock_logs.stream = MagicMock(side_effect=RuntimeError("something went wrong"))
-
-        mock_core_client.read_namespaced_pod_log = MagicMock(return_value=mock_logs)
+        mock_watch.stream = MagicMock(side_effect=RuntimeError("something went wrong"))
 
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             with caplog.at_level("WARNING"):
@@ -2165,7 +2178,7 @@ class TestKubernetesWorker:
                 sleep(0.5)
                 yield {"object": job}
 
-        mock_watch.stream.side_effect = mock_stream
+        mock_watch.api_object_stream.side_effect = mock_stream
 
         default_configuration.pod_watch_timeout_seconds = 42
         default_configuration.job_watch_timeout_seconds = 0
@@ -2206,7 +2219,7 @@ class TestKubernetesWorker:
             return MagicMock()
 
         mock_core_client.read_namespaced_pod_log.side_effect = mock_log_stream
-        mock_watch.stream.side_effect = mock_stream
+        mock_watch.api_object_stream.side_effect = mock_stream
 
         default_configuration.job_watch_timeout_seconds = 1000
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
@@ -2214,7 +2227,7 @@ class TestKubernetesWorker:
 
         assert result.status_code == 1
 
-        mock_watch.stream.assert_has_calls(
+        mock_watch.api_object_stream.assert_has_calls(
             [
                 mock.call(
                     func=mock_core_client.list_namespaced_pod,
@@ -2256,7 +2269,7 @@ class TestKubernetesWorker:
                 # Yield the job then return exiting the stream
                 # After restarting the watch a few times, we'll report completion
                 job.status.completion_time = (
-                    None if mock_watch.stream.call_count < 3 else True
+                    None if mock_watch.api_object_stream.call_count < 3 else True
                 )
                 yield {"object": job}
 
@@ -2265,8 +2278,8 @@ class TestKubernetesWorker:
                 sleep(0.25)
                 yield f"test {i}".encode()
 
-        mock_core_client.read_namespaced_pod_log.return_value.stream = mock_log_stream
-        mock_watch.stream.side_effect = mock_stream
+        mock_watch.stream = mock_log_stream
+        mock_watch.api_object_stream.side_effect = mock_stream
 
         default_configuration.job_watch_timeout_seconds = 1
 
@@ -2276,7 +2289,7 @@ class TestKubernetesWorker:
         # The job should timeout
         assert result.status_code == -1
 
-        mock_watch.stream.assert_has_calls(
+        mock_watch.api_object_stream.assert_has_calls(
             [
                 mock.call(
                     func=mock_core_client.list_namespaced_pod,
@@ -2320,8 +2333,8 @@ class TestKubernetesWorker:
                 sleep(0.25)
                 yield f"test {i}".encode()
 
-        mock_core_client.read_namespaced_pod_log.return_value.stream = mock_log_stream
-        mock_watch.stream.side_effect = mock_stream
+        mock_watch.stream = mock_log_stream
+        mock_watch.api_object_stream.side_effect = mock_stream
 
         default_configuration.job_watch_timeout_seconds = 1
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
@@ -2330,7 +2343,7 @@ class TestKubernetesWorker:
         # The job should not timeout
         assert result.status_code == 1
 
-        mock_watch.stream.assert_has_calls(
+        mock_watch.api_object_stream.assert_has_calls(
             [
                 mock.call(
                     func=mock_core_client.list_namespaced_pod,
@@ -2382,14 +2395,14 @@ class TestKubernetesWorker:
                 job.spec.backoff_limit = 6
                 yield {"object": job, "type": "ADDED"}
 
-        mock_watch.stream.side_effect = mock_stream
+        mock_watch.api_object_stream.side_effect = mock_stream
         default_configuration.job_watch_timeout_seconds = 40
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             result = await k8s_worker.run(flow_run, default_configuration)
 
         assert result.status_code == -1
 
-        mock_watch.stream.assert_has_calls(
+        mock_watch.api_object_stream.assert_has_calls(
             [
                 mock.call(
                     func=mock_core_client.list_namespaced_pod,
@@ -2457,7 +2470,7 @@ class TestKubernetesWorker:
                     job.status.failed = i
                     yield {"object": job, "type": "ADDED"}
 
-        mock_watch.stream.side_effect = mock_stream
+        mock_watch.api_object_stream.side_effect = mock_stream
 
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             result = await k8s_worker.run(flow_run, default_configuration)
@@ -2492,7 +2505,7 @@ class TestKubernetesWorker:
                     job.status.failed = i
                     yield {"object": job, "type": "ADDED"}
 
-        mock_watch.stream.side_effect = mock_stream
+        mock_watch.api_object_stream.side_effect = mock_stream
 
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             result = await k8s_worker.run(flow_run, default_configuration)
@@ -2537,7 +2550,7 @@ class TestKubernetesWorker:
                     job.status.failed = i
                     yield {"object": job, "type": "ADDED"}
 
-        mock_watch.stream.side_effect = mock_stream
+        mock_watch.api_object_stream.side_effect = mock_stream
 
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             result = await k8s_worker.run(flow_run, default_configuration)
