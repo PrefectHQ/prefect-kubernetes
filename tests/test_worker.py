@@ -2145,9 +2145,7 @@ class TestKubernetesWorker:
         # The job should not be completed to start
         mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
 
-        mock_watch.log_stream = MagicMock(
-            side_effect=RuntimeError("something went wrong")
-        )
+        mock_watch.stream = MagicMock(side_effect=RuntimeError("something went wrong"))
 
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             with caplog.at_level("WARNING"):
@@ -2280,7 +2278,7 @@ class TestKubernetesWorker:
                 sleep(0.25)
                 yield f"test {i}".encode()
 
-        mock_watch.log_stream = mock_log_stream
+        mock_watch.stream = mock_log_stream
         mock_watch.api_object_stream.side_effect = mock_stream
 
         default_configuration.job_watch_timeout_seconds = 1
@@ -2335,7 +2333,7 @@ class TestKubernetesWorker:
                 sleep(0.25)
                 yield f"test {i}".encode()
 
-        mock_watch.log_stream = mock_log_stream
+        mock_watch.stream = mock_log_stream
         mock_watch.api_object_stream.side_effect = mock_stream
 
         default_configuration.job_watch_timeout_seconds = 1

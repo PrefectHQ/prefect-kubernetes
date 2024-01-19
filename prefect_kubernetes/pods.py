@@ -280,7 +280,7 @@ async def read_namespaced_pod_log(
             # should no longer need to manually refresh on ApiException.status == 410
             # as of https://github.com/kubernetes-client/python-base/pull/133
             watcher = ResilientStreamWatcher()
-            for log_line in watcher.log_stream(
+            for log_line in watcher.stream(
                 core_v1_client.read_namespaced_pod_log,
                 name=pod_name,
                 namespace=namespace,

@@ -306,7 +306,7 @@ def test_resilient_streaming_pulls_all_logs_on_reconnects():
                 raise watcher.reconnect_exceptions[0]
 
     watcher.watch.stream = my_stream
-    results = [obj for obj in watcher.log_stream(str)]
+    results = [obj for obj in watcher.stream(str)]
 
     assert results == [
         "log1",  # Before first exception

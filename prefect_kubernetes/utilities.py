@@ -223,14 +223,29 @@ class ResilientStreamWatcher:
         )
         self.reconnect_exceptions = tuple(reconnect_exceptions)
 
-    def _stream(
+    def stream(
         self, func: Callable, *args, cache: Optional[FIFOCache] = None, **kwargs
     ):
         """
         A private method for streaming API objects or logs from a Kubernetes
         client function. This method will reconnect the stream on certain
         configurable exceptions and deduplicate results on reconnects if
-        streaming API objects.
+        streaming API objects and a cache is provided.
+
+        Note that client functions that produce a stream of logs will
+        restart a stream from the beginning of the log's history on reconnect.
+        It is possible for duplicate logs to be yielded.
+
+        Args:
+            func: A Kubernetes client function to call which produces a stream
+                of logs
+            *args: Positional arguments to pass to `func`
+            cache: A keyward argument thaht provides a way to deduplicate
+                results on reconnects
+            **kwargs: Keyword arguments to pass to `func`
+
+        Returns:
+            An iterator of log
         """
         keep_streaming = True
         while keep_streaming:
@@ -285,25 +300,7 @@ class ResilientStreamWatcher:
             An iterator of API objects
         """
         cache = FIFOCache(maxsize=self.max_cache_size)
-        yield from self._stream(func, *args, cache=cache, **kwargs)
-
-    def log_stream(self, func: Callable, *args, **kwargs):
-        """
-        Stream logs genererated by a function in a way that will reconnect the
-        stream on `self.reconnect_exceptions`. On reconnect, the stream will
-        restart streaming starting from the beginning of the log's history. It
-        is possible for duplicate logs to be yielded.
-
-        Args:
-            func: A Kubernetes client function to call which produces a stream
-                of logs
-            *args: Positional arguments to pass to `func`
-            **kwargs: Keyword arguments to pass to `func`
-
-        Returns:
-            An iterator of log
-        """
-        yield from self._stream(func, *args, **kwargs)
+        yield from self.stream(func, *args, cache=cache, **kwargs)
 
     def stop(self):
         """

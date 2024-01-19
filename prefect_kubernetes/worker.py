@@ -913,7 +913,7 @@ class KubernetesWorker(BaseWorker):
             with self._get_core_client(client) as core_client:
                 watch = ResilientStreamWatcher(logger=logger)
                 try:
-                    for log in watch.log_stream(
+                    for log in watch.stream(
                         core_client.read_namespaced_pod_log,
                         pod.metadata.name,
                         configuration.namespace,
