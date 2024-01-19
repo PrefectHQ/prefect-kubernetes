@@ -2,10 +2,9 @@
 import logging
 import time
 from pathlib import Path
-from typing import Callable, List, Optional, Type, TypeVar, Union
+from typing import Callable, List, Optional, Set, Type, TypeVar, Union
 
 import urllib3
-from cachetools import FIFOCache
 from kubernetes import watch
 from kubernetes.client import models as k8s_models
 from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
@@ -16,6 +15,24 @@ from slugify import slugify
 base_types = {"str", "int", "float", "bool", "list[str]", "dict(str, str)", "object"}
 
 V1KubernetesModel = TypeVar("V1KubernetesModel")
+
+
+class _CappedSet(set):
+    """
+    A set with a bounded size.
+    """
+
+    def __init__(self, maxsize):
+        super().__init__()
+        self.maxsize = maxsize
+
+    def add(self, value):
+        """
+        Add to the set and maintain its max size.
+        """
+        if len(self) >= self.maxsize:
+            self.pop()
+        super().add(value)
 
 
 def convert_manifest_to_model(
@@ -223,9 +240,7 @@ class ResilientStreamWatcher:
         )
         self.reconnect_exceptions = tuple(reconnect_exceptions)
 
-    def stream(
-        self, func: Callable, *args, cache: Optional[FIFOCache] = None, **kwargs
-    ):
+    def stream(self, func: Callable, *args, cache: Optional[Set] = None, **kwargs):
         """
         A private method for streaming API objects or logs from a Kubernetes
         client function. This method will reconnect the stream on certain
@@ -240,8 +255,8 @@ class ResilientStreamWatcher:
             func: A Kubernetes client function to call which produces a stream
                 of logs
             *args: Positional arguments to pass to `func`
-            cache: A keyward argument thaht provides a way to deduplicate
-                results on reconnects
+            cache: A keyward argument that provides a way to deduplicate
+                results on reconnects and bound
             **kwargs: Keyword arguments to pass to `func`
 
         Returns:
@@ -259,7 +274,7 @@ class ResilientStreamWatcher:
                     ):
                         uid = event["object"].metadata.uid
                         if uid not in cache:
-                            cache[uid] = None
+                            cache.add(uid)
                             yield event
                     else:
                         yield event
@@ -285,7 +300,7 @@ class ResilientStreamWatcher:
 
     def api_object_stream(self, func: Callable, *args, **kwargs):
         """
-        Create a FIFOCache to maintain a record of API objects that have been
+        Create a cache to maintain a record of API objects that have been
         seen. This is useful because `_stream` will reconnect a stream on
         `self.reconnect_exceptions` and on reconnect it will restart streaming all
         objects. This cache prevents the same object from being yielded twice.
@@ -299,7 +314,7 @@ class ResilientStreamWatcher:
         Returns:
             An iterator of API objects
         """
-        cache = FIFOCache(maxsize=self.max_cache_size)
+        cache = _CappedSet(self.max_cache_size)
         yield from self.stream(func, *args, cache=cache, **kwargs)
 
     def stop(self):
