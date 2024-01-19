@@ -223,7 +223,7 @@ class ResilientStreamWatcher:
         )
         self.reconnect_exceptions = tuple(reconnect_exceptions)
 
-    def _stream(self, cache: Optional[FIFOCache], func: Callable, *args, **kwargs):
+    def _stream(self, func: Callable, *args, cache: Optional[FIFOCache] = None, **kwargs):
         """
         A private method for streaming API objects or logs from a Kubernetes
         client function. This method will reconnect the stream on certain
