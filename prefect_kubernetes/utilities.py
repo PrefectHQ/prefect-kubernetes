@@ -242,7 +242,7 @@ class ResilientStreamWatcher:
 
     def stream(self, func: Callable, *args, cache: Optional[Set] = None, **kwargs):
         """
-        A private method for streaming API objects or logs from a Kubernetes
+        A method for streaming API objects or logs from a Kubernetes
         client function. This method will reconnect the stream on certain
         configurable exceptions and deduplicate results on reconnects if
         streaming API objects and a cache is provided.
