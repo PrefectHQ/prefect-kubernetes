@@ -2559,7 +2559,7 @@ class TestKubernetesWorker:
 
         assert result.status_code == -1
 
-    class __TestKillInfrastructure:
+    class TestKillInfrastructure:
         async def test_kill_infrastructure_calls_delete_namespaced_job(
             self,
             default_configuration,
