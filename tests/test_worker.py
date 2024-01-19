@@ -117,7 +117,6 @@ def mock_core_client(monkeypatch, mock_cluster_config):
 
     @contextmanager
     def get_core_client(*args, **kwargs):
-        print("We've yielded a core client mock")
         yield mock
 
     monkeypatch.setattr(
