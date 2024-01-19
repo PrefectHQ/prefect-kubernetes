@@ -301,7 +301,7 @@ class ResilientStreamWatcher:
     def api_object_stream(self, func: Callable, *args, **kwargs):
         """
         Create a cache to maintain a record of API objects that have been
-        seen. This is useful because `_stream` will reconnect a stream on
+        seen. This is useful because `stream` will reconnect a stream on
         `self.reconnect_exceptions` and on reconnect it will restart streaming all
         objects. This cache prevents the same object from being yielded twice.
 
