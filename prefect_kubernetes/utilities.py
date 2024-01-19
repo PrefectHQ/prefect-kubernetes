@@ -247,9 +247,9 @@ class ResilientStreamWatcher:
         configurable exceptions and deduplicate results on reconnects if
         streaming API objects and a cache is provided.
 
-        Note that client functions that produce a stream of logs will
+        Note that client functions that produce a stream will
         restart a stream from the beginning of the log's history on reconnect.
-        It is possible for duplicate logs to be yielded.
+        If a cache is not provided, it is possible for duplicate entries to be yielded.
 
         Args:
             func: A Kubernetes client function to call which produces a stream
