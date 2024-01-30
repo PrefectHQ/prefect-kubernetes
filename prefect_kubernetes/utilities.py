@@ -1,5 +1,6 @@
 """ Utilities for working with the Python Kubernetes API. """
 import logging
+import socket
 import sys
 import time
 from pathlib import Path
@@ -44,7 +45,6 @@ def enable_socket_keep_alive(client: ApiClient) -> None:
     kubernetes is using internally offer the functionality to enable keep-alive
     messages. Thus the flags are added to be used on the underlying sockets.
     """
-    import socket
 
     socket_options = [(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)]
 
