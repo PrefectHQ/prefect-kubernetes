@@ -1,13 +1,14 @@
 """ Utilities for working with the Python Kubernetes API. """
 import logging
+import sys
 import time
 from pathlib import Path
 from typing import Callable, List, Optional, Set, Type, TypeVar, Union
-import sys
 
 import urllib3
 from kubernetes import watch
-from kubernetes.client import models as k8s_models, ApiClient
+from kubernetes.client import ApiClient
+from kubernetes.client import models as k8s_models
 from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
 from slugify import slugify
 
@@ -39,13 +40,9 @@ class _CappedSet(set):
 def enable_socket_keep_alive(client: ApiClient) -> None:
     """
     Setting the keep-alive flags on the kubernetes client object.
-    Unfortunately neither the kubernetes library nor the urllib3 library which kubernetes is using
-    internally offer the functionality to enable keep-alive messages. Thus the flags are added to
-    be used on the underlying sockets.
-
-    Args:
-        - client (KubernetesClient): the kubernetes client object on which the keep-alive should be
-            enabled
+    Unfortunately neither the kubernetes library nor the urllib3 library which
+    kubernetes is using internally offer the functionality to enable keep-alive
+    messages. Thus the flags are added to be used on the underlying sockets.
     """
     import socket
 

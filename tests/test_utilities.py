@@ -1,6 +1,4 @@
 import logging
-import socket
-import sys
 import uuid
 from typing import Type
 from unittest import mock

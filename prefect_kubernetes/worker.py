@@ -110,7 +110,6 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
-import sys
 
 import anyio.abc
 from kubernetes.client.exceptions import ApiException
