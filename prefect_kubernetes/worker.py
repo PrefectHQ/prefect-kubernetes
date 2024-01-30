@@ -523,9 +523,9 @@ class KubernetesWorkerVariables(BaseVariables):
     tcp_keepalive: bool = Field(
         default=True,
         description=(
-            "Maintain connections to the Kubernetes API by sending ",
-            "keep-alive messages. Recommended when using cloud load ",
-            "balancers or firewalls.",
+            "Maintain connections to the Kubernetes API by sending "
+            "keep-alive messages. Recommended when using cloud load "
+            "balancers or firewalls."
         ),
     )
 
