@@ -9,7 +9,6 @@ from prefect.events import RelatedResource
 from prefect.utilities.importtools import lazy_import
 
 from prefect_kubernetes.events import EVICTED_REASONS, KubernetesEventsReplicator
-from prefect_kubernetes.utilities import ResilientStreamWatcher
 
 kubernetes = lazy_import("kubernetes")
 
@@ -170,8 +169,8 @@ def test_lifecycle(replicator):
 
 
 def test_replicate_successful_pod_events(replicator, successful_pod_stream):
-    mock_watch = MagicMock(spec=ResilientStreamWatcher)
-    mock_watch.api_object_stream.return_value = successful_pod_stream
+    mock_watch = MagicMock(spec=kubernetes.watch.Watch)
+    mock_watch.stream.return_value = successful_pod_stream
 
     event_count = 0
 
@@ -258,12 +257,12 @@ def test_replicate_successful_pod_events(replicator, successful_pod_stream):
             ),
         ]
     )
-    # mock_watch.stop.assert_called_once_with()
+    mock_watch.stop.assert_called_once_with()
 
 
 def test_replicate_failed_pod_events(replicator, failed_pod_stream):
-    mock_watch = MagicMock(spec=ResilientStreamWatcher)
-    mock_watch.api_object_stream.return_value = failed_pod_stream
+    mock_watch = MagicMock(spec=kubernetes.watch.Watch)
+    mock_watch.stream.return_value = failed_pod_stream
 
     event_count = 0
 
@@ -354,8 +353,8 @@ def test_replicate_failed_pod_events(replicator, failed_pod_stream):
 
 
 def test_replicate_evicted_pod_events(replicator, evicted_pod_stream):
-    mock_watch = MagicMock(spec=ResilientStreamWatcher)
-    mock_watch.api_object_stream.return_value = evicted_pod_stream
+    mock_watch = MagicMock(spec=kubernetes.watch.Watch)
+    mock_watch.stream.return_value = evicted_pod_stream
 
     event_count = 0
 

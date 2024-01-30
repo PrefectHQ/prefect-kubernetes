@@ -144,7 +144,6 @@ from typing_extensions import Literal
 
 from prefect_kubernetes.events import KubernetesEventsReplicator
 from prefect_kubernetes.utilities import (
-    ResilientStreamWatcher,
     _slugify_label_key,
     _slugify_label_value,
     _slugify_name,
@@ -577,6 +576,7 @@ class KubernetesWorker(BaseWorker):
                 task_status.started(pid)
 
             # Monitor the job until completion
+
             events_replicator = KubernetesEventsReplicator(
                 client=client,
                 job_name=job.metadata.name,
@@ -586,7 +586,6 @@ class KubernetesWorker(BaseWorker):
                     configuration=configuration
                 ),
                 timeout_seconds=configuration.pod_watch_timeout_seconds,
-                logger=logger,
             )
 
             with events_replicator:
@@ -919,16 +918,15 @@ class KubernetesWorker(BaseWorker):
 
         if configuration.stream_output:
             with self._get_core_client(client) as core_client:
-                watch = ResilientStreamWatcher(logger=logger)
+                logs = core_client.read_namespaced_pod_log(
+                    pod.metadata.name,
+                    configuration.namespace,
+                    follow=True,
+                    _preload_content=False,
+                    container="prefect-job",
+                )
                 try:
-                    for log in watch.stream(
-                        core_client.read_namespaced_pod_log,
-                        pod.metadata.name,
-                        configuration.namespace,
-                        follow=True,
-                        _preload_content=False,
-                        container="prefect-job",
-                    ):
+                    for log in logs.stream():
                         print(log.decode().rstrip())
 
                         # Check if we have passed the deadline and should stop streaming
@@ -938,6 +936,7 @@ class KubernetesWorker(BaseWorker):
                         )
                         if deadline and remaining_time <= 0:
                             break
+
                 except Exception:
                     logger.warning(
                         (
@@ -966,7 +965,7 @@ class KubernetesWorker(BaseWorker):
                     )
                     return -1
 
-                watch = ResilientStreamWatcher(logger=logger)
+                watch = kubernetes.watch.Watch()
                 # The kubernetes library will disable retries if the timeout kwarg is
                 # present regardless of the value so we do not pass it unless given
                 # https://github.com/kubernetes-client/python/blob/84f5fea2a3e4b161917aa597bf5e5a1d95e24f5a/kubernetes/base/watch/watch.py#LL160
@@ -974,7 +973,7 @@ class KubernetesWorker(BaseWorker):
                     {"timeout_seconds": remaining_time} if deadline else {}
                 )
 
-                for event in watch.api_object_stream(
+                for event in watch.stream(
                     func=batch_client.list_namespaced_job,
                     field_selector=f"metadata.name={job_name}",
                     namespace=configuration.namespace,
@@ -1074,12 +1073,12 @@ class KubernetesWorker(BaseWorker):
         """Get the first running pod for a job."""
         from kubernetes.client.models import V1Pod
 
-        watch = ResilientStreamWatcher(logger=logger)
+        watch = kubernetes.watch.Watch()
         logger.debug(f"Job {job_name!r}: Starting watch for pod start...")
         last_phase = None
         last_pod_name: Optional[str] = None
         with self._get_core_client(client) as core_client:
-            for event in watch.api_object_stream(
+            for event in watch.stream(
                 func=core_client.list_namespaced_pod,
                 namespace=configuration.namespace,
                 label_selector=f"job-name={job_name}",
