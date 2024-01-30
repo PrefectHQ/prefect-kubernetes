@@ -3,10 +3,11 @@ import logging
 import time
 from pathlib import Path
 from typing import Callable, List, Optional, Set, Type, TypeVar, Union
+import sys
 
 import urllib3
 from kubernetes import watch
-from kubernetes.client import models as k8s_models
+from kubernetes.client import models as k8s_models, ApiClient
 from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
 from slugify import slugify
 
@@ -33,6 +34,41 @@ class _CappedSet(set):
         if len(self) >= self.maxsize:
             self.pop()
         super().add(value)
+
+
+def enable_socket_keep_alive(client: ApiClient) -> None:
+    """
+    Setting the keep-alive flags on the kubernetes client object.
+    Unfortunately neither the kubernetes library nor the urllib3 library which kubernetes is using
+    internally offer the functionality to enable keep-alive messages. Thus the flags are added to
+    be used on the underlying sockets.
+
+    Args:
+        - client (KubernetesClient): the kubernetes client object on which the keep-alive should be
+            enabled
+    """
+    import socket
+
+    socket_options = [(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)]
+
+    if hasattr(socket, "TCP_KEEPINTVL"):
+        socket_options.append((socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 30))
+
+    if hasattr(socket, "TCP_KEEPCNT"):
+        socket_options.append((socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 6))
+
+    if hasattr(socket, "TCP_KEEPIDLE"):
+        socket_options.append((socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 6))
+
+    if sys.platform == "darwin":
+        # TCP_KEEP_ALIVE not available on socket module in macOS, but defined in
+        # https://github.com/apple/darwin-xnu/blob/2ff845c2e033bd0ff64b5b6aa6063a1f8f65aa32/bsd/netinet/tcp.h#L215
+        TCP_KEEP_ALIVE = 0x10
+        socket_options.append((socket.IPPROTO_TCP, TCP_KEEP_ALIVE, 30))
+
+    client.rest_client.pool_manager.connection_pool_kw[
+        "socket_options"
+    ] = socket_options
 
 
 def convert_manifest_to_model(

@@ -110,6 +110,7 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+import sys
 
 import anyio.abc
 from kubernetes.client.exceptions import ApiException
@@ -148,6 +149,7 @@ from prefect_kubernetes.utilities import (
     _slugify_label_key,
     _slugify_label_value,
     _slugify_name,
+    enable_socket_keep_alive,
 )
 
 if TYPE_CHECKING:
@@ -258,6 +260,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
     job_watch_timeout_seconds: Optional[int] = Field(default=None)
     pod_watch_timeout_seconds: int = Field(default=60)
     stream_output: bool = Field(default=True)
+    tcp_keepalive: bool = Field(default=True)
 
     # internal-use only
     _api_dns_name: Optional[str] = None  # Replaces 'localhost' in API URL
@@ -517,6 +520,14 @@ class KubernetesWorkerVariables(BaseVariables):
         default=None,
         description="The Kubernetes cluster config to use for job creation.",
     )
+    tcp_keepalive: bool = Field(
+        default=True,
+        description=(
+            "Maintain connections to the Kubernetes API by sending ",
+            "keep-alive messages. Recommended when using cloud load ",
+            "balancers or firewalls.",
+        ),
+    )
 
 
 class KubernetesWorkerResult(BaseWorkerResult):
@@ -690,7 +701,7 @@ class KubernetesWorker(BaseWorker):
 
         # if a hard-coded cluster config is provided, use it
         if configuration.cluster_config:
-            return kubernetes.config.new_client_from_config_dict(
+            client = kubernetes.config.new_client_from_config_dict(
                 config_dict=configuration.cluster_config.config,
                 context=configuration.cluster_config.context_name,
             )
@@ -702,9 +713,14 @@ class KubernetesWorker(BaseWorker):
             try:
                 kubernetes.config.load_incluster_config()
                 config = kubernetes.client.Configuration.get_default_copy()
-                return kubernetes.client.ApiClient(configuration=config)
+                client = kubernetes.client.ApiClient(configuration=config)
             except kubernetes.config.ConfigException:
-                return kubernetes.config.new_client_from_config()
+                client = kubernetes.config.new_client_from_config()
+
+        if configuration.tcp_keepalive:
+            enable_socket_keep_alive(client)
+
+        return client
 
     def _replace_api_key_with_secret(
         self, configuration: KubernetesWorkerJobConfiguration, client: "ApiClient"
