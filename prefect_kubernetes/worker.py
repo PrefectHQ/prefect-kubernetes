@@ -708,7 +708,7 @@ class KubernetesWorker(BaseWorker):
                 client = kubernetes.config.new_client_from_config()
 
         if os.environ.get(
-            "PREFECT_KUBERNETES_WORKER_ADD_TCP_KEEPALIVE", ""
+            "PREFECT_KUBERNETES_WORKER_ADD_TCP_KEEPALIVE", "TRUE"
         ).strip().lower() in ("true", "1"):
             enable_socket_keep_alive(client)
 
