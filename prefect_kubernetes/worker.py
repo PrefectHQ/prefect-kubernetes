@@ -259,7 +259,6 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
     job_watch_timeout_seconds: Optional[int] = Field(default=None)
     pod_watch_timeout_seconds: int = Field(default=60)
     stream_output: bool = Field(default=True)
-    tcp_keepalive: bool = Field(default=True)
 
     # internal-use only
     _api_dns_name: Optional[str] = None  # Replaces 'localhost' in API URL
@@ -519,14 +518,6 @@ class KubernetesWorkerVariables(BaseVariables):
         default=None,
         description="The Kubernetes cluster config to use for job creation.",
     )
-    tcp_keepalive: bool = Field(
-        default=True,
-        description=(
-            "Maintain connections to the Kubernetes API by sending "
-            "keep-alive messages. Recommended when using cloud load "
-            "balancers or firewalls."
-        ),
-    )
 
 
 class KubernetesWorkerResult(BaseWorkerResult):
@@ -716,7 +707,7 @@ class KubernetesWorker(BaseWorker):
             except kubernetes.config.ConfigException:
                 client = kubernetes.config.new_client_from_config()
 
-        if configuration.tcp_keepalive:
+        if os.environ.get("TCP_KEEPALIVE", "").strip().lower() in ("true", "1"):
             enable_socket_keep_alive(client)
 
         return client
