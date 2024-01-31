@@ -201,7 +201,7 @@ from_template_and_values_cases = [
             stream_output=True,
         ),
         lambda flow_run, deployment, flow: KubernetesWorkerJobConfiguration(
-            command="python -m prefect.engine",
+            command="prefect flow-run execute",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
                 "PREFECT__FLOW_RUN_ID": str(flow_run.id),
@@ -259,7 +259,11 @@ from_template_and_values_cases = [
                                         },
                                     ],
                                     "image": get_prefect_image_name(),
-                                    "args": ["python", "-m", "prefect.engine"],
+                                    "args": [
+                                        "prefect",
+                                        "flow-run",
+                                        "execute",
+                                    ],
                                 }
                             ],
                         }
@@ -478,7 +482,7 @@ from_template_and_values_cases = [
             stream_output=True,
         ),
         lambda flow_run, deployment, flow: KubernetesWorkerJobConfiguration(
-            command="python -m prefect.engine",
+            command="prefect flow-run execute",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
                 "PREFECT__FLOW_RUN_ID": str(flow_run.id),
@@ -545,7 +549,11 @@ from_template_and_values_cases = [
                                         },
                                     ],
                                     "image": get_prefect_image_name(),
-                                    "args": ["python", "-m", "prefect.engine"],
+                                    "args": [
+                                        "prefect",
+                                        "flow-run",
+                                        "execute",
+                                    ],
                                 }
                             ],
                         }
@@ -1211,7 +1219,7 @@ class TestKubernetesWorkerJobConfiguration:
 
         # the prefect-job container is still populated
         assert pod["containers"][0]["name"] == "prefect-job"
-        assert pod["containers"][0]["args"] == ["python", "-m", "prefect.engine"]
+        assert pod["containers"][0]["args"] == ["prefect", "flow-run", "execute"]
 
         assert pod["containers"][1] == {
             "name": "my-sidecar",
