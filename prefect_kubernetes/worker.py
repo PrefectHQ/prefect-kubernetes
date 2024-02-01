@@ -148,6 +148,7 @@ from prefect_kubernetes.utilities import (
     _slugify_label_key,
     _slugify_label_value,
     _slugify_name,
+    enable_socket_keep_alive,
 )
 
 if TYPE_CHECKING:
@@ -690,7 +691,7 @@ class KubernetesWorker(BaseWorker):
 
         # if a hard-coded cluster config is provided, use it
         if configuration.cluster_config:
-            return kubernetes.config.new_client_from_config_dict(
+            client = kubernetes.config.new_client_from_config_dict(
                 config_dict=configuration.cluster_config.config,
                 context=configuration.cluster_config.context_name,
             )
@@ -702,9 +703,16 @@ class KubernetesWorker(BaseWorker):
             try:
                 kubernetes.config.load_incluster_config()
                 config = kubernetes.client.Configuration.get_default_copy()
-                return kubernetes.client.ApiClient(configuration=config)
+                client = kubernetes.client.ApiClient(configuration=config)
             except kubernetes.config.ConfigException:
-                return kubernetes.config.new_client_from_config()
+                client = kubernetes.config.new_client_from_config()
+
+        if os.environ.get(
+            "PREFECT_KUBERNETES_WORKER_ADD_TCP_KEEPALIVE", "TRUE"
+        ).strip().lower() in ("true", "1"):
+            enable_socket_keep_alive(client)
+
+        return client
 
     def _replace_api_key_with_secret(
         self, configuration: KubernetesWorkerJobConfiguration, client: "ApiClient"

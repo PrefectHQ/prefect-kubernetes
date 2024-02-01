@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- A `ResilientWatcher` utility class to reconnect Kubernetes client streams on `ProtocolErrors` - [#107](https://github.com/PrefectHQ/prefect-kubernetes/pull/107)
+- TCP keepalive option for preventing closure of inactive connections - [#108](https://github.com/PrefectHQ/prefect-kubernetes/pull/108)
 
 ### Changed
 
@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## 0.3.3
+
+Released January 23rd, 2024.
+
+### Added
+
+- A `ResilientWatcher` utility class to reconnect Kubernetes client streams on `ProtocolErrors` - [#107](https://github.com/PrefectHQ/prefect-kubernetes/pull/107)
 
 ## 0.3.2
 
@@ -55,7 +63,6 @@ Released September 18th, 2023.
 - Logging recent job events when pod scheduling fails - [#88](https://github.com/PrefectHQ/prefect-kubernetes/pull/88)
 - Event logging for pod events - [#91](https://github.com/PrefectHQ/prefect-kubernetes/pull/91)
 
-
 ### Fixed
 
 - `env` handling to allow hard coding of environment variable in base job template - [#94](https://github.com/PrefectHQ/prefect-kubernetes/pull/94)
@@ -65,6 +72,7 @@ Released September 18th, 2023.
 Released July 20th, 2023.
 
 ### Changed
+
 - Promoted workers to GA, removed beta disclaimers
 
 ## 0.2.10
@@ -99,6 +107,7 @@ Released May 4th, 2023.
 ### Added
 
 - Fixed issue where `KubernetesEventReplicator` would not shutdown after a flow-run was completed resulting in new flow-runs not being picked up and the worker hanging on exit. - [#57](https://github.com/PrefectHQ/prefect-kubernetes/pull/57)
+
 ## 0.2.6
 
 Released April 28th, 2023.
@@ -113,7 +122,7 @@ Released April 20th, 2023.
 
 ### Added
 
-- `kill_infrastructure` method on `KubernetesWorker` which stops jobs for cancelled flow runs  - [#52](https://github.com/PrefectHQ/prefect-kubernetes/pull/52)
+- `kill_infrastructure` method on `KubernetesWorker` which stops jobs for cancelled flow runs - [#52](https://github.com/PrefectHQ/prefect-kubernetes/pull/52)
 
 ## 0.2.4
 
@@ -149,6 +158,7 @@ Released March 24, 2023.
 Released February 17, 2023.
 
 ### Added
+
 - Sync compatibility for block method calls used by `run_namespaced_job` - [#34](https://github.com/PrefectHQ/prefect-kubernetes/pull/34)
 
 ## 0.2.0
@@ -156,6 +166,7 @@ Released February 17, 2023.
 Released December 23, 2022.
 
 ### Added
+
 - `KubernetesJob` block for running a Kubernetes job from a manifest - [#28](https://github.com/PrefectHQ/prefect-kubernetes/pull/28)
 - `run_namespaced_job` flow allowing easy execution of a well-specified `KubernetesJob` block on a cluster specified by `KubernetesCredentials` - [#28](https://github.com/PrefectHQ/prefect-kubernetes/pull/28)
 - `convert_manifest_to_model` utility function for converting a Kubernetes manifest to a model object - [#28](https://github.com/PrefectHQ/prefect-kubernetes/pull/28)
@@ -163,7 +174,9 @@ Released December 23, 2022.
 ## 0.1.0
 
 Released November 21, 2022.
+
 ### Added
+
 - `KubernetesCredentials` block for generating authenticated Kubernetes clients - [#19](https://github.com/PrefectHQ/prefect-kubernetes/pull/19)
 - Tasks for interacting with `job` resources: `create_namespaced_job`, `delete_namespaced_job`, `list_namespaced_job`, `patch_namespaced_job`, `read_namespaced_job`, `replace_namespaced_job` - [#19](https://github.com/PrefectHQ/prefect-kubernetes/pull/19)
 - Tasks for interacting with `pod` resources: `create_namespaced_pod`, `delete_namespaced_pod`, `list_namespaced_pod`, `patch_namespaced_pod`, `read_namespaced_pod`, `read_namespaced_pod_logs`, `replace_namespaced_pod` - [#21](https://github.com/PrefectHQ/prefect-kubernetes/pull/21)
@@ -173,4 +186,5 @@ Released November 21, 2022.
 - Tasks for interacting with `deployment` resources: `create_namespaced_deployment`, `delete_namespaced_deployment`, `list_namespaced_deployment`, `patch_namespaced_deployment`, `read_namespaced_deployment`, `replace_namespaced_deployment` - [#25](https://github.com/PrefectHQ/prefect-kubernetes/pull/25)
 
 ### Changed
+
 - `KubernetesCredentials` block to use a single `get_client` method capable of creating all resource-specific client types - [#21](https://github.com/PrefectHQ/prefect-kubernetes/pull/21)
