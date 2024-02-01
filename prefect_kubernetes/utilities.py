@@ -1,13 +1,9 @@
 """ Utilities for working with the Python Kubernetes API. """
-import logging
 import socket
 import sys
-import time
 from pathlib import Path
-from typing import Callable, List, Optional, Set, Type, TypeVar, Union
+from typing import Optional, TypeVar, Union
 
-import urllib3
-from kubernetes import watch
 from kubernetes.client import ApiClient
 from kubernetes.client import models as k8s_models
 from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
@@ -18,24 +14,6 @@ from slugify import slugify
 base_types = {"str", "int", "float", "bool", "list[str]", "dict(str, str)", "object"}
 
 V1KubernetesModel = TypeVar("V1KubernetesModel")
-
-
-class _CappedSet(set):
-    """
-    A set with a bounded size.
-    """
-
-    def __init__(self, maxsize):
-        super().__init__()
-        self.maxsize = maxsize
-
-    def add(self, value):
-        """
-        Add to the set and maintain its max size.
-        """
-        if len(self) >= self.maxsize:
-            self.pop()
-        super().add(value)
 
 
 def enable_socket_keep_alive(client: ApiClient) -> None:
@@ -235,123 +213,3 @@ def _slugify_label_value(value: str, max_length: int = 63) -> str:
     # Kubernetes to throw the validation error
 
     return slug
-
-
-class ResilientStreamWatcher:
-    """
-    A wrapper class around kuberenetes.watch.Watch that will reconnect on
-    certain exceptions.
-    """
-
-    DEFAULT_RECONNECT_EXCEPTIONS = (urllib3.exceptions.ProtocolError,)
-
-    def __init__(
-        self,
-        logger: Optional[logging.Logger] = None,
-        max_cache_size: int = 50000,
-        reconnect_exceptions: Optional[List[Type[Exception]]] = None,
-    ) -> None:
-        """
-        A utility class for managing streams of Kuberenetes API objects and logs
-
-        Attributes:
-            logger: A logger which will be used interally to log errors
-            max_cache_size: The maximum number of API objects to track in an
-                internal cache to help deduplicate results on stream reconnects
-            reconnect_exceptions: A list of exceptions that will cause the stream
-                to reconnect.
-        """
-
-        self.max_cache_size = max_cache_size
-        self.logger = logger
-        self.watch = watch.Watch()
-
-        reconnect_exceptions = (
-            reconnect_exceptions
-            if reconnect_exceptions is not None
-            else self.DEFAULT_RECONNECT_EXCEPTIONS
-        )
-        self.reconnect_exceptions = tuple(reconnect_exceptions)
-
-    def stream(self, func: Callable, *args, cache: Optional[Set] = None, **kwargs):
-        """
-        A method for streaming API objects or logs from a Kubernetes
-        client function. This method will reconnect the stream on certain
-        configurable exceptions and deduplicate results on reconnects if
-        streaming API objects and a cache is provided.
-
-        Note that client functions that produce a stream will
-        restart a stream from the beginning of the log's history on reconnect.
-        If a cache is not provided, it is possible for duplicate entries to be yielded.
-
-        Args:
-            func: A Kubernetes client function to call which produces a stream
-                of logs
-            *args: Positional arguments to pass to `func`
-            cache: A keyward argument that provides a way to deduplicate
-                results on reconnects and bound
-            **kwargs: Keyword arguments to pass to `func`
-
-        Returns:
-            An iterator of log
-        """
-        keep_streaming = True
-        while keep_streaming:
-            try:
-                for event in self.watch.stream(func, *args, **kwargs):
-                    # check that we want to and can track this object
-                    if (
-                        cache is not None
-                        and isinstance(event, dict)
-                        and "object" in event
-                    ):
-                        uid = event["object"].metadata.uid
-                        if uid not in cache:
-                            cache.add(uid)
-                            yield event
-                    else:
-                        yield event
-                else:
-                    # Case: we've finished iterating
-                    keep_streaming = False
-            except self.reconnect_exceptions:
-                # Case: We've hit an exception we're willing to retry on
-                if self.logger:
-                    self.logger.error("Unable to connect, retrying...", exc_info=True)
-                time.sleep(1)
-            except Exception:
-                # Case: We hit an exception we're unwilling to retry on
-                if self.logger:
-                    self.logger.exception(
-                        f"Unexpected error while streaming {func.__name__}"
-                    )
-                keep_streaming = False
-                self.stop()
-                raise
-
-        self.stop()
-
-    def api_object_stream(self, func: Callable, *args, **kwargs):
-        """
-        Create a cache to maintain a record of API objects that have been
-        seen. This is useful because `stream` will reconnect a stream on
-        `self.reconnect_exceptions` and on reconnect it will restart streaming all
-        objects. This cache prevents the same object from being yielded twice.
-
-        Args:
-            func: A Kubernetes client function to call which produces a stream of API o
-                bjects
-            *args: Positional arguments to pass to `func`
-            **kwargs: Keyword arguments to pass to `func`
-
-        Returns:
-            An iterator of API objects
-        """
-        cache = _CappedSet(self.max_cache_size)
-        yield from self.stream(func, *args, cache=cache, **kwargs)
-
-    def stop(self):
-        """
-        Shut down the internal Watch object.
-        """
-        self.watch.stop()

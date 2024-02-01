@@ -2,11 +2,11 @@
 from typing import Any, Callable, Dict, Optional, Union
 
 from kubernetes.client.models import V1DeleteOptions, V1Pod, V1PodList
+from kubernetes.watch import Watch
 from prefect import task
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 
 from prefect_kubernetes.credentials import KubernetesCredentials
-from prefect_kubernetes.utilities import ResilientStreamWatcher
 
 
 @task
@@ -45,6 +45,7 @@ async def create_namespaced_pod(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
+
         return await run_sync_in_worker_thread(
             core_v1_client.create_namespaced_pod,
             namespace=namespace,
@@ -92,6 +93,7 @@ async def delete_namespaced_pod(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
+
         return await run_sync_in_worker_thread(
             core_v1_client.delete_namespaced_pod,
             pod_name,
@@ -133,6 +135,7 @@ async def list_namespaced_pod(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
+
         return await run_sync_in_worker_thread(
             core_v1_client.list_namespaced_pod, namespace=namespace, **kube_kwargs
         )
@@ -177,6 +180,7 @@ async def patch_namespaced_pod(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
+
         return await run_sync_in_worker_thread(
             core_v1_client.patch_namespaced_pod,
             name=pod_name,
@@ -220,6 +224,7 @@ async def read_namespaced_pod(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
+
         return await run_sync_in_worker_thread(
             core_v1_client.read_namespaced_pod,
             name=pod_name,
@@ -276,11 +281,11 @@ async def read_namespaced_pod_log(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
+
         if print_func is not None:
             # should no longer need to manually refresh on ApiException.status == 410
             # as of https://github.com/kubernetes-client/python-base/pull/133
-            watcher = ResilientStreamWatcher()
-            for log_line in watcher.stream(
+            for log_line in Watch().stream(
                 core_v1_client.read_namespaced_pod_log,
                 name=pod_name,
                 namespace=namespace,
@@ -336,6 +341,7 @@ async def replace_namespaced_pod(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
+
         return await run_sync_in_worker_thread(
             core_v1_client.replace_namespaced_pod,
             body=new_pod,
