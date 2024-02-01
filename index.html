@@ -114,7 +114,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="." title="prefect-kubernetes" class="md-header__button md-logo" aria-label="prefect-kubernetes" data-md-component="logo">
       
-  <img src="img/prefect-logo-mark-solid-white-500.png" alt="logo">
+  <img src="img/prefect-logo-mark.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -256,7 +256,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="." title="prefect-kubernetes" class="md-nav__button md-logo" aria-label="prefect-kubernetes" data-md-component="logo">
       
-  <img src="img/prefect-logo-mark-solid-white-500.png" alt="logo">
+  <img src="img/prefect-logo-mark.png" alt="logo">
 
     </a>
     prefect-kubernetes
@@ -805,18 +805,17 @@
 <h1 id="prefect-kubernetes">prefect-kubernetes</h1>
 <p align="center">
     <a href="https://pypi.python.org/pypi/prefect-kubernetes/" alt="PyPI version">
-        <img alt="PyPI" src="https://img.shields.io/pypi/v/prefect-kubernetes?color=0052FF&labelColor=090422"></a>
+        <img alt="PyPI" src="https://img.shields.io/pypi/v/prefect-kubernetes?color=26272B&labelColor=090422"></a>
     <a href="https://github.com/PrefectHQ/prefect-kubernetes/" alt="Stars">
-        <img src="https://img.shields.io/github/stars/PrefectHQ/prefect-kubernetes?color=0052FF&labelColor=090422" /></a>
+        <img src="https://img.shields.io/github/stars/PrefectHQ/prefect-kubernetes?color=26272B&labelColor=090422" /></a>
     <a href="https://pypistats.org/packages/prefect-kubernetes/" alt="Downloads">
-        <img src="https://img.shields.io/pypi/dm/prefect-kubernetes?color=0052FF&labelColor=090422" /></a>
+        <img src="https://img.shields.io/pypi/dm/prefect-kubernetes?color=26272B&labelColor=090422" /></a>
     <a href="https://github.com/PrefectHQ/prefect-kubernetes/pulse" alt="Activity">
-        <img src="https://img.shields.io/github/commit-activity/m/PrefectHQ/prefect-kubernetes?color=0052FF&labelColor=090422" /></a>
+        <img src="https://img.shields.io/github/commit-activity/m/PrefectHQ/prefect-kubernetes?color=26272B&labelColor=090422" /></a>
     <br>
     <a href="https://prefect-community.slack.com" alt="Slack">
-        <img src="https://img.shields.io/badge/slack-join_community-red.svg?color=0052FF&labelColor=090422&logo=slack" /></a>
-    <a href="https://discourse.prefect.io/" alt="Discourse">
-        <img src="https://img.shields.io/badge/discourse-browse_forum-red.svg?color=0052FF&labelColor=090422&logo=discourse" /></a>
+        <img src="https://img.shields.io/badge/slack-join_community-red.svg?color=26272B&labelColor=090422&logo=slack" /></a>
+
 </p>
 
 <h2 id="welcome">Welcome!</h2>
@@ -829,7 +828,7 @@
 <div class="highlight"><pre><span></span><code><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>prefect-kubernetes
 <span class="w"> </span><span class="sb">```</span>
 
-Requires<span class="w"> </span>an<span class="w"> </span>installation<span class="w"> </span>of<span class="w"> </span>Python<span class="w"> </span><span class="m">3</span>.7+.
+Requires<span class="w"> </span>an<span class="w"> </span>installation<span class="w"> </span>of<span class="w"> </span>Python<span class="w"> </span><span class="m">3</span>.8+.
 
 We<span class="w"> </span>recommend<span class="w"> </span>using<span class="w"> </span>a<span class="w"> </span>Python<span class="w"> </span>virtual<span class="w"> </span>environment<span class="w"> </span>manager<span class="w"> </span>such<span class="w"> </span>as<span class="w"> </span>pipenv,<span class="w"> </span>conda<span class="w"> </span>or<span class="w"> </span>virtualenv.
 
@@ -840,7 +839,7 @@ Then,<span class="w"> </span>to<span class="w"> </span>register<span class="w"> 
 <span class="sb">```</span>bash
 prefect<span class="w"> </span>block<span class="w"> </span>register<span class="w"> </span>-m<span class="w"> </span>prefect_kubernetes
 </code></pre></div></p>
-<p>Note, to use the <code>load</code> method on Blocks, you must already have a block document <a href="https://docs.prefect.io/concepts/blocks/#saving-blocks">saved through code</a> or <a href="https://docs.prefect.io/ui/blocks/">saved through the UI</a>.</p>
+<p>Note, to use the <code>load</code> method on Blocks, you must already have a block document <a href="https://docs.prefect.io/concepts/blocks/#saving-blocks">saved through code</a> or saved through the UI.</p>
 <h3 id="example-usage">Example Usage</h3>
 <h4 id="use-with_options-to-customize-options-on-any-existing-task-or-flow">Use <code>with_options</code> to customize options on any existing task or flow</h4>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">prefect_kubernetes.flows</span> <span class="kn">import</span> <span class="n">run_namespaced_job</span>
