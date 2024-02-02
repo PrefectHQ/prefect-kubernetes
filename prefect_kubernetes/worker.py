@@ -99,6 +99,7 @@ is hard-coded and cannot be changed by deployments.
 For more information about work pools and workers,
 checkout out the [Prefect docs](https://docs.prefect.io/concepts/work-pools/).
 """
+
 import asyncio
 import base64
 import enum
@@ -109,6 +110,8 @@ import shlex
 import time
 from contextlib import contextmanager
 from datetime import datetime
+from functools import lru_cache
+from threading import Lock
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 
 import anyio.abc
@@ -124,6 +127,7 @@ from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 from prefect.utilities.dockerutils import get_prefect_image_name
+from prefect.utilities.hashing import hash_objects
 from prefect.utilities.importtools import lazy_import
 from prefect.utilities.pydantic import JsonPatch
 from prefect.utilities.templating import find_placeholders
@@ -134,6 +138,7 @@ from prefect.workers.base import (
     BaseWorkerResult,
 )
 from pydantic import VERSION as PYDANTIC_VERSION
+from pydantic import BaseModel
 
 if PYDANTIC_VERSION.startswith("2."):
     from pydantic.v1 import Field, validator
@@ -160,6 +165,63 @@ if TYPE_CHECKING:
     from prefect.client.schemas import FlowRun
 else:
     kubernetes = lazy_import("kubernetes")
+
+_LOCK = Lock()
+
+
+class HashableKubernetesClusterConfig(BaseModel):
+    """
+    A hashable version of the KubernetesClusterConfig class.
+    Used for caching.
+    """
+
+    config: dict = Field(
+        default=..., description="The entire contents of a kubectl config file."
+    )
+    context_name: str = Field(
+        default=..., description="The name of the kubectl context to use."
+    )
+
+    def __hash__(self):
+        """Make the conifg hashable."""
+        return hash(
+            (
+                hash_objects(self.config),
+                self.context_name,
+            )
+        )
+
+
+@lru_cache(maxsize=8, typed=True)
+def _get_configured_kubernetes_client_cached(
+    cluster_config: Optional[HashableKubernetesClusterConfig] = None,
+) -> Any:
+    """Returns a configured Kubernetes client."""
+    with _LOCK:
+        # if a hard-coded cluster config is provided, use it
+        if cluster_config:
+            client = kubernetes.config.new_client_from_config_dict(
+                config_dict=cluster_config.config,
+                context=cluster_config.context_name,
+            )
+        else:
+            # If no hard-coded config specified, try to load Kubernetes configuration
+            # within a cluster. If that doesn't work, try to load the configuration
+            # from the local environment, allowing any further ConfigExceptions to
+            # bubble up.
+            try:
+                kubernetes.config.load_incluster_config()
+                config = kubernetes.client.Configuration.get_default_copy()
+                client = kubernetes.client.ApiClient(configuration=config)
+            except kubernetes.config.ConfigException:
+                client = kubernetes.config.new_client_from_config()
+
+        if os.environ.get(
+            "PREFECT_KUBERNETES_WORKER_ADD_TCP_KEEPALIVE", "TRUE"
+        ).strip().lower() in ("true", "1"):
+            enable_socket_keep_alive(client)
+
+        return client
 
 
 def _get_default_job_manifest_template() -> Dict[str, Any]:
@@ -688,30 +750,15 @@ class KubernetesWorker(BaseWorker):
         Returns a configured Kubernetes client.
         """
 
-        # if a hard-coded cluster config is provided, use it
+        cluster_config = None
+
         if configuration.cluster_config:
-            client = kubernetes.config.new_client_from_config_dict(
-                config_dict=configuration.cluster_config.config,
-                context=configuration.cluster_config.context_name,
+            cluster_config = HashableKubernetesClusterConfig(
+                config=configuration.cluster_config.config,
+                context_name=configuration.cluster_config.context_name,
             )
-        else:
-            # If no hard-coded config specified, try to load Kubernetes configuration
-            # within a cluster. If that doesn't work, try to load the configuration
-            # from the local environment, allowing any further ConfigExceptions to
-            # bubble up.
-            try:
-                kubernetes.config.load_incluster_config()
-                config = kubernetes.client.Configuration.get_default_copy()
-                client = kubernetes.client.ApiClient(configuration=config)
-            except kubernetes.config.ConfigException:
-                client = kubernetes.config.new_client_from_config()
 
-        if os.environ.get(
-            "PREFECT_KUBERNETES_WORKER_ADD_TCP_KEEPALIVE", "TRUE"
-        ).strip().lower() in ("true", "1"):
-            enable_socket_keep_alive(client)
-
-        return client
+        return _get_configured_kubernetes_client_cached(cluster_config)
 
     def _replace_api_key_with_secret(
         self, configuration: KubernetesWorkerJobConfiguration, client: "ApiClient"
