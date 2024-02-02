@@ -175,8 +175,12 @@ class HashableKubernetesClusterConfig(BaseModel):
     Used for caching.
     """
 
-    config: Optional[dict] = Field(...)
-    context_name: str = Field(...)
+    config: dict = Field(
+        default=..., description="The entire contents of a kubectl config file."
+    )
+    context_name: str = Field(
+        default=..., description="The name of the kubectl context to use."
+    )
 
     def __hash__(self):
         """Make the conifg hashable."""
