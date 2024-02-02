@@ -59,7 +59,7 @@ def hash_collection(collection) -> int:
 
     Example:
         ```python
-        from prefect_aws.utilities import hash_collection
+        from prefect_kubernetes.utilities import hash_collection
 
         hash_collection({"a": 1, "b": 2})
         ```
