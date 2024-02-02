@@ -47,7 +47,10 @@ else:
 
 from prefect_kubernetes import KubernetesWorker
 from prefect_kubernetes.utilities import _slugify_label_value, _slugify_name
-from prefect_kubernetes.worker import KubernetesWorkerJobConfiguration
+from prefect_kubernetes.worker import (
+    KubernetesWorkerJobConfiguration,
+    _get_cached_kubernetes_client,
+)
 
 FAKE_CLUSTER = "fake-cluster"
 MOCK_CLUSTER_UID = "1234"
@@ -1978,6 +1981,7 @@ class TestKubernetesWorker:
         mock_cluster_config,
         mock_batch_client,
     ):
+        _get_cached_kubernetes_client.cache_clear()
         mock_watch.stream = _mock_pods_stream_that_returns_running_pod
 
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
@@ -1995,6 +1999,7 @@ class TestKubernetesWorker:
         mock_cluster_config,
         mock_batch_client,
     ):
+        _get_cached_kubernetes_client.cache_clear()
         mock_watch.stream = _mock_pods_stream_that_returns_running_pod
         mock_cluster_config.load_incluster_config.side_effect = ConfigException()
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
