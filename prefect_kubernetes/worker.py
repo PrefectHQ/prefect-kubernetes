@@ -184,11 +184,9 @@ class HashableKubernetesClusterConfig(BaseModel):
 
     def __hash__(self):
         """Make the conifg hashable."""
-        return hash(
-            (
-                hash_objects(self.config),
-                self.context_name,
-            )
+        return hash_objects(
+            self.config,
+            self.context_name,
         )
 
 
