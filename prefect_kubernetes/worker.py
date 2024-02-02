@@ -196,7 +196,7 @@ class HashableKubernetesClusterConfig(BaseModel):
 def _get_configured_kubernetes_client_cached(
     cluster_config: Optional[HashableKubernetesClusterConfig] = None,
 ) -> Any:
-    "Returns a new Kubernetes client is there is not one cached"
+    "Returns a new Kubernetes client if there is not one cached"
     with _LOCK:
         # if a hard-coded cluster config is provided, use it
         if cluster_config:
