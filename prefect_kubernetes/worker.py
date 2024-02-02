@@ -175,7 +175,7 @@ class HashableKubernetesClusterConfig(BaseModel):
     Used for caching.
     """
 
-    config: Optional[dict[str, Any]] = Field(...)
+    config: Optional[dict] = Field(...)
     context_name: str = Field(...)
 
     def __hash__(self):
