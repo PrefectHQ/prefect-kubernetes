@@ -193,7 +193,7 @@ class HashableKubernetesClusterConfig(BaseModel):
 
 
 @lru_cache(maxsize=8, typed=True)
-def _get_cached_kubernetes_client(
+def _get_configured_kubernetes_client_cached(
     cluster_config: Optional[HashableKubernetesClusterConfig] = None,
 ) -> Any:
     "Returns a new Kubernetes client is there is not one cached"
@@ -758,7 +758,7 @@ class KubernetesWorker(BaseWorker):
                 context_name=configuration.cluster_config.context_name,
             )
 
-        return _get_cached_kubernetes_client(cluster_config)
+        return _get_configured_kubernetes_client_cached(cluster_config)
 
     def _replace_api_key_with_secret(
         self, configuration: KubernetesWorkerJobConfiguration, client: "ApiClient"
