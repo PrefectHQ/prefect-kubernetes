@@ -8,7 +8,6 @@ from typing import Optional, TypeVar, Union
 from kubernetes.client import ApiClient
 from kubernetes.client import models as k8s_models
 from prefect.infrastructure.kubernetes import KubernetesJob, KubernetesManifest
-from prefect.utilities.collections import visit_collection
 from slugify import slugify
 
 # Note: `dict(str, str)` is the Kubernetes API convention for
@@ -46,38 +45,6 @@ def enable_socket_keep_alive(client: ApiClient) -> None:
     client.rest_client.pool_manager.connection_pool_kw[
         "socket_options"
     ] = socket_options
-
-
-def hash_collection(collection) -> int:
-    """Use visit_collection to transform and hash a collection.
-
-    Args:
-        collection (Any): The collection to hash.
-
-    Returns:
-        int: The hash of the transformed collection.
-
-    Example:
-        ```python
-        from prefect_kubernetes.utilities import hash_collection
-
-        hash_collection({"a": 1, "b": 2})
-        ```
-
-    """
-
-    def make_hashable(item):
-        """Make an item hashable by converting it to a tuple."""
-        if isinstance(item, dict):
-            return tuple(sorted((k, make_hashable(v)) for k, v in item.items()))
-        elif isinstance(item, list):
-            return tuple(make_hashable(v) for v in item)
-        return item
-
-    hashable_collection = visit_collection(
-        collection, visit_fn=make_hashable, return_data=True
-    )
-    return hash(hashable_collection)
 
 
 def convert_manifest_to_model(
