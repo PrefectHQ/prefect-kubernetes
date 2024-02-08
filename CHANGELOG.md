@@ -9,11 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- TCP keepalive option for preventing closure of inactive connections - [#108](https://github.com/PrefectHQ/prefect-kubernetes/pull/108)
-
 ### Changed
-
-- Update branding
 
 ### Deprecated
 
@@ -21,12 +17,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+### Security
+
+## 0.3.5
+
+Released February 8th, 2024.
+
+### Changed
+
+- Update branding [#110](https://github.com/PrefectHQ/prefect-kubernetes/pull/110)
+
+### Fixed
+
 - Added Kubernetes client caching to prevent worker from running out of sockets - [#111](https://github.com/PrefectHQ/prefect-kubernetes/pull/111)
+
+## 0.3.4
+
+Released February 1st, 2024.
+### Added
+
+- TCP keepalive option for preventing closure of inactive connections - [#108](https://github.com/PrefectHQ/prefect-kubernetes/pull/108)
+### Fixed
 
 - Reverting [#107](https://github.com/PrefectHQ/prefect-kubernetes/pull/107) to address
   deadlocking issue.
-
-### Security
 
 ## 0.3.3
 
