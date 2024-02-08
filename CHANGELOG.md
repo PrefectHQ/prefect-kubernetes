@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update branding
+- Update branding [#110](https://github.com/PrefectHQ/prefect-kubernetes/pull/110)
 
 ### Fixed
 
