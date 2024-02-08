@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.3.4
 
+Released February 1st, 2024.
 ### Added
 
 - TCP keepalive option for preventing closure of inactive connections - [#108](https://github.com/PrefectHQ/prefect-kubernetes/pull/108)
