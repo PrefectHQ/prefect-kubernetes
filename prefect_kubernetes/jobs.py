@@ -461,7 +461,8 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                     self._completed = True
                     self.logger.info(
                         f"Job {v1_job_status.metadata.name!r} has "
-                        f"completed with {v1_job_status.status.succeeded} pods.")
+                        f"completed with {v1_job_status.status.succeeded} pods."
+                    )
                 elif final_completed_conditions:
                     failed_conditions = [
                         condition.reason
@@ -469,8 +470,9 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                         if condition.type == "Failed"
                     ]
                     raise RuntimeError(
-                        f"Job {v1_job_status.metadata.name!r} failed due to {failed_conditions}, check the Kubernetes "
-                        f"pod logs for more information."
+                        f"Job {v1_job_status.metadata.name!r} failed due to "
+                        f"{failed_conditions}, check the Kubernetes pod logs "
+                        f"for more information."
                     )
 
         if self._kubernetes_job.delete_after_completion:
