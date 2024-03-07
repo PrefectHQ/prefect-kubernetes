@@ -451,14 +451,27 @@ class KubernetesJobRun(JobRun[Dict[str, Any]]):
                 await sleep(self._kubernetes_job.interval_seconds)
                 if self._kubernetes_job.timeout_seconds:
                     elapsed_time += self._kubernetes_job.interval_seconds
-            elif v1_job_status.status.failed:
-                raise RuntimeError(
-                    f"Job {v1_job_status.metadata.name!r} failed, check the "
-                    "Kubernetes pod logs for more information."
-                )
-            elif v1_job_status.status.succeeded:
-                self._completed = True
-                self.logger.info(f"Job {v1_job_status.metadata.name!r} has completed.")
+            elif v1_job_status.status.conditions:
+                final_completed_conditions = [
+                    condition.type == "Complete"
+                    for condition in v1_job_status.status.conditions
+                    if condition.status == "True"
+                ]
+                if final_completed_conditions and any(final_completed_conditions):
+                    self._completed = True
+                    self.logger.info(
+                        f"Job {v1_job_status.metadata.name!r} has "
+                        f"completed with {v1_job_status.status.succeeded} pods.")
+                elif final_completed_conditions:
+                    failed_conditions = [
+                        condition.reason
+                        for condition in v1_job_status.status.conditions
+                        if condition.type == "Failed"
+                    ]
+                    raise RuntimeError(
+                        f"Job {v1_job_status.metadata.name!r} failed due to {failed_conditions}, check the Kubernetes "
+                        f"pod logs for more information."
+                    )
 
         if self._kubernetes_job.delete_after_completion:
             await self._cleanup()
