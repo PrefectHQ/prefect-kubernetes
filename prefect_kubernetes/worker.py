@@ -145,6 +145,7 @@ if PYDANTIC_VERSION.startswith("2."):
 else:
     from pydantic import Field, validator
 
+from tenacity import retry, stop_after_attempt, wait_fixed, wait_random
 from typing_extensions import Literal
 
 from prefect_kubernetes.events import KubernetesEventsReplicator
@@ -154,7 +155,6 @@ from prefect_kubernetes.utilities import (
     _slugify_name,
     enable_socket_keep_alive,
 )
-from tenacity import retry, stop_after_attempt, wait_fixed, wait_random
 
 if TYPE_CHECKING:
     import kubernetes
@@ -802,9 +802,9 @@ class KubernetesWorker(BaseWorker):
             )
             # Store configuration so that we can delete the secret when the worker shuts
             # down
-            self._created_secrets[(secret.metadata.name, secret.metadata.namespace)] = (
-                configuration
-            )
+            self._created_secrets[
+                (secret.metadata.name, secret.metadata.namespace)
+            ] = configuration
             new_api_env_entry = {
                 "name": "PREFECT_API_KEY",
                 "valueFrom": {"secretKeyRef": {"name": secret_name, "key": "value"}},
