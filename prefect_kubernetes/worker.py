@@ -154,6 +154,7 @@ from prefect_kubernetes.utilities import (
     _slugify_name,
     enable_socket_keep_alive,
 )
+from tenacity import retry, stop_after_attempt, wait_fixed, wait_random
 
 if TYPE_CHECKING:
     import kubernetes
@@ -165,6 +166,12 @@ if TYPE_CHECKING:
     from prefect.client.schemas import FlowRun
 else:
     kubernetes = lazy_import("kubernetes")
+
+MAX_ATTEMPTS = 3
+RETRY_MIN_DELAY_SECONDS = 1
+RETRY_MIN_DELAY_JITTER_SECONDS = 0
+RETRY_MAX_DELAY_JITTER_SECONDS = 3
+
 
 _LOCK = Lock()
 
@@ -603,6 +610,15 @@ class KubernetesWorker(BaseWorker):
         super().__init__(*args, **kwargs)
         self._created_secrets = {}
 
+    @retry(
+        stop=stop_after_attempt(MAX_ATTEMPTS),
+        wait=wait_fixed(RETRY_MIN_DELAY_SECONDS)
+        + wait_random(
+            RETRY_MIN_DELAY_JITTER_SECONDS,
+            RETRY_MAX_DELAY_JITTER_SECONDS,
+        ),
+        reraise=True,
+    )
     async def run(
         self,
         flow_run: "FlowRun",
@@ -786,9 +802,9 @@ class KubernetesWorker(BaseWorker):
             )
             # Store configuration so that we can delete the secret when the worker shuts
             # down
-            self._created_secrets[
-                (secret.metadata.name, secret.metadata.namespace)
-            ] = configuration
+            self._created_secrets[(secret.metadata.name, secret.metadata.namespace)] = (
+                configuration
+            )
             new_api_env_entry = {
                 "name": "PREFECT_API_KEY",
                 "valueFrom": {"secretKeyRef": {"name": secret_name, "key": "value"}},
