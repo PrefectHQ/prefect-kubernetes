@@ -610,15 +610,6 @@ class KubernetesWorker(BaseWorker):
         super().__init__(*args, **kwargs)
         self._created_secrets = {}
 
-    @retry(
-        stop=stop_after_attempt(MAX_ATTEMPTS),
-        wait=wait_fixed(RETRY_MIN_DELAY_SECONDS)
-        + wait_random(
-            RETRY_MIN_DELAY_JITTER_SECONDS,
-            RETRY_MAX_DELAY_JITTER_SECONDS,
-        ),
-        reraise=True,
-    )
     async def run(
         self,
         flow_run: "FlowRun",
@@ -817,6 +808,15 @@ class KubernetesWorker(BaseWorker):
                 "env"
             ] = manifest_env
 
+    @retry(
+        stop=stop_after_attempt(MAX_ATTEMPTS),
+        wait=wait_fixed(RETRY_MIN_DELAY_SECONDS)
+        + wait_random(
+            RETRY_MIN_DELAY_JITTER_SECONDS,
+            RETRY_MAX_DELAY_JITTER_SECONDS,
+        ),
+        reraise=True,
+    )
     def _create_job(
         self, configuration: KubernetesWorkerJobConfiguration, client: "ApiClient"
     ) -> "V1Job":
