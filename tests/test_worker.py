@@ -47,7 +47,10 @@ else:
 
 from prefect_kubernetes import KubernetesWorker
 from prefect_kubernetes.utilities import _slugify_label_value, _slugify_name
-from prefect_kubernetes.worker import KubernetesWorkerJobConfiguration
+from prefect_kubernetes.worker import (
+    KubernetesWorkerJobConfiguration,
+    _get_configured_kubernetes_client_cached,
+)
 
 FAKE_CLUSTER = "fake-cluster"
 MOCK_CLUSTER_UID = "1234"
@@ -201,7 +204,7 @@ from_template_and_values_cases = [
             stream_output=True,
         ),
         lambda flow_run, deployment, flow: KubernetesWorkerJobConfiguration(
-            command="python -m prefect.engine",
+            command="prefect flow-run execute",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
                 "PREFECT__FLOW_RUN_ID": str(flow_run.id),
@@ -259,7 +262,11 @@ from_template_and_values_cases = [
                                         },
                                     ],
                                     "image": get_prefect_image_name(),
-                                    "args": ["python", "-m", "prefect.engine"],
+                                    "args": [
+                                        "prefect",
+                                        "flow-run",
+                                        "execute",
+                                    ],
                                 }
                             ],
                         }
@@ -478,7 +485,7 @@ from_template_and_values_cases = [
             stream_output=True,
         ),
         lambda flow_run, deployment, flow: KubernetesWorkerJobConfiguration(
-            command="python -m prefect.engine",
+            command="prefect flow-run execute",
             env={
                 **get_current_settings().to_environment_variables(exclude_unset=True),
                 "PREFECT__FLOW_RUN_ID": str(flow_run.id),
@@ -545,7 +552,11 @@ from_template_and_values_cases = [
                                         },
                                     ],
                                     "image": get_prefect_image_name(),
-                                    "args": ["python", "-m", "prefect.engine"],
+                                    "args": [
+                                        "prefect",
+                                        "flow-run",
+                                        "execute",
+                                    ],
                                 }
                             ],
                         }
@@ -1211,7 +1222,7 @@ class TestKubernetesWorkerJobConfiguration:
 
         # the prefect-job container is still populated
         assert pod["containers"][0]["name"] == "prefect-job"
-        assert pod["containers"][0]["args"] == ["python", "-m", "prefect.engine"]
+        assert pod["containers"][0]["args"] == ["prefect", "flow-run", "execute"]
 
         assert pod["containers"][1] == {
             "name": "my-sidecar",
@@ -1545,6 +1556,49 @@ class TestKubernetesWorker:
                 ),
             ):
                 await k8s_worker.run(flow_run, configuration)
+
+    async def test_create_job_retries(
+        self,
+        flow_run,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+    ):
+        MAX_ATTEMPTS = 3
+        response = MagicMock()
+        response.data = {
+            "kind": "Status",
+            "apiVersion": "v1",
+            "metadata": {},
+            "status": "Failure",
+            "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
+            "reason": "Forbidden",
+            "details": {"group": "batch", "kind": "jobs"},
+            "code": 403,
+        }
+        response.status = 403
+        response.reason = "Forbidden"
+
+        mock_batch_client.create_namespaced_job.side_effect = ApiException(
+            http_resp=response
+        )
+
+        configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
+            KubernetesWorker.get_default_base_job_template(), {"image": "foo"}
+        )
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            with pytest.raises(
+                InfrastructureError,
+                match=re.escape(
+                    "Unable to create Kubernetes job: Forbidden: jobs.batch is forbidden: User "
+                    '"system:serviceaccount:helm-test:prefect-worker-dev" cannot '
+                    'create resource "jobs" in API group "batch" in the namespace '
+                    '"prefect"'
+                ),
+            ):
+                await k8s_worker.run(flow_run, configuration)
+
+        assert mock_batch_client.create_namespaced_job.call_count == MAX_ATTEMPTS
 
     async def test_create_job_failure_no_reason(
         self,
@@ -1970,6 +2024,7 @@ class TestKubernetesWorker:
         mock_cluster_config,
         mock_batch_client,
     ):
+        _get_configured_kubernetes_client_cached.cache_clear()
         mock_watch.stream = _mock_pods_stream_that_returns_running_pod
 
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
@@ -1987,12 +2042,35 @@ class TestKubernetesWorker:
         mock_cluster_config,
         mock_batch_client,
     ):
+        _get_configured_kubernetes_client_cached.cache_clear()
         mock_watch.stream = _mock_pods_stream_that_returns_running_pod
         mock_cluster_config.load_incluster_config.side_effect = ConfigException()
         async with KubernetesWorker(work_pool_name="test") as k8s_worker:
             await k8s_worker.run(flow_run, default_configuration)
 
             mock_cluster_config.new_client_from_config.assert_called_once()
+
+    async def test_get_configured_kubernetes_client_cached(
+        self,
+        flow_run,
+        default_configuration,
+        mock_core_client,
+        mock_watch,
+        mock_cluster_config,
+        mock_batch_client,
+    ):
+        _get_configured_kubernetes_client_cached.cache_clear()
+        mock_watch.stream = _mock_pods_stream_that_returns_running_pod
+
+        assert _get_configured_kubernetes_client_cached.cache_info().hits == 0
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            await k8s_worker.run(flow_run, default_configuration)
+            await k8s_worker.run(flow_run, default_configuration)
+            await k8s_worker.run(flow_run, default_configuration)
+
+        assert _get_configured_kubernetes_client_cached.cache_info().misses == 1
+        assert _get_configured_kubernetes_client_cached.cache_info().hits == 2
 
     @pytest.mark.parametrize("job_timeout", [24, 100])
     async def test_allows_configurable_timeouts_for_pod_and_job_watches(
