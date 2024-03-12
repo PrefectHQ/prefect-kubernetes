@@ -145,6 +145,7 @@ if PYDANTIC_VERSION.startswith("2."):
 else:
     from pydantic import Field, validator
 
+from tenacity import retry, stop_after_attempt, wait_fixed, wait_random
 from typing_extensions import Literal
 
 from prefect_kubernetes.events import KubernetesEventsReplicator
@@ -165,6 +166,12 @@ if TYPE_CHECKING:
     from prefect.client.schemas import FlowRun
 else:
     kubernetes = lazy_import("kubernetes")
+
+MAX_ATTEMPTS = 3
+RETRY_MIN_DELAY_SECONDS = 1
+RETRY_MIN_DELAY_JITTER_SECONDS = 0
+RETRY_MAX_DELAY_JITTER_SECONDS = 3
+
 
 _LOCK = Lock()
 
@@ -801,6 +808,15 @@ class KubernetesWorker(BaseWorker):
                 "env"
             ] = manifest_env
 
+    @retry(
+        stop=stop_after_attempt(MAX_ATTEMPTS),
+        wait=wait_fixed(RETRY_MIN_DELAY_SECONDS)
+        + wait_random(
+            RETRY_MIN_DELAY_JITTER_SECONDS,
+            RETRY_MAX_DELAY_JITTER_SECONDS,
+        ),
+        reraise=True,
+    )
     def _create_job(
         self, configuration: KubernetesWorkerJobConfiguration, client: "ApiClient"
     ) -> "V1Job":
