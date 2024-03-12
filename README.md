@@ -2,18 +2,17 @@
 
 <p align="center">
     <a href="https://pypi.python.org/pypi/prefect-kubernetes/" alt="PyPI version">
-        <img alt="PyPI" src="https://img.shields.io/pypi/v/prefect-kubernetes?color=0052FF&labelColor=090422"></a>
+        <img alt="PyPI" src="https://img.shields.io/pypi/v/prefect-kubernetes?color=26272B&labelColor=090422"></a>
     <a href="https://github.com/PrefectHQ/prefect-kubernetes/" alt="Stars">
-        <img src="https://img.shields.io/github/stars/PrefectHQ/prefect-kubernetes?color=0052FF&labelColor=090422" /></a>
+        <img src="https://img.shields.io/github/stars/PrefectHQ/prefect-kubernetes?color=26272B&labelColor=090422" /></a>
     <a href="https://pypistats.org/packages/prefect-kubernetes/" alt="Downloads">
-        <img src="https://img.shields.io/pypi/dm/prefect-kubernetes?color=0052FF&labelColor=090422" /></a>
+        <img src="https://img.shields.io/pypi/dm/prefect-kubernetes?color=26272B&labelColor=090422" /></a>
     <a href="https://github.com/PrefectHQ/prefect-kubernetes/pulse" alt="Activity">
-        <img src="https://img.shields.io/github/commit-activity/m/PrefectHQ/prefect-kubernetes?color=0052FF&labelColor=090422" /></a>
+        <img src="https://img.shields.io/github/commit-activity/m/PrefectHQ/prefect-kubernetes?color=26272B&labelColor=090422" /></a>
     <br>
     <a href="https://prefect-community.slack.com" alt="Slack">
-        <img src="https://img.shields.io/badge/slack-join_community-red.svg?color=0052FF&labelColor=090422&logo=slack" /></a>
-    <a href="https://discourse.prefect.io/" alt="Discourse">
-        <img src="https://img.shields.io/badge/discourse-browse_forum-red.svg?color=0052FF&labelColor=090422&logo=discourse" /></a>
+        <img src="https://img.shields.io/badge/slack-join_community-red.svg?color=26272B&labelColor=090422&logo=slack" /></a>
+
 </p>
 
 
@@ -33,7 +32,7 @@ Install `prefect-kubernetes` with `pip`:
  pip install prefect-kubernetes
  ```
 
-Requires an installation of Python 3.7+.
+Requires an installation of Python 3.8+.
 
 We recommend using a Python virtual environment manager such as pipenv, conda or virtualenv.
 
@@ -45,7 +44,7 @@ Then, to register [blocks](https://docs.prefect.io/ui/blocks/) on Prefect Cloud:
 prefect block register -m prefect_kubernetes
 ```
 
-Note, to use the `load` method on Blocks, you must already have a block document [saved through code](https://docs.prefect.io/concepts/blocks/#saving-blocks) or [saved through the UI](https://docs.prefect.io/ui/blocks/).
+Note, to use the `load` method on Blocks, you must already have a block document [saved through code](https://docs.prefect.io/concepts/blocks/#saving-blocks) or saved through the UI.
 
 
 ### Example Usage
