@@ -1,8 +1,16 @@
+from unittest.mock import MagicMock
+
 import pytest
 from kubernetes.client import models as k8s_models
+from kubernetes.config import ConfigException
 from prefect.infrastructure.kubernetes import KubernetesJob
 
-from prefect_kubernetes.utilities import convert_manifest_to_model
+from prefect_kubernetes.utilities import (
+    convert_manifest_to_model,
+    enable_socket_keep_alive,
+)
+
+FAKE_CLUSTER = "fake-cluster"
 
 base_path = "tests/sample_k8s_resources"
 
@@ -155,6 +163,25 @@ expected_service_model = k8s_models.V1Service(
 )
 
 
+@pytest.fixture
+def mock_cluster_config(monkeypatch):
+    mock = MagicMock()
+    # We cannot mock this or the `except` clause will complain
+    mock.config.ConfigException = ConfigException
+    mock.list_kube_config_contexts.return_value = (
+        [],
+        {"context": {"cluster": FAKE_CLUSTER}},
+    )
+    monkeypatch.setattr("kubernetes.config", mock)
+    monkeypatch.setattr("kubernetes.config.ConfigException", ConfigException)
+    return mock
+
+
+@pytest.fixture
+def mock_api_client(mock_cluster_config):
+    return MagicMock()
+
+
 @pytest.mark.parametrize(
     "manifest,model_name,expected_model",
     [
@@ -200,3 +227,14 @@ def test_bad_model_type_raises(v1_model_name):
         match="`v1_model` must be the name of a valid Kubernetes client model.",
     ):
         convert_manifest_to_model(sample_deployment_manifest, v1_model_name)
+
+
+def test_keep_alive_updates_socket_options(mock_api_client):
+    enable_socket_keep_alive(mock_api_client)
+
+    assert (
+        mock_api_client.rest_client.pool_manager.connection_pool_kw[
+            "socket_options"
+        ]._mock_set_call
+        is not None
+    )
