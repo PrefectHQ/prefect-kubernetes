@@ -57,6 +57,23 @@ def successful_job_status():
     job_status.status.active = None
     job_status.status.failed = None
     job_status.status.succeeded = 1
+    job_status.status.conditions = [
+        models.V1JobCondition(type="Complete", status="True"),
+    ]
+    return job_status
+
+
+@pytest.fixture
+def unsuccessful_job_status():
+    job_status = MagicMock()
+    job_status.status.active = 0
+    job_status.status.failed = 1
+    job_status.status.succeeded = 1
+    job_status.status.conditions = [
+        models.V1JobCondition(
+            type="Failed", status="True", reason="BackoffLimitExceeded"
+        ),
+    ]
     return job_status
 
 
@@ -156,7 +173,14 @@ def mock_read_namespaced_job_status(monkeypatch):
                     spec=models.V1PodSpec(containers=[models.V1Container(name="test")])
                 )
             ),
-            status=models.V1JobStatus(active=0, failed=0, succeeded=1),
+            status=models.V1JobStatus(
+                active=0,
+                failed=0,
+                succeeded=1,
+                conditions=[
+                    models.V1JobCondition(type="Complete", status="True"),
+                ],
+            ),
         )
     )
     monkeypatch.setattr(
