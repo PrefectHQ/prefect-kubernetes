@@ -957,7 +957,7 @@ class KubernetesWorker(BaseWorker):
         job_name: str,
         namespace: str,
         watch_kwargs: dict,
-    ):
+    ) -> Generator[Any | dict | str, Any, None]:
         """
         Stream job events.
 
