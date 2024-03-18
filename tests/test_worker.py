@@ -157,6 +157,22 @@ def _mock_pods_stream_that_returns_running_pod(*args, **kwargs):
     ]
 
 
+def _mock_stream_that_raises_410_if_job(*args, **kwargs):
+    job_pod = MagicMock(spec=kubernetes.client.V1Pod)
+    job_pod.status.phase = "Running"
+
+    job = MagicMock(spec=kubernetes.client.V1Job)
+    job.status.completion_time = pendulum.now("utc").timestamp()
+
+    if kwargs["func"] == kubernetes.client.BatchV1Api.list_namespaced_job:
+        raise ApiException(status=410, reason="Gone")
+
+    return [
+        {"object": job_pod, "type": "MODIFIED"},
+        {"object": job, "type": "MODIFIED"},
+    ]
+
+
 @pytest.fixture
 def enable_store_api_key_in_secret(monkeypatch):
     monkeypatch.setenv("PREFECT_KUBERNETES_WORKER_STORE_PREFECT_API_IN_SECRET", "true")
@@ -2621,6 +2637,49 @@ class TestKubernetesWorker:
             result = await k8s_worker.run(flow_run, default_configuration)
 
         assert result.status_code == -1
+
+    async def test_watch_handles_410(
+        self,
+        default_configuration: KubernetesWorkerJobConfiguration,
+        flow_run,
+        mock_batch_client,
+        mock_core_client,
+        mock_watch,
+    ):
+        mock_watch.stream.side_effect = [
+            _mock_pods_stream_that_returns_running_pod(),
+            _mock_pods_stream_that_returns_running_pod(),
+            ApiException(status=410),
+            _mock_pods_stream_that_returns_running_pod(),
+        ]
+
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            await k8s_worker.run(flow_run=flow_run, configuration=default_configuration)
+
+        mock_watch.stream.assert_has_calls(
+            [
+                mock.call(
+                    func=mock_core_client.list_namespaced_pod,
+                    namespace=mock.ANY,
+                    label_selector=mock.ANY,
+                    timeout_seconds=60,
+                ),
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    namespace=mock.ANY,
+                    field_selector=mock.ANY,
+                ),
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    namespace=mock.ANY,
+                    field_selector=mock.ANY,
+                    resource_version=mock.ANY,
+                ),
+            ]
+        )
 
     class TestKillInfrastructure:
         async def test_kill_infrastructure_calls_delete_namespaced_job(
