@@ -966,27 +966,21 @@ class KubernetesWorker(BaseWorker):
 
         See https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes  # noqa
         """
-        try:
-            return watch.stream(
-                func=batch_client.list_namespaced_job,
-                namespace=namespace,
-                field_selector=f"metadata.name={job_name}",
-                **watch_kwargs,
-            )
-        except ApiException as e:
-            if str(e.status) == "410":
-                job = batch_client.list_namespaced_job(namespace=namespace)
-                resource_version = job.metadata.resource_version
-                watch_kwargs["resource_version"] = resource_version
-                return self._job_events(
-                    watch=watch,
-                    batch_client=batch_client,
-                    job_name=job_name,
+        while True:
+            try:
+                return watch.stream(
+                    func=batch_client.list_namespaced_job,
                     namespace=namespace,
-                    watch_kwargs=watch_kwargs,
+                    field_selector=f"metadata.name={job_name}",
+                    **watch_kwargs,
                 )
-            else:
-                raise
+            except ApiException as e:
+                if str(e.status) == "410":
+                    job = batch_client.list_namespaced_job(namespace=namespace)
+                    resource_version = job.metadata.resource_version
+                    watch_kwargs["resource_version"] = resource_version
+                else:
+                    raise
 
     def _watch_job(
         self,
