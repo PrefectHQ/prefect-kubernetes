@@ -112,7 +112,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from functools import lru_cache
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
 
 import anyio.abc
 from kubernetes.client.exceptions import ApiException
@@ -957,7 +957,7 @@ class KubernetesWorker(BaseWorker):
         job_name: str,
         namespace: str,
         watch_kwargs: dict,
-    ) -> Generator[Any | dict | str, Any, None]:
+    ) -> Generator[Union[Any, dict, str], Any, None]:
         """
         Stream job events.
 
