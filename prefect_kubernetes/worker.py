@@ -975,7 +975,7 @@ class KubernetesWorker(BaseWorker):
                     **watch_kwargs,
                 )
             except ApiException as e:
-                if str(e.status) == "410":
+                if e.status == 410:
                     job = batch_client.list_namespaced_job(namespace=namespace)
                     resource_version = job.metadata.resource_version
                     watch_kwargs["resource_version"] = resource_version
