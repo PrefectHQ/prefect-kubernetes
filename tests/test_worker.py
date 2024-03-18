@@ -157,22 +157,6 @@ def _mock_pods_stream_that_returns_running_pod(*args, **kwargs):
     ]
 
 
-def _mock_stream_that_raises_410_if_job(*args, **kwargs):
-    job_pod = MagicMock(spec=kubernetes.client.V1Pod)
-    job_pod.status.phase = "Running"
-
-    job = MagicMock(spec=kubernetes.client.V1Job)
-    job.status.completion_time = pendulum.now("utc").timestamp()
-
-    if kwargs["func"] == kubernetes.client.BatchV1Api.list_namespaced_job:
-        raise ApiException(status=410, reason="Gone")
-
-    return [
-        {"object": job_pod, "type": "MODIFIED"},
-        {"object": job, "type": "MODIFIED"},
-    ]
-
-
 @pytest.fixture
 def enable_store_api_key_in_secret(monkeypatch):
     monkeypatch.setenv("PREFECT_KUBERNETES_WORKER_STORE_PREFECT_API_IN_SECRET", "true")
