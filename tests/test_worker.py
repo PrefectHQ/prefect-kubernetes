@@ -2622,6 +2622,48 @@ class TestKubernetesWorker:
 
         assert result.status_code == -1
 
+    async def test_watch_handles_410(
+        self,
+        default_configuration: KubernetesWorkerJobConfiguration,
+        flow_run,
+        mock_batch_client,
+        mock_core_client,
+        mock_watch,
+    ):
+        mock_watch.stream.side_effect = [
+            _mock_pods_stream_that_returns_running_pod(),
+            _mock_pods_stream_that_returns_running_pod(),
+            ApiException(status=410),
+            _mock_pods_stream_that_returns_running_pod(),
+        ]
+
+        job_list = MagicMock(spec=kubernetes.client.V1JobList)
+        job_list.metadata.resource_version = "1"
+
+        mock_batch_client.list_namespaced_job.side_effect = [job_list]
+
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            await k8s_worker.run(flow_run=flow_run, configuration=default_configuration)
+
+        mock_watch.stream.assert_has_calls(
+            [
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    namespace=mock.ANY,
+                    field_selector="metadata.name=mock-job",
+                ),
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    namespace=mock.ANY,
+                    field_selector="metadata.name=mock-job",
+                    resource_version="1",
+                ),
+            ]
+        )
+
     class TestKillInfrastructure:
         async def test_kill_infrastructure_calls_delete_namespaced_job(
             self,

@@ -112,7 +112,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from functools import lru_cache
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
 
 import anyio.abc
 from kubernetes.client.exceptions import ApiException
@@ -950,6 +950,40 @@ class KubernetesWorker(BaseWorker):
 
         return cluster_uid
 
+    def _job_events(
+        self,
+        watch: kubernetes.watch.Watch,
+        batch_client: kubernetes.client.BatchV1Api,
+        job_name: str,
+        namespace: str,
+        watch_kwargs: dict,
+    ) -> Generator[Union[Any, dict, str], Any, None]:
+        """
+        Stream job events.
+
+        Pick up from the current resource version returned by the API
+        in the case of a 410.
+
+        See https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes  # noqa
+        """
+        while True:
+            try:
+                return watch.stream(
+                    func=batch_client.list_namespaced_job,
+                    namespace=namespace,
+                    field_selector=f"metadata.name={job_name}",
+                    **watch_kwargs,
+                )
+            except ApiException as e:
+                if e.status == 410:
+                    job_list = batch_client.list_namespaced_job(
+                        namespace=namespace, field_selector=f"metadata.name={job_name}"
+                    )
+                    resource_version = job_list.metadata.resource_version
+                    watch_kwargs["resource_version"] = resource_version
+                else:
+                    raise
+
     def _watch_job(
         self,
         logger: logging.Logger,
@@ -1029,18 +1063,18 @@ class KubernetesWorker(BaseWorker):
                     return -1
 
                 watch = kubernetes.watch.Watch()
+
                 # The kubernetes library will disable retries if the timeout kwarg is
                 # present regardless of the value so we do not pass it unless given
                 # https://github.com/kubernetes-client/python/blob/84f5fea2a3e4b161917aa597bf5e5a1d95e24f5a/kubernetes/base/watch/watch.py#LL160
-                timeout_seconds = (
-                    {"timeout_seconds": remaining_time} if deadline else {}
-                )
+                watch_kwargs = {"timeout_seconds": remaining_time} if deadline else {}
 
-                for event in watch.stream(
-                    func=batch_client.list_namespaced_job,
-                    field_selector=f"metadata.name={job_name}",
-                    namespace=configuration.namespace,
-                    **timeout_seconds,
+                for event in self._job_events(
+                    watch,
+                    batch_client,
+                    job_name,
+                    configuration.namespace,
+                    watch_kwargs,
                 ):
                     if event["type"] == "DELETED":
                         logger.error(f"Job {job_name!r}: Job has been deleted.")
