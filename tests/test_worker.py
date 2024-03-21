@@ -1557,6 +1557,49 @@ class TestKubernetesWorker:
             ):
                 await k8s_worker.run(flow_run, configuration)
 
+    async def test_create_job_retries(
+        self,
+        flow_run,
+        mock_core_client,
+        mock_watch,
+        mock_batch_client,
+    ):
+        MAX_ATTEMPTS = 3
+        response = MagicMock()
+        response.data = {
+            "kind": "Status",
+            "apiVersion": "v1",
+            "metadata": {},
+            "status": "Failure",
+            "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
+            "reason": "Forbidden",
+            "details": {"group": "batch", "kind": "jobs"},
+            "code": 403,
+        }
+        response.status = 403
+        response.reason = "Forbidden"
+
+        mock_batch_client.create_namespaced_job.side_effect = ApiException(
+            http_resp=response
+        )
+
+        configuration = await KubernetesWorkerJobConfiguration.from_template_and_values(
+            KubernetesWorker.get_default_base_job_template(), {"image": "foo"}
+        )
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            with pytest.raises(
+                InfrastructureError,
+                match=re.escape(
+                    "Unable to create Kubernetes job: Forbidden: jobs.batch is forbidden: User "
+                    '"system:serviceaccount:helm-test:prefect-worker-dev" cannot '
+                    'create resource "jobs" in API group "batch" in the namespace '
+                    '"prefect"'
+                ),
+            ):
+                await k8s_worker.run(flow_run, configuration)
+
+        assert mock_batch_client.create_namespaced_job.call_count == MAX_ATTEMPTS
+
     async def test_create_job_failure_no_reason(
         self,
         flow_run,
@@ -2578,6 +2621,48 @@ class TestKubernetesWorker:
             result = await k8s_worker.run(flow_run, default_configuration)
 
         assert result.status_code == -1
+
+    async def test_watch_handles_410(
+        self,
+        default_configuration: KubernetesWorkerJobConfiguration,
+        flow_run,
+        mock_batch_client,
+        mock_core_client,
+        mock_watch,
+    ):
+        mock_watch.stream.side_effect = [
+            _mock_pods_stream_that_returns_running_pod(),
+            _mock_pods_stream_that_returns_running_pod(),
+            ApiException(status=410),
+            _mock_pods_stream_that_returns_running_pod(),
+        ]
+
+        job_list = MagicMock(spec=kubernetes.client.V1JobList)
+        job_list.metadata.resource_version = "1"
+
+        mock_batch_client.list_namespaced_job.side_effect = [job_list]
+
+        # The job should not be completed to start
+        mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
+
+        async with KubernetesWorker(work_pool_name="test") as k8s_worker:
+            await k8s_worker.run(flow_run=flow_run, configuration=default_configuration)
+
+        mock_watch.stream.assert_has_calls(
+            [
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    namespace=mock.ANY,
+                    field_selector="metadata.name=mock-job",
+                ),
+                mock.call(
+                    func=mock_batch_client.list_namespaced_job,
+                    namespace=mock.ANY,
+                    field_selector="metadata.name=mock-job",
+                    resource_version="1",
+                ),
+            ]
+        )
 
     class TestKillInfrastructure:
         async def test_kill_infrastructure_calls_delete_namespaced_job(
