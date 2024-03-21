@@ -44,7 +44,6 @@ async def create_namespaced_deployment(
         ```
     """
     with kubernetes_credentials.get_client("apps") as apps_v1_client:
-
         return await run_sync_in_worker_thread(
             apps_v1_client.create_namespaced_deployment,
             namespace=namespace,
@@ -92,7 +91,6 @@ async def delete_namespaced_deployment(
         ```
     """
     with kubernetes_credentials.get_client("apps") as apps_v1_client:
-
         return await run_sync_in_worker_thread(
             apps_v1_client.delete_namespaced_deployment,
             deployment_name,
@@ -134,7 +132,6 @@ async def list_namespaced_deployment(
         ```
     """
     with kubernetes_credentials.get_client("apps") as apps_v1_client:
-
         return await run_sync_in_worker_thread(
             apps_v1_client.list_namespaced_deployment,
             namespace=namespace,
@@ -181,7 +178,6 @@ async def patch_namespaced_deployment(
         ```
     """
     with kubernetes_credentials.get_client("apps") as apps_v1_client:
-
         return await run_sync_in_worker_thread(
             apps_v1_client.patch_namespaced_deployment,
             name=deployment_name,
@@ -225,7 +221,6 @@ async def read_namespaced_deployment(
         ```
     """
     with kubernetes_credentials.get_client("apps") as apps_v1_client:
-
         return await run_sync_in_worker_thread(
             apps_v1_client.read_namespaced_deployment,
             name=deployment_name,
@@ -273,7 +268,6 @@ async def replace_namespaced_deployment(
         ```
     """
     with kubernetes_credentials.get_client("apps") as apps_v1_client:
-
         return await run_sync_in_worker_thread(
             apps_v1_client.replace_namespaced_deployment,
             body=new_deployment,

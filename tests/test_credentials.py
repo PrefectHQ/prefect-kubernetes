@@ -1,17 +1,21 @@
 import base64
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Dict
-import pytest
-from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, CustomObjectsApi
-import yaml
-from kubernetes.client import ApiClient
-from kubernetes.config.kube_config import list_kube_config_contexts
 
+import pytest
+import yaml
+from kubernetes.client import (
+    ApiClient,
+    AppsV1Api,
+    BatchV1Api,
+    CoreV1Api,
+    CustomObjectsApi,
+)
+from kubernetes.config.kube_config import list_kube_config_contexts
+from pydantic.version import VERSION as PYDANTIC_VERSION
 
 from prefect_kubernetes.credentials import KubernetesClusterConfig
-
-from pydantic.version import VERSION as PYDANTIC_VERSION
 
 if PYDANTIC_VERSION.startswith("2."):
     import pydantic.v1 as pydantic

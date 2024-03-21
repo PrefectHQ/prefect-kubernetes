@@ -2386,7 +2386,7 @@ class TestKubernetesWorker:
         for i in range(4, 10):
             assert f"test {i}" not in stdout
 
-    @pytest.mark.flaky  # Rarely, the sleep times we check for do not fit within the tolerences
+    @pytest.mark.flaky  # Rarely, the sleep times we check for do not fit within the tolerances
     async def test_watch_timeout_is_restarted_until_job_is_complete(
         self,
         flow_run,

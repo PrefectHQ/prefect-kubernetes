@@ -45,7 +45,6 @@ async def create_namespaced_service(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
-
         return await run_sync_in_worker_thread(
             core_v1_client.create_namespaced_service,
             body=new_service,
@@ -92,7 +91,6 @@ async def delete_namespaced_service(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
-
         return await run_sync_in_worker_thread(
             core_v1_client.delete_namespaced_service,
             name=service_name,
@@ -134,7 +132,6 @@ async def list_namespaced_service(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
-
         return await run_sync_in_worker_thread(
             core_v1_client.list_namespaced_service,
             namespace=namespace,
@@ -181,7 +178,6 @@ async def patch_namespaced_service(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
-
         return await run_sync_in_worker_thread(
             core_v1_client.patch_namespaced_service,
             name=service_name,
@@ -226,7 +222,6 @@ async def read_namespaced_service(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
-
         return await run_sync_in_worker_thread(
             core_v1_client.read_namespaced_service,
             name=service_name,
@@ -274,7 +269,6 @@ async def replace_namespaced_service(
         ```
     """
     with kubernetes_credentials.get_client("core") as core_v1_client:
-
         return await run_sync_in_worker_thread(
             core_v1_client.replace_namespaced_service,
             name=service_name,

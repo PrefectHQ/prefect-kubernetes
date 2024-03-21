@@ -2,8 +2,9 @@
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Dict, Generator, Optional, Self, Type, Union
+from typing import Dict, Generator, Optional, Type, Union
 
+import yaml
 from kubernetes import config
 from kubernetes.client import (
     ApiClient,
@@ -16,9 +17,8 @@ from kubernetes.client import (
 from kubernetes.config.config_exception import ConfigException
 from prefect.blocks.core import Block
 from prefect.utilities.collections import listrepr
-from typing_extensions import Literal
 from pydantic.version import VERSION as PYDANTIC_VERSION
-import yaml
+from typing_extensions import Literal, Self
 
 if PYDANTIC_VERSION.startswith("2."):
     from pydantic.v1 import Field, validator
@@ -88,9 +88,10 @@ class KubernetesClusterConfig(Block):
         path = path.expanduser().resolve()
 
         # Determine the context
-        existing_contexts, current_context = (
-            config.kube_config.list_kube_config_contexts(config_file=str(path))
-        )
+        (
+            existing_contexts,
+            current_context,
+        ) = config.kube_config.list_kube_config_contexts(config_file=str(path))
         context_names = {ctx["name"] for ctx in existing_contexts}
         if context_name:
             if context_name not in context_names:
