@@ -968,7 +968,6 @@ class KubernetesWorker(BaseWorker):
         """
         while True:
             try:
-
                 return watch.stream(
                     func=batch_client.list_namespaced_job,
                     namespace=namespace,

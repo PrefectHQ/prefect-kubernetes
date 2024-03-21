@@ -2637,12 +2637,10 @@ class TestKubernetesWorker:
             _mock_pods_stream_that_returns_running_pod(),
         ]
 
-        job_list_1 = MagicMock(spec=kubernetes.client.V1JobList)
-        job_list_1.metadata.resource_version = "1"
+        job_list = MagicMock(spec=kubernetes.client.V1JobList)
+        job_list.metadata.resource_version = "1"
 
-        mock_batch_client.list_namespaced_job.side_effect = [
-            job_list_1,
-        ]
+        mock_batch_client.list_namespaced_job.side_effect = [job_list]
 
         # The job should not be completed to start
         mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
