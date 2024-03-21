@@ -2637,6 +2637,13 @@ class TestKubernetesWorker:
             _mock_pods_stream_that_returns_running_pod(),
         ]
 
+        job_list_1 = MagicMock(spec=kubernetes.client.V1JobList)
+        job_list_1.metadata.resource_version = "1"
+
+        mock_batch_client.list_namespaced_job.side_effect = [
+            job_list_1,
+        ]
+
         # The job should not be completed to start
         mock_batch_client.read_namespaced_job.return_value.status.completion_time = None
 
@@ -2646,21 +2653,15 @@ class TestKubernetesWorker:
         mock_watch.stream.assert_has_calls(
             [
                 mock.call(
-                    func=mock_core_client.list_namespaced_pod,
+                    func=mock_batch_client.list_namespaced_job,
                     namespace=mock.ANY,
-                    label_selector=mock.ANY,
-                    timeout_seconds=60,
+                    field_selector="metadata.name=mock-job",
                 ),
                 mock.call(
                     func=mock_batch_client.list_namespaced_job,
                     namespace=mock.ANY,
-                    field_selector=mock.ANY,
-                ),
-                mock.call(
-                    func=mock_batch_client.list_namespaced_job,
-                    namespace=mock.ANY,
-                    field_selector=mock.ANY,
-                    resource_version=mock.ANY,
+                    field_selector="metadata.name=mock-job",
+                    resource_version="1",
                 ),
             ]
         )
