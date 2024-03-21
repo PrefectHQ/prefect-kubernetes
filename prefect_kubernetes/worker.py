@@ -648,45 +648,45 @@ class KubernetesWorker(BaseWorker):
         grace_seconds: int = 30,
     ):
         """Removes the given Job from the Kubernetes cluster"""
-        client = self._get_configured_kubernetes_client(configuration)
-        job_cluster_uid, job_namespace, job_name = self._parse_infrastructure_pid(
-            infrastructure_pid
-        )
-
-        if job_namespace != configuration.namespace:
-            raise InfrastructureNotAvailable(
-                f"Unable to kill job {job_name!r}: The job is running in namespace "
-                f"{job_namespace!r} but this worker expected jobs to be running in "
-                f"namespace {configuration.namespace!r} based on the work pool and "
-                "deployment configuration."
+        with self._get_configured_kubernetes_client(configuration) as client:
+            job_cluster_uid, job_namespace, job_name = self._parse_infrastructure_pid(
+                infrastructure_pid
             )
 
-        current_cluster_uid = self._get_cluster_uid(client)
-        if job_cluster_uid != current_cluster_uid:
-            raise InfrastructureNotAvailable(
-                f"Unable to kill job {job_name!r}: The job is running on another "
-                "cluster than the one specified by the infrastructure PID."
-            )
-
-        with self._get_batch_client(client) as batch_client:
-            try:
-                batch_client.delete_namespaced_job(
-                    name=job_name,
-                    namespace=job_namespace,
-                    grace_period_seconds=grace_seconds,
-                    # Foreground propagation deletes dependent objects before deleting
-                    # owner objects. This ensures that the pods are cleaned up before
-                    # the job is marked as deleted.
-                    # See: https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion # noqa
-                    propagation_policy="Foreground",
+            if job_namespace != configuration.namespace:
+                raise InfrastructureNotAvailable(
+                    f"Unable to kill job {job_name!r}: The job is running in namespace "
+                    f"{job_namespace!r} but this worker expected jobs to be running in "
+                    f"namespace {configuration.namespace!r} based on the work pool and "
+                    "deployment configuration."
                 )
-            except kubernetes.client.exceptions.ApiException as exc:
-                if exc.status == 404:
-                    raise InfrastructureNotFound(
-                        f"Unable to kill job {job_name!r}: The job was not found."
-                    ) from exc
-                else:
-                    raise
+
+            current_cluster_uid = self._get_cluster_uid(client)
+            if job_cluster_uid != current_cluster_uid:
+                raise InfrastructureNotAvailable(
+                    f"Unable to kill job {job_name!r}: The job is running on another "
+                    "cluster than the one specified by the infrastructure PID."
+                )
+
+            with self._get_batch_client(client) as batch_client:
+                try:
+                    batch_client.delete_namespaced_job(
+                        name=job_name,
+                        namespace=job_namespace,
+                        grace_period_seconds=grace_seconds,
+                        # Foreground propagation deletes dependent objects before deleting # noqa
+                        # owner objects. This ensures that the pods are cleaned up before # noqa
+                        # the job is marked as deleted.
+                        # See: https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion # noqa
+                        propagation_policy="Foreground",
+                    )
+                except kubernetes.client.exceptions.ApiException as exc:
+                    if exc.status == 404:
+                        raise InfrastructureNotFound(
+                            f"Unable to kill job {job_name!r}: The job was not found."
+                        ) from exc
+                    else:
+                        raise
 
     @contextmanager
     def _get_configured_kubernetes_client(
