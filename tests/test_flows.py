@@ -38,7 +38,6 @@ async def test_run_namespaced_job_successful(
     mock_list_namespaced_pod,
     read_pod_logs,
 ):
-
     await run_namespaced_job(kubernetes_job=valid_kubernetes_job_block)
 
     assert mock_create_namespaced_job.call_count == 1
@@ -85,7 +84,6 @@ async def test_run_namespaced_job_unsuccessful(
     mock_list_namespaced_pod,
     read_pod_logs,
 ):
-
     mock_read_namespaced_job_status.return_value = unsuccessful_job_status
 
     with pytest.raises(RuntimeError, match=", check the Kubernetes pod logs"):

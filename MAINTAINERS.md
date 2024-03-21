@@ -87,7 +87,7 @@ This collection comes with [GitHub Actions](https://docs.github.com/en/actions) 
 
 `interrogate` will tell you which methods, functions, classes, and modules have docstrings, and which do not--the job has a fail threshold of 95%, meaning that it will fail if more than 5% of the codebase is undocumented. We recommend following the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) for docstring format.
 
-Simiarly, `coverage` ensures that the codebase includes tests--the job has a fail threshold of 80%, meaning that it will fail if more than 20% of the codebase is missing tests.
+Similarly, `coverage` ensures that the codebase includes tests--the job has a fail threshold of 80%, meaning that it will fail if more than 20% of the codebase is missing tests.
 
 ### Track Issues on Project Board
 

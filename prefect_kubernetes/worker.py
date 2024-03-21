@@ -190,7 +190,7 @@ class HashableKubernetesClusterConfig(BaseModel):
     )
 
     def __hash__(self):
-        """Make the conifg hashable."""
+        """Make the config hashable."""
         return hash(
             (
                 hash_objects(self.config),
@@ -424,7 +424,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         placeholder and hard coded a value for `env`. In this case, we need to prepend
         our environment variables to the list to ensure Prefect setting propagation.
         An example reason the a user would remove the `{{ env }}` placeholder to
-        hardcode Kuberentes secrets in the base job template.
+        hardcode Kubernetes secrets in the base job template.
         """
         transformed_env = [{"name": k, "value": v} for k, v in self.env.items()]
 
