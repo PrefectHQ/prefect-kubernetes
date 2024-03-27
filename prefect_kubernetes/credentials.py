@@ -1,9 +1,11 @@
 """Module for defining Kubernetes credential handling and client generation."""
 
 from contextlib import contextmanager
-from typing import Generator, Optional, Union
+from pathlib import Path
+from typing import Dict, Generator, Optional, Type, Union
 
-from kubernetes import config as kube_config
+import yaml
+from kubernetes import config
 from kubernetes.client import (
     ApiClient,
     AppsV1Api,
@@ -14,9 +16,15 @@ from kubernetes.client import (
 )
 from kubernetes.config.config_exception import ConfigException
 from prefect.blocks.core import Block
-from prefect.blocks.kubernetes import KubernetesClusterConfig
 from prefect.utilities.collections import listrepr
-from typing_extensions import Literal
+from pydantic.version import VERSION as PYDANTIC_VERSION
+from typing_extensions import Literal, Self
+
+if PYDANTIC_VERSION.startswith("2."):
+    from pydantic.v1 import Field, validator
+else:
+    from pydantic import Field, validator
+
 
 KubernetesClient = Union[AppsV1Api, BatchV1Api, CoreV1Api]
 
@@ -26,6 +34,97 @@ K8S_CLIENT_TYPES = {
     "core": CoreV1Api,
     "custom_objects": CustomObjectsApi,
 }
+
+
+class KubernetesClusterConfig(Block):
+    """
+    Stores configuration for interaction with Kubernetes clusters.
+
+    See `from_file` for creation.
+
+    Attributes:
+        config: The entire loaded YAML contents of a kubectl config file
+        context_name: The name of the kubectl context to use
+
+    Example:
+        Load a saved Kubernetes cluster config:
+        ```python
+        from prefect_kubernetes.credentials import import KubernetesClusterConfig
+
+        cluster_config_block = KubernetesClusterConfig.load("BLOCK_NAME")
+        ```
+    """
+
+    _block_type_name = "Kubernetes Cluster Config"
+    _logo_url = "https://cdn.sanity.io/images/3ugk85nk/production/2d0b896006ad463b49c28aaac14f31e00e32cfab-250x250.png"
+    _documentation_url = "https://prefecthq.github.io/prefect-kubernetes/credentials/#prefect_kubernetes.credentials.KubernetesClusterConfig"  # noqa
+    config: Dict = Field(
+        default=..., description="The entire contents of a kubectl config file."
+    )
+    context_name: str = Field(
+        default=..., description="The name of the kubectl context to use."
+    )
+
+    @validator("config", pre=True)
+    def parse_yaml_config(cls, value):
+        if isinstance(value, str):
+            return yaml.safe_load(value)
+        return value
+
+    @classmethod
+    def from_file(cls: Type[Self], path: Path = None, context_name: str = None) -> Self:
+        """
+        Create a cluster config from the a Kubernetes config file.
+
+        By default, the current context in the default Kubernetes config file will be
+        used.
+
+        An alternative file or context may be specified.
+
+        The entire config file will be loaded and stored.
+        """
+
+        path = Path(path or config.kube_config.KUBE_CONFIG_DEFAULT_LOCATION)
+        path = path.expanduser().resolve()
+
+        # Determine the context
+        (
+            existing_contexts,
+            current_context,
+        ) = config.kube_config.list_kube_config_contexts(config_file=str(path))
+        context_names = {ctx["name"] for ctx in existing_contexts}
+        if context_name:
+            if context_name not in context_names:
+                raise ValueError(
+                    f"Context {context_name!r} not found. "
+                    f"Specify one of: {listrepr(context_names, sep=', ')}."
+                )
+        else:
+            context_name = current_context["name"]
+
+        # Load the entire config file
+        config_file_contents = path.read_text()
+        config_dict = yaml.safe_load(config_file_contents)
+
+        return cls(config=config_dict, context_name=context_name)
+
+    def get_api_client(self) -> "ApiClient":
+        """
+        Returns a Kubernetes API client for this cluster config.
+        """
+        return config.kube_config.new_client_from_config_dict(
+            config_dict=self.config, context=self.context_name
+        )
+
+    def configure_client(self) -> None:
+        """
+        Activates this cluster configuration by loading the configuration into the
+        Kubernetes Python client. After calling this, Kubernetes API clients can use
+        this config's context.
+        """
+        config.kube_config.load_kube_config_from_dict(
+            config_dict=self.config, context=self.context_name
+        )
 
 
 class KubernetesCredentials(Block):
@@ -115,9 +214,9 @@ class KubernetesCredentials(Block):
             self.cluster_config.configure_client()
         else:
             try:
-                kube_config.load_incluster_config()
+                config.load_incluster_config()
             except ConfigException:
-                kube_config.load_kube_config()
+                config.load_kube_config()
 
         try:
             return K8S_CLIENT_TYPES[client_type]()

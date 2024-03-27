@@ -110,9 +110,7 @@ import shlex
 import time
 from contextlib import contextmanager
 from datetime import datetime
-from functools import lru_cache
-from threading import Lock
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
 
 import anyio.abc
 from kubernetes.client.exceptions import ApiException
@@ -127,7 +125,6 @@ from prefect.server.schemas.core import Flow
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 from prefect.utilities.dockerutils import get_prefect_image_name
-from prefect.utilities.hashing import hash_objects
 from prefect.utilities.importtools import lazy_import
 from prefect.utilities.pydantic import JsonPatch
 from prefect.utilities.templating import find_placeholders
@@ -138,13 +135,13 @@ from prefect.workers.base import (
     BaseWorkerResult,
 )
 from pydantic import VERSION as PYDANTIC_VERSION
-from pydantic import BaseModel
 
 if PYDANTIC_VERSION.startswith("2."):
     from pydantic.v1 import Field, validator
 else:
     from pydantic import Field, validator
 
+from tenacity import retry, stop_after_attempt, wait_fixed, wait_random
 from typing_extensions import Literal
 
 from prefect_kubernetes.events import KubernetesEventsReplicator
@@ -166,62 +163,10 @@ if TYPE_CHECKING:
 else:
     kubernetes = lazy_import("kubernetes")
 
-_LOCK = Lock()
-
-
-class HashableKubernetesClusterConfig(BaseModel):
-    """
-    A hashable version of the KubernetesClusterConfig class.
-    Used for caching.
-    """
-
-    config: dict = Field(
-        default=..., description="The entire contents of a kubectl config file."
-    )
-    context_name: str = Field(
-        default=..., description="The name of the kubectl context to use."
-    )
-
-    def __hash__(self):
-        """Make the conifg hashable."""
-        return hash(
-            (
-                hash_objects(self.config),
-                self.context_name,
-            )
-        )
-
-
-@lru_cache(maxsize=8, typed=True)
-def _get_configured_kubernetes_client_cached(
-    cluster_config: Optional[HashableKubernetesClusterConfig] = None,
-) -> Any:
-    """Returns a configured Kubernetes client."""
-    with _LOCK:
-        # if a hard-coded cluster config is provided, use it
-        if cluster_config:
-            client = kubernetes.config.new_client_from_config_dict(
-                config_dict=cluster_config.config,
-                context=cluster_config.context_name,
-            )
-        else:
-            # If no hard-coded config specified, try to load Kubernetes configuration
-            # within a cluster. If that doesn't work, try to load the configuration
-            # from the local environment, allowing any further ConfigExceptions to
-            # bubble up.
-            try:
-                kubernetes.config.load_incluster_config()
-                config = kubernetes.client.Configuration.get_default_copy()
-                client = kubernetes.client.ApiClient(configuration=config)
-            except kubernetes.config.ConfigException:
-                client = kubernetes.config.new_client_from_config()
-
-        if os.environ.get(
-            "PREFECT_KUBERNETES_WORKER_ADD_TCP_KEEPALIVE", "TRUE"
-        ).strip().lower() in ("true", "1"):
-            enable_socket_keep_alive(client)
-
-        return client
+MAX_ATTEMPTS = 3
+RETRY_MIN_DELAY_SECONDS = 1
+RETRY_MIN_DELAY_JITTER_SECONDS = 0
+RETRY_MAX_DELAY_JITTER_SECONDS = 3
 
 
 def _get_default_job_manifest_template() -> Dict[str, Any]:
@@ -417,7 +362,7 @@ class KubernetesWorkerJobConfiguration(BaseJobConfiguration):
         placeholder and hard coded a value for `env`. In this case, we need to prepend
         our environment variables to the list to ensure Prefect setting propagation.
         An example reason the a user would remove the `{{ env }}` placeholder to
-        hardcode Kuberentes secrets in the base job template.
+        hardcode Kubernetes secrets in the base job template.
         """
         transformed_env = [{"name": k, "value": v} for k, v in self.env.items()]
 
@@ -703,62 +648,80 @@ class KubernetesWorker(BaseWorker):
         grace_seconds: int = 30,
     ):
         """Removes the given Job from the Kubernetes cluster"""
-        client = self._get_configured_kubernetes_client(configuration)
-        job_cluster_uid, job_namespace, job_name = self._parse_infrastructure_pid(
-            infrastructure_pid
-        )
-
-        if job_namespace != configuration.namespace:
-            raise InfrastructureNotAvailable(
-                f"Unable to kill job {job_name!r}: The job is running in namespace "
-                f"{job_namespace!r} but this worker expected jobs to be running in "
-                f"namespace {configuration.namespace!r} based on the work pool and "
-                "deployment configuration."
+        with self._get_configured_kubernetes_client(configuration) as client:
+            job_cluster_uid, job_namespace, job_name = self._parse_infrastructure_pid(
+                infrastructure_pid
             )
 
-        current_cluster_uid = self._get_cluster_uid(client)
-        if job_cluster_uid != current_cluster_uid:
-            raise InfrastructureNotAvailable(
-                f"Unable to kill job {job_name!r}: The job is running on another "
-                "cluster than the one specified by the infrastructure PID."
-            )
-
-        with self._get_batch_client(client) as batch_client:
-            try:
-                batch_client.delete_namespaced_job(
-                    name=job_name,
-                    namespace=job_namespace,
-                    grace_period_seconds=grace_seconds,
-                    # Foreground propagation deletes dependent objects before deleting
-                    # owner objects. This ensures that the pods are cleaned up before
-                    # the job is marked as deleted.
-                    # See: https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion # noqa
-                    propagation_policy="Foreground",
+            if job_namespace != configuration.namespace:
+                raise InfrastructureNotAvailable(
+                    f"Unable to kill job {job_name!r}: The job is running in namespace "
+                    f"{job_namespace!r} but this worker expected jobs to be running in "
+                    f"namespace {configuration.namespace!r} based on the work pool and "
+                    "deployment configuration."
                 )
-            except kubernetes.client.exceptions.ApiException as exc:
-                if exc.status == 404:
-                    raise InfrastructureNotFound(
-                        f"Unable to kill job {job_name!r}: The job was not found."
-                    ) from exc
-                else:
-                    raise
 
+            current_cluster_uid = self._get_cluster_uid(client)
+            if job_cluster_uid != current_cluster_uid:
+                raise InfrastructureNotAvailable(
+                    f"Unable to kill job {job_name!r}: The job is running on another "
+                    "cluster than the one specified by the infrastructure PID."
+                )
+
+            with self._get_batch_client(client) as batch_client:
+                try:
+                    batch_client.delete_namespaced_job(
+                        name=job_name,
+                        namespace=job_namespace,
+                        grace_period_seconds=grace_seconds,
+                        # Foreground propagation deletes dependent objects before deleting # noqa
+                        # owner objects. This ensures that the pods are cleaned up before # noqa
+                        # the job is marked as deleted.
+                        # See: https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion # noqa
+                        propagation_policy="Foreground",
+                    )
+                except kubernetes.client.exceptions.ApiException as exc:
+                    if exc.status == 404:
+                        raise InfrastructureNotFound(
+                            f"Unable to kill job {job_name!r}: The job was not found."
+                        ) from exc
+                    else:
+                        raise
+
+    @contextmanager
     def _get_configured_kubernetes_client(
         self, configuration: KubernetesWorkerJobConfiguration
-    ) -> "ApiClient":
+    ) -> Generator["ApiClient", None, None]:
         """
         Returns a configured Kubernetes client.
         """
 
-        cluster_config = None
+        try:
+            if configuration.cluster_config:
+                client = kubernetes.config.new_client_from_config_dict(
+                    config_dict=configuration.cluster_config.config,
+                    context=configuration.cluster_config.context_name,
+                )
+            else:
+                # If no hardcoded config specified, try to load Kubernetes configuration
+                # within a cluster. If that doesn't work, try to load the configuration
+                # from the local environment, allowing any further ConfigExceptions to
+                # bubble up.
+                try:
+                    kubernetes.config.load_incluster_config()
+                    config = kubernetes.client.Configuration.get_default_copy()
+                    client = kubernetes.client.ApiClient(configuration=config)
+                except kubernetes.config.ConfigException:
+                    client = kubernetes.config.new_client_from_config()
 
-        if configuration.cluster_config:
-            cluster_config = HashableKubernetesClusterConfig(
-                config=configuration.cluster_config.config,
-                context_name=configuration.cluster_config.context_name,
-            )
+            if os.environ.get(
+                "PREFECT_KUBERNETES_WORKER_ADD_TCP_KEEPALIVE", "TRUE"
+            ).strip().lower() in ("true", "1"):
+                enable_socket_keep_alive(client)
 
-        return _get_configured_kubernetes_client_cached(cluster_config)
+            yield client
+        finally:
+            client.rest_client.pool_manager.clear()
 
     def _replace_api_key_with_secret(
         self, configuration: KubernetesWorkerJobConfiguration, client: "ApiClient"
@@ -801,6 +764,15 @@ class KubernetesWorker(BaseWorker):
                 "env"
             ] = manifest_env
 
+    @retry(
+        stop=stop_after_attempt(MAX_ATTEMPTS),
+        wait=wait_fixed(RETRY_MIN_DELAY_SECONDS)
+        + wait_random(
+            RETRY_MIN_DELAY_JITTER_SECONDS,
+            RETRY_MAX_DELAY_JITTER_SECONDS,
+        ),
+        reraise=True,
+    )
     def _create_job(
         self, configuration: KubernetesWorkerJobConfiguration, client: "ApiClient"
     ) -> "V1Job":
@@ -934,7 +906,41 @@ class KubernetesWorker(BaseWorker):
 
         return cluster_uid
 
-    async def _watch_job(
+    def _job_events(
+        self,
+        watch: kubernetes.watch.Watch,
+        batch_client: kubernetes.client.BatchV1Api,
+        job_name: str,
+        namespace: str,
+        watch_kwargs: dict,
+    ) -> Generator[Union[Any, dict, str], Any, None]:
+        """
+        Stream job events.
+
+        Pick up from the current resource version returned by the API
+        in the case of a 410.
+
+        See https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes  # noqa
+        """
+        while True:
+            try:
+                return watch.stream(
+                    func=batch_client.list_namespaced_job,
+                    namespace=namespace,
+                    field_selector=f"metadata.name={job_name}",
+                    **watch_kwargs,
+                )
+            except ApiException as e:
+                if e.status == 410:
+                    job_list = batch_client.list_namespaced_job(
+                        namespace=namespace, field_selector=f"metadata.name={job_name}"
+                    )
+                    resource_version = job_list.metadata.resource_version
+                    watch_kwargs["resource_version"] = resource_version
+                else:
+                    raise
+
+    def _watch_job(
         self,
         logger: logging.Logger,
         job_name: str,
@@ -1013,18 +1019,18 @@ class KubernetesWorker(BaseWorker):
                     return -1
 
                 watch = kubernetes.watch.Watch()
+
                 # The kubernetes library will disable retries if the timeout kwarg is
                 # present regardless of the value so we do not pass it unless given
                 # https://github.com/kubernetes-client/python/blob/84f5fea2a3e4b161917aa597bf5e5a1d95e24f5a/kubernetes/base/watch/watch.py#LL160
-                timeout_seconds = (
-                    {"timeout_seconds": remaining_time} if deadline else {}
-                )
+                watch_kwargs = {"timeout_seconds": remaining_time} if deadline else {}
 
-                for event in watch.stream(
-                    func=batch_client.list_namespaced_job,
-                    field_selector=f"metadata.name={job_name}",
-                    namespace=configuration.namespace,
-                    **timeout_seconds,
+                for event in self._job_events(
+                    watch,
+                    batch_client,
+                    job_name,
+                    configuration.namespace,
+                    watch_kwargs,
                 ):
                     if event["type"] == "DELETED":
                         logger.error(f"Job {job_name!r}: Job has been deleted.")
