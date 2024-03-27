@@ -934,7 +934,7 @@ class KubernetesWorker(BaseWorker):
 
         return cluster_uid
 
-    def _watch_job(
+    async def _watch_job(
         self,
         logger: logging.Logger,
         job_name: str,
