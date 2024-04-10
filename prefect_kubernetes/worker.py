@@ -103,6 +103,7 @@ checkout out the [Prefect docs](https://docs.prefect.io/concepts/work-pools/).
 import asyncio
 import base64
 import enum
+import json
 import logging
 import math
 import os
@@ -795,8 +796,8 @@ class KubernetesWorker(BaseWorker):
             message = ""
             if exc.reason:
                 message += ": " + exc.reason
-            if exc.body and "message" in exc.body:
-                message += ": " + exc.body["message"]
+            if exc.body and "message" in (body := json.loads(exc.body)):
+                message += ": " + body["message"]
 
             raise InfrastructureError(
                 f"Unable to create Kubernetes job{message}"

@@ -1,4 +1,5 @@
 import base64
+import json
 import re
 import uuid
 from contextlib import contextmanager
@@ -1008,7 +1009,7 @@ class TestKubernetesWorkerJobConfiguration:
 
     @pytest.fixture
     def deployment(self):
-        return DeploymentResponse(name="my-deployment-name")
+        return DeploymentResponse(name="my-deployment-name", flow_id=uuid.uuid4())
 
     @pytest.fixture
     def flow(self):
@@ -1522,16 +1523,18 @@ class TestKubernetesWorker:
         mock_batch_client,
     ):
         response = MagicMock()
-        response.data = {
-            "kind": "Status",
-            "apiVersion": "v1",
-            "metadata": {},
-            "status": "Failure",
-            "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
-            "reason": "Forbidden",
-            "details": {"group": "batch", "kind": "jobs"},
-            "code": 403,
-        }
+        response.data = json.dumps(
+            {
+                "kind": "Status",
+                "apiVersion": "v1",
+                "metadata": {},
+                "status": "Failure",
+                "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
+                "reason": "Forbidden",
+                "details": {"group": "batch", "kind": "jobs"},
+                "code": 403,
+            }
+        )
         response.status = 403
         response.reason = "Forbidden"
 
@@ -1563,16 +1566,18 @@ class TestKubernetesWorker:
     ):
         MAX_ATTEMPTS = 3
         response = MagicMock()
-        response.data = {
-            "kind": "Status",
-            "apiVersion": "v1",
-            "metadata": {},
-            "status": "Failure",
-            "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
-            "reason": "Forbidden",
-            "details": {"group": "batch", "kind": "jobs"},
-            "code": 403,
-        }
+        response.data = json.dumps(
+            {
+                "kind": "Status",
+                "apiVersion": "v1",
+                "metadata": {},
+                "status": "Failure",
+                "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
+                "reason": "Forbidden",
+                "details": {"group": "batch", "kind": "jobs"},
+                "code": 403,
+            }
+        )
         response.status = 403
         response.reason = "Forbidden"
 
@@ -1605,16 +1610,18 @@ class TestKubernetesWorker:
         mock_batch_client,
     ):
         response = MagicMock()
-        response.data = {
-            "kind": "Status",
-            "apiVersion": "v1",
-            "metadata": {},
-            "status": "Failure",
-            "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
-            "reason": "Forbidden",
-            "details": {"group": "batch", "kind": "jobs"},
-            "code": 403,
-        }
+        response.data = json.dumps(
+            {
+                "kind": "Status",
+                "apiVersion": "v1",
+                "metadata": {},
+                "status": "Failure",
+                "message": 'jobs.batch is forbidden: User "system:serviceaccount:helm-test:prefect-worker-dev" cannot create resource "jobs" in API group "batch" in the namespace "prefect"',
+                "reason": "Forbidden",
+                "details": {"group": "batch", "kind": "jobs"},
+                "code": 403,
+            }
+        )
         response.status = 403
         response.reason = None
 
@@ -1645,15 +1652,17 @@ class TestKubernetesWorker:
         mock_batch_client,
     ):
         response = MagicMock()
-        response.data = {
-            "kind": "Status",
-            "apiVersion": "v1",
-            "metadata": {},
-            "status": "Failure",
-            "reason": "Forbidden",
-            "details": {"group": "batch", "kind": "jobs"},
-            "code": 403,
-        }
+        response.data = json.dumps(
+            {
+                "kind": "Status",
+                "apiVersion": "v1",
+                "metadata": {},
+                "status": "Failure",
+                "reason": "Forbidden",
+                "details": {"group": "batch", "kind": "jobs"},
+                "code": 403,
+            }
+        )
         response.status = 403
         response.reason = "Test"
 
