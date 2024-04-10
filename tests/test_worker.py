@@ -1009,7 +1009,7 @@ class TestKubernetesWorkerJobConfiguration:
 
     @pytest.fixture
     def deployment(self):
-        return DeploymentResponse(name="my-deployment-name")
+        return DeploymentResponse(name="my-deployment-name", flow_id=uuid.uuid4())
 
     @pytest.fixture
     def flow(self):
